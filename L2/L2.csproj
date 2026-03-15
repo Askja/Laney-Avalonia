@@ -191,11 +191,11 @@
     <PackageReference Include="Avalonia.Controls.ItemsRepeater" Version="11.1.999" />
     <PackageReference Include="Avalonia.Desktop" Version="11.3.12" />
 
-    <PackageReference Include="Avalonia.Labs.Controls" Version="11.3.999" />
-    <PackageReference Include="Avalonia.Labs.Lottie" Version="11.3.999" />
-    <PackageReference Include="Avalonia.Labs.Notifications" Version="11.3.999" />
-    <PackageReference Include="Avalonia.Labs.Panels" Version="11.3.999" />
-    <PackageReference Include="Avalonia.Labs.Qr" Version="11.3.999" />
+    <PackageReference Include="Avalonia.Labs.Controls" Version="11.3.1" />
+    <PackageReference Include="Avalonia.Labs.Lottie" Version="11.3.1" />
+    <PackageReference Include="Avalonia.Labs.Notifications" Version="11.3.1" />
+    <PackageReference Include="Avalonia.Labs.Panels" Version="11.3.1" />
+    <PackageReference Include="Avalonia.Labs.Qr" Version="11.3.1" />
     <PackageReference Include="Avalonia.Themes.Simple" Version="11.3.12" />
     <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="AvaloniaUI.DiagnosticsSupport" Version="2.1.1" />
     <PackageReference Condition="'$(Configuration)' == 'Release'" Include="Chisel" Version="1.1.2">
