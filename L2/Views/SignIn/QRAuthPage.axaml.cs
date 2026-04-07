@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 using VKUI.Controls;
 
 namespace ELOR.Laney.Views.SignIn {
-    public partial class QRAuthPage : Page {
+    public partial class QRAuthPage : VKUI.Controls.Page {
         public QRAuthPage() {
             InitializeComponent();
         }
