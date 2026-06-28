@@ -4,7 +4,6 @@ using Serilog;
 using System;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.Json;
 
 namespace ELOR.Laney.Core {
@@ -21,20 +20,13 @@ namespace ELOR.Laney.Core {
             }
 
             try {
-                FileStream file = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None, 4096);
-
-                byte[] fileBytes = new byte[file.Length];
-                file.Read(fileBytes, 0, fileBytes.Length);
-
-                UTF8Encoding enc = new UTF8Encoding(true);
-                string content = enc.GetString(fileBytes);
-
-                if (content.Length == 0) {
+                using FileStream file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 64 * 1024);
+                if (file.Length == 0) {
                     Log.Warning("File for demo mode is empty! skipping.");
                     return false;
                 }
 
-                Data = (DemoModeData)JsonSerializer.Deserialize(content, typeof(DemoModeData), L2JsonSerializerContext.Default);
+                Data = (DemoModeData)JsonSerializer.Deserialize(file, typeof(DemoModeData), L2JsonSerializerContext.Default);
                 Log.Information("File for demo mode is found and successfully loaded!");
                 IsEnabled = true;
                 return true;

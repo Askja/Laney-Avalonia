@@ -15,7 +15,7 @@
         Width="360" Height="576" Loaded="SearchInChatWindow_Loaded"
         Title="{x:Static i18n:Resources.search}">
   <Grid x:Name="Root" RowDefinitions="Auto Auto *" x:DataType="vmm:SearchInChatViewModel">
-    <TextBox x:Name="SearchBox" Grid.Row="1" Margin="12,0" Classes="Search" Watermark="{x:Static i18n:Resources.search}" Text="{Binding Query, Mode=TwoWay}" KeyUp="OnSearchBoxKeyUp"/>
+    <TextBox x:Name="SearchBox" Grid.Row="1" Margin="12,0" Classes="Search" PlaceholderText="{x:Static i18n:Resources.search}" Text="{Binding Query, Mode=TwoWay}" KeyUp="OnSearchBoxKeyUp"/>
     <Grid Grid.Row="2">
       <ScrollViewer x:Name="MessagesSV">
         <ItemsRepeater x:Name="MessagesList" Margin="0,6" ItemsSource="{Binding Messages}">
@@ -32,7 +32,7 @@
       
       <Grid x:Name="EmptyMessagesListContainer" IsVisible="{Binding Messages, Mode=OneWay, Converter={x:Static ObjectConverters.IsNull}}">
         <vkui:Spinner HorizontalAlignment="Center" Width="32" Height="32" IsVisible="{Binding IsLoading, Mode=OneWay}"/>
-        <vkui:Placeholder VerticalAlignment="Center"
+        <vkui:Placeholder Classes="Compact" VerticalAlignment="Center"
                               IsVisible="{Binding Placeholder, Mode=OneWay, FallbackValue=False, Converter={x:Static ObjectConverters.IsNotNull}}"
                               Icon="{Binding Placeholder.Icon, Mode=OneWay}"
                               Header="{Binding Placeholder.Header, Mode=OneWay}"

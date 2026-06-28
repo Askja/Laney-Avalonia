@@ -24,7 +24,7 @@
         <DoubleTransition
             Easing="CubicEaseOut"
             Property="Canvas.Left"
-            Duration="0:0:0.2" />
+            Duration="0:0:0.14" />
       </Transitions>
     </Setter>
     <Setter Property="Template">

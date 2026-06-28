@@ -64,7 +64,7 @@ namespace ELOR.Laney.Extensions {
                 return new Size(v.Width, v.Height);
             } else if (preview is Document d && d.Preview?.Photo != null && d.Preview.Photo.Sizes.Count > 0) {
                 var s = d.Preview.Photo.Sizes.LastOrDefault();
-                new Size(s.Width, s.Height);
+                return new Size(s.Width, s.Height);
             }
             return new Size(0, 0);
         }
@@ -95,7 +95,7 @@ namespace ELOR.Laney.Extensions {
                     ps = s;
                     if (ElorMath.IsLargeOrEqualThanMax(s.Width, s.Height, maxWidth, maxHeight)) break;
                 }
-            } else if (preview is Document d && d.Preview != null) {
+            } else if (preview is Document d && d.Preview?.Photo != null) {
                 if (d.Preview.Photo.Sizes == null || d.Preview.Photo.Sizes.Count == 0) {
                     Log.Warning($"Preview for {d} have no sizes and links!");
                     return ps;

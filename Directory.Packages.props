@@ -1,0 +1,52 @@
+<Project>
+  <PropertyGroup>
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageVersion Include="Avalonia" Version="12.0.4" />
+    <PackageVersion Include="Avalonia.Controls.ItemsRepeater" Version="12.0.0" />
+    <PackageVersion Include="Avalonia.Desktop" Version="12.0.4" />
+    <PackageVersion Include="Avalonia.Labs.Controls" Version="12.0.2" />
+    <PackageVersion Include="Avalonia.Labs.Lottie" Version="12.0.2" />
+    <PackageVersion Include="Avalonia.Labs.Notifications" Version="12.0.2" />
+    <PackageVersion Include="Avalonia.Labs.Panels" Version="12.0.2" />
+    <PackageVersion Include="Avalonia.Labs.Qr" Version="12.0.2" />
+    <PackageVersion Include="Avalonia.Themes.Simple" Version="12.0.4" />
+    <PackageVersion Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.2" />
+    <PackageVersion Include="Chisel" Version="1.2.0" />
+    <PackageVersion Include="DeviceId" Version="6.11.0" />
+    <PackageVersion Include="DynamicData" Version="9.4.31" />
+    <PackageVersion Include="LibVLCSharp" Version="3.9.7.1" />
+    <PackageVersion Include="HarfBuzzSharp" Version="8.3.1.5" />
+    <PackageVersion Include="HarfBuzzSharp.NativeAssets.Linux" Version="8.3.1.5" />
+    <PackageVersion Include="HarfBuzzSharp.NativeAssets.macOS" Version="8.3.1.5" />
+    <PackageVersion Include="HarfBuzzSharp.NativeAssets.WebAssembly" Version="8.3.1.5" />
+    <PackageVersion Include="HarfBuzzSharp.NativeAssets.Win32" Version="8.3.1.5" />
+    <PackageVersion Include="MicroCom.Runtime" Version="0.11.6" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.9" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.9" />
+    <PackageVersion Include="PanAndZoom" Version="12.0.0.1" />
+    <PackageVersion Include="Serilog" Version="4.3.1" />
+    <PackageVersion Include="Serilog.Sinks.Debug" Version="3.0.0" />
+    <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
+    <PackageVersion Include="SkiaSharp.Resources" Version="3.119.4" />
+    <PackageVersion Include="SkiaSharp.SceneGraph" Version="3.119.4" />
+    <PackageVersion Include="SkiaSharp.Skottie" Version="3.119.4" />
+    <PackageVersion Include="Svg.Controls.Skia.Avalonia" Version="12.0.0.13" />
+    <PackageVersion Include="Tmds.DBus.Protocol" Version="0.94.1" />
+    <PackageVersion Include="Unicode.net" Version="2.0.0" />
+    <PackageVersion Include="VideoLAN.LibVLC.Mac" Version="3.1.3.1" />
+    <PackageVersion Include="VideoLAN.LibVLC.Windows" Version="3.0.23.1" />
+    <PackageVersion Include="ZstdSharp.Port" Version="0.8.8" />
+    <PackageVersion Include="Bildstein.SpiderEye.Core" Version="1.0.0-beta.5" />
+    <PackageVersion Include="Bildstein.SpiderEye.Linux" Version="1.0.0-beta.5" />
+    <PackageVersion Include="Bildstein.SpiderEye.Mac" Version="1.0.0-beta.5" />
+    <PackageVersion Include="Microsoft.Web.WebView2" Version="1.0.4022.49" />
+    <PackageVersion Include="NSec.Cryptography" Version="26.4.0" />
+    <PackageVersion Include="Vanara.PInvoke.Kernel32" Version="5.0.5" />
+    <PackageVersion Include="Vanara.PInvoke.User32" Version="5.0.5" />
+    <PackageVersion Include="Whisper.net" Version="1.9.1" />
+    <PackageVersion Include="Whisper.net.Runtime" Version="1.9.1" />
+  </ItemGroup>
+</Project>

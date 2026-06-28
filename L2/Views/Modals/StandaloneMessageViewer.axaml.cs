@@ -37,6 +37,23 @@ public partial class StandaloneMessageViewer : DialogWindow {
         ScrollRoot.Content = ui;
     }
 
+    public StandaloneMessageViewer(VKSession session, WallPost post) : this(session) {
+        InitializeComponent();
+        if (post == null) throw new ArgumentNullException("post", "Post not passed!");
+        Title = Assets.i18n.Resources.wall;
+#if LINUX
+        TitleBar.IsVisible = false;
+#endif
+
+        var ui = new PostUI() {
+            Post = post,
+            Width = Width - 24,
+            Margin = new Thickness(0, 0, 0, 24)
+        };
+        ui.SizeChanged += Ui_SizeChanged;
+        ScrollRoot.Content = ui;
+    }
+
     public StandaloneMessageViewer(VKSession session, List<Message> messages) : this(session) {
         InitializeComponent();
         if (messages == null || messages.Count == 0) throw new ArgumentNullException("messages", "Messages not passed!");

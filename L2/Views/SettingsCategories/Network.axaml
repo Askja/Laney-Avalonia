@@ -1,0 +1,75 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vkui="using:VKUI.Controls"
+             xmlns:vm="using:ELOR.Laney.ViewModels.SettingsCategories"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="ELOR.Laney.Views.SettingsCategories.Network" x:DataType="vm:NetworkViewModel">
+  <ScrollViewer>
+    <StackPanel>
+      <Border Classes="Group" VerticalAlignment="Top">
+        <StackPanel>
+          <Grid Classes="GroupHeader">
+            <TextBlock Text="Трафик"/>
+          </Grid>
+          <vkui:Cell Header="Low traffic" Subtitle="Отключает background long poll групп и увеличивает TTL кеша.">
+            <vkui:Cell.After>
+              <ToggleSwitch IsChecked="{Binding LowTrafficMode, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="Group" VerticalAlignment="Top">
+        <StackPanel>
+          <Grid Classes="GroupHeader">
+            <TextBlock Text="Long Poll"/>
+          </Grid>
+          <vkui:Cell Header="Фоновых групп" Subtitle="Сколько групп держать в background long poll. 0 отключает.">
+            <vkui:Cell.After>
+              <TextBox Width="96" Text="{Binding GroupsBackgroundLongPollLimitText, Mode=TwoWay}" PlaceholderText="3"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="Group" VerticalAlignment="Top">
+        <StackPanel>
+          <Grid Classes="GroupHeader">
+            <TextBlock Text="Логи сети"/>
+          </Grid>
+          <vkui:Cell Header="Long Poll logs" Subtitle="Писать long poll события в лог.">
+            <vkui:Cell.After>
+              <ToggleSwitch IsChecked="{Binding EnableLongPollLogs, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="LNet logs" Subtitle="Сетевой слой и HTTP ошибки.">
+            <vkui:Cell.After>
+              <ToggleSwitch IsChecked="{Binding LNetLogs, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="API call buffer" Subtitle="Хранить последние 300 VK API вызовов для debug-панели. Все чувствительные параметры redacted.">
+            <vkui:Cell.After>
+              <ToggleSwitch IsChecked="{Binding ApiDebugMonitorEnabled, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <Button Classes="Tertiary" Click="OpenApiDebugPanel_Click">
+            <vkui:Cell Header="Открыть API debug" Subtitle="Метод, статус, длительность и параметры без токенов, текста сообщений и payload.">
+              <vkui:Cell.Before>
+                <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon28BugOutline}"/>
+              </vkui:Cell.Before>
+            </vkui:Cell>
+          </Button>
+          <Button Classes="Tertiary" Click="RunAccountHealthCheck_Click">
+            <vkui:Cell Header="Health-check аккаунта" Subtitle="Проверить сеть, API auth, LongPoll, recent ошибки и риск rate-limit.">
+              <vkui:Cell.Before>
+                <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon28DoneOutline}"/>
+              </vkui:Cell.Before>
+            </vkui:Cell>
+          </Button>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

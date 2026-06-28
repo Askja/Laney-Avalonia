@@ -1,4 +1,5 @@
-﻿using Avalonia.Media.Imaging;
+using Avalonia;
+using Avalonia.Media.Imaging;
 using ELOR.Laney.Core.Network;
 using ELOR.Laney.Helpers;
 using Serilog;
@@ -6,143 +7,438 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace ELOR.Laney.Core {
+    public enum BitmapCacheKind {
+        Default = 0,
+        Avatar = 1,
+        Attachment = 2,
+        E2E = 3
+    }
+
+    public readonly struct BitmapCacheSnapshot {
+        public int EntryCount { get; }
+        public int LoadingCount { get; }
+        public int DefaultCount { get; }
+        public int AvatarCount { get; }
+        public int AttachmentCount { get; }
+        public int E2ECount { get; }
+        public long SizeBytes { get; }
+        public long LimitBytes { get; }
+
+        public BitmapCacheSnapshot(int entryCount, int loadingCount, int defaultCount, int avatarCount, int attachmentCount, int e2ECount, long sizeBytes, long limitBytes) {
+            EntryCount = entryCount;
+            LoadingCount = loadingCount;
+            DefaultCount = defaultCount;
+            AvatarCount = avatarCount;
+            AttachmentCount = attachmentCount;
+            E2ECount = e2ECount;
+            SizeBytes = sizeBytes;
+            LimitBytes = limitBytes;
+        }
+    }
+
     public static class BitmapManager {
-        // static ConcurrentDictionary<string, WriteableBitmap> cachedImages = new ConcurrentDictionary<string, WriteableBitmap>();
-        static ConcurrentDictionary<string, Bitmap> cachedImages = new ConcurrentDictionary<string, Bitmap>();
-        static ConcurrentDictionary<string, ManualResetEventSlim> nowLoading = new ConcurrentDictionary<string, ManualResetEventSlim>();
-        const int cachesLimit = 500;
+        private static readonly TimeSpan ExpirationScanInterval = TimeSpan.FromMinutes(1);
+
+        private static readonly object cacheLock = new object();
+        private static readonly Dictionary<string, CacheEntry> cachedImages = new Dictionary<string, CacheEntry>();
+        private static readonly LinkedList<string> lruKeys = new LinkedList<string>();
+        private static readonly ConcurrentDictionary<string, Lazy<Task<Bitmap>>> nowLoading = new ConcurrentDictionary<string, Lazy<Task<Bitmap>>>();
+
+        private static long cachedBytes = 0;
+        private static DateTime lastExpirationScanUtc = DateTime.MinValue;
 
         public static void ClearCachedImages() {
-            long ram1 = System.Diagnostics.Process.GetCurrentProcess().PrivateMemorySize64;
-            double ram1mb = (double)ram1 / 1048576;
-            // RAMInfo.Text = $"{Math.Round(rammb, 1)} Mb";
+            long ramBefore = System.Diagnostics.Process.GetCurrentProcess().PrivateMemorySize64;
+            List<Bitmap> bitmapsToDispose = new List<Bitmap>();
 
-            lock (cachedImages) {
-                foreach (var ci in cachedImages) {
-                    ci.Value.Dispose();
+            lock (cacheLock) {
+                foreach (var cacheEntry in cachedImages.Values) {
+                    bitmapsToDispose.Add(cacheEntry.Bitmap);
                 }
-            }
-            cachedImages.Clear();
-            GC.Collect(2, GCCollectionMode.Forced);
-            GC.WaitForPendingFinalizers();
-            GC.Collect(2, GCCollectionMode.Aggressive);
 
-            long ram2 = System.Diagnostics.Process.GetCurrentProcess().PrivateMemorySize64;
-            double ram2mb = (double)ram2 / 1048576;
+                cachedImages.Clear();
+                lruKeys.Clear();
+                cachedBytes = 0;
+            }
+
+            foreach (var bitmap in bitmapsToDispose) {
+                bitmap.Dispose();
+            }
+
+            long ramAfter = System.Diagnostics.Process.GetCurrentProcess().PrivateMemorySize64;
 
 #if !MAC
-            Log.Information($"ClearCachedImages: RAM usage before cleaning is {Math.Round(ram1mb, 1)} Mb, after cleaning is {Math.Round(ram2mb, 1)} Mb.");
+            Log.Information(
+                "ClearCachedImages: RAM usage before cleaning is {Before} Mb, after cleaning is {After} Mb.",
+                Math.Round((double)ramBefore / 1048576, 1),
+                Math.Round((double)ramAfter / 1048576, 1));
 #endif
         }
 
-        private static async Task<Bitmap> TryGetCachedBitmapOrDownloadAsync(Uri uri, double decodeWidth = 0, double decodeHeight = 0) {
-            if (uri == null) return null;
+        public static BitmapCacheSnapshot GetCacheSnapshot() {
+            lock (cacheLock) {
+                int defaultCount = 0;
+                int avatarCount = 0;
+                int attachmentCount = 0;
+                int e2ECount = 0;
 
-            string url = uri.AbsoluteUri;
-            if (decodeWidth > 0) { // DPI aware
-                decodeWidth = Convert.ToInt32(decodeWidth * App.Current.DPI);
-            }
-            if (decodeHeight > 0) { // DPI aware
-                decodeHeight = Convert.ToInt32(decodeHeight * App.Current.DPI);
-            }
-
-            bool needResize = decodeWidth > 0 && decodeHeight > 0;
-            string key = url;
-
-            if (!cachedImages.ContainsKey(key)) {
-                if (uri.Scheme == "avares") {
-                    var lbitmap = AssetsManager.GetBitmapFromUri(uri);
-                    return needResize ? await GetResizedBitmap(lbitmap, decodeWidth, decodeHeight) : lbitmap;
-                } else {
-                    // WriteableBitmap bitmap = null;
-                    Bitmap bitmap = null;
-                    if (nowLoading.ContainsKey(key)) {
-                        var lmres = nowLoading[key];
-                        if (Settings.BitmapManagerLogs) Log.Information($"TryGetCachedBitmapAsync: The bitmap with key \"{key}\" is currently downloading by another instance. Waiting...");
-                        await Task.Factory.StartNew(lmres.Wait).ConfigureAwait(true);
-                        return needResize ? await GetResizedBitmap(cachedImages[key], decodeWidth, decodeHeight) : cachedImages[key];
+                foreach (var cacheEntry in cachedImages.Values) {
+                    switch (cacheEntry.Kind) {
+                        case BitmapCacheKind.Avatar:
+                            avatarCount++;
+                            break;
+                        case BitmapCacheKind.Attachment:
+                            attachmentCount++;
+                            break;
+                        case BitmapCacheKind.E2E:
+                            e2ECount++;
+                            break;
+                        default:
+                            defaultCount++;
+                            break;
                     }
-                    using ManualResetEventSlim mres = new ManualResetEventSlim();
-                    bool isAdded = nowLoading.TryAdd(key, mres);
-                    if (!isAdded) Log.Warning($"TryGetCachedBitmapAsync: cannot add MRES \"{key}\"!");
-
-                    using var response = Settings.LoadImagesSequential ? await LNet.GetSequentialAsync(uri) : await LNet.GetAsync(uri);
-                    response.EnsureSuccessStatusCode();
-                    var bytes = await response.Content.ReadAsByteArrayAsync();
-                    using Stream stream = new MemoryStream(bytes);
-                    if (bytes.Length == 0) throw new Exception("Image length is 0!");
-
-                    // bitmap = WriteableBitmap.Decode(stream);
-                    bitmap = new Bitmap(stream);
-
-                    if (cachedImages.Count == cachesLimit) {
-                        var first = cachedImages.First();
-                        // WriteableBitmap outwb = null;
-                        Bitmap outwb = null;
-                        bool isRemoved = cachedImages.Remove(first.Key, out outwb);
-                        if (!isRemoved) Log.Warning($"TryGetCachedBitmapAsync: cannot remove bitmap \"{first.Key}\"!");
-                        first.Value.Dispose();
-                    }
-                    if (!cachedImages.ContainsKey(key)) {
-                        bool isAdded2 = cachedImages.TryAdd(key, bitmap);
-                        if (!isAdded2) Log.Warning($"TryGetCachedBitmapAsync: cannot add bitmap \"{key}\"!");
-                    }
-                    await stream.FlushAsync();
-                    ManualResetEventSlim outmres = null;
-                    bool isRemoved2 = nowLoading.Remove(key, out outmres);
-                    if (!isRemoved2) Log.Warning($"TryGetCachedBitmapAsync: cannot remove MRES \"{key}\"!");
-                    mres.Set();
-                    // mres.Dispose();
-                    return needResize ? await GetResizedBitmap(bitmap, decodeWidth, decodeHeight) : bitmap;
                 }
-            } else {
-                return needResize ? await GetResizedBitmap(cachedImages[key], decodeWidth, decodeHeight) : cachedImages[key];
+
+                return new BitmapCacheSnapshot(
+                    cachedImages.Count,
+                    nowLoading.Count,
+                    defaultCount,
+                    avatarCount,
+                    attachmentCount,
+                    e2ECount,
+                    cachedBytes,
+                    GetCacheLimitBytes());
             }
         }
 
-        private static async Task<Bitmap> GetResizedBitmap(Bitmap bitmap, double dw, double dh) {
-            var iw = bitmap == null ? 0 : bitmap.Size.Width;
-            var ih = bitmap == null ? 0 : bitmap.Size.Height;
+        public static Task<Bitmap> GetBitmapAsync(Uri source, double decodeWidth, double decodeHeight, BitmapCacheKind cacheKind, CancellationToken cancellationToken = default) {
+            return GetBitmapAsync(source, decodeWidth, decodeHeight, cancellationToken, cacheKind);
+        }
 
-            if (dw == 0 || dh == 0 || iw == 0 || ih == 0) {
-                if (Settings.BitmapManagerLogs) Log.Information($"GetResizedBitmap: bitmap size is {iw}x{ih}, container size is {dw}x{dh}. One of these parameters is zero, returning original bitmap.");
+        public static async Task<Bitmap> GetBitmapAsync(Uri source, double decodeWidth = 0, double decodeHeight = 0, CancellationToken cancellationToken = default, BitmapCacheKind cacheKind = BitmapCacheKind.Default) {
+            if (source == null) return null;
+
+            ImageRequest request = ImageRequest.Create(source, decodeWidth, decodeHeight, cacheKind);
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (source.Scheme == "avares") {
+                return await LoadAssetBitmapAsync(request, cancellationToken);
+            }
+
+            if (TryGetCachedBitmap(request.Key, out Bitmap cachedBitmap)) {
+                return cachedBitmap;
+            }
+
+            Lazy<Task<Bitmap>> lazyLoad = nowLoading.GetOrAdd(
+                request.Key,
+                _ => new Lazy<Task<Bitmap>>(() => LoadAndCacheBitmapAsync(request), LazyThreadSafetyMode.ExecutionAndPublication));
+
+            Task<Bitmap> loadTask = lazyLoad.Value;
+            _ = loadTask.ContinueWith(_ => nowLoading.TryRemove(request.Key, out Lazy<Task<Bitmap>> ignored), TaskScheduler.Default);
+
+            try {
+                return await loadTask.WaitAsync(cancellationToken);
+            } catch (OperationCanceledException) {
+                if (Settings.BitmapManagerLogs) {
+                    Log.Information("GetBitmapAsync canceled. Source: {Source}, size: {Width}x{Height}", source.AbsoluteUri, request.DecodeWidth, request.DecodeHeight);
+                }
+
+                throw;
+            } catch (Exception ex) {
+                Log.Error(ex, "GetBitmapAsync error! Source: {Source}, size: {Width}x{Height}", source.AbsoluteUri, request.DecodeWidth, request.DecodeHeight);
+                return null;
+            }
+        }
+
+        private static bool TryGetCachedBitmap(string key, out Bitmap bitmap) {
+            Bitmap expiredBitmap = null;
+            string expiredKey = null;
+            BitmapCacheKind expiredKind = BitmapCacheKind.Default;
+            bool isHit = false;
+
+            lock (cacheLock) {
+                if (!cachedImages.TryGetValue(key, out CacheEntry cacheEntry)) {
+                    bitmap = null;
+                } else {
+                    DateTime utcNow = DateTime.UtcNow;
+                    if (IsExpired(cacheEntry, utcNow)) {
+                        if (RemoveCacheEntry(cacheEntry)) {
+                            expiredBitmap = cacheEntry.Bitmap;
+                            expiredKey = cacheEntry.Key;
+                            expiredKind = cacheEntry.Kind;
+                        }
+
+                        bitmap = null;
+                    } else {
+                        cacheEntry.Touch(utcNow);
+                        bitmap = cacheEntry.Bitmap;
+                        isHit = true;
+                    }
+                }
+            }
+
+            if (expiredBitmap != null) {
+                expiredBitmap.Dispose();
+
+                if (Settings.BitmapManagerLogs) {
+                    Log.Information("Bitmap cache expired {Key} ({Kind}). Cache size: {CacheMb} Mb.", expiredKey, expiredKind, Math.Round((double)cachedBytes / 1048576, 1));
+                }
+            }
+
+            return isHit;
+        }
+
+        private static async Task<Bitmap> LoadAndCacheBitmapAsync(ImageRequest request) {
+            Bitmap bitmap = await LoadNetworkBitmapAsync(request);
+            AddToCache(request.Key, bitmap, request.CacheKind);
+            return bitmap;
+        }
+
+        private static async Task<Bitmap> LoadNetworkBitmapAsync(ImageRequest request) {
+            using var response = Settings.LoadImagesSequential
+                ? await LNet.GetSequentialAsync(request.Uri)
+                : await LNet.GetAsync(request.Uri);
+
+            response.EnsureSuccessStatusCode();
+
+            byte[] bytes = await response.Content.ReadAsByteArrayAsync();
+            if (bytes.Length == 0) throw new Exception("Image length is 0!");
+
+            using Stream stream = new MemoryStream(bytes, false);
+            Bitmap bitmap = DecodeBitmap(stream, request.DecodeWidth, request.DecodeHeight);
+
+            if (Settings.BitmapManagerLogs) {
+                Log.Information(
+                    "Loaded bitmap {Source}, requested {Width}x{Height}, decoded {DecodedWidth}x{DecodedHeight}, cache {CacheMb} Mb.",
+                    request.Uri.AbsoluteUri,
+                    request.DecodeWidth,
+                    request.DecodeHeight,
+                    bitmap.PixelSize.Width,
+                    bitmap.PixelSize.Height,
+                    Math.Round((double)cachedBytes / 1048576, 1));
+            }
+
+            return bitmap;
+        }
+
+        private static async Task<Bitmap> LoadAssetBitmapAsync(ImageRequest request, CancellationToken cancellationToken) {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            Bitmap bitmap = AssetsManager.GetBitmapFromUri(request.Uri);
+            if (request.DecodeWidth <= 0 && request.DecodeHeight <= 0) return bitmap;
+
+            return await CreateScaledBitmapAsync(bitmap, request.DecodeWidth, request.DecodeHeight, cancellationToken);
+        }
+
+        private static Bitmap DecodeBitmap(Stream stream, int decodeWidth, int decodeHeight) {
+            if (decodeWidth <= 0 && decodeHeight <= 0) {
+                return new Bitmap(stream);
+            }
+
+            if (decodeWidth > 0 && (decodeHeight <= 0 || decodeWidth <= decodeHeight)) {
+                return Bitmap.DecodeToWidth(stream, decodeWidth, BitmapInterpolationMode.MediumQuality);
+            }
+
+            return Bitmap.DecodeToHeight(stream, decodeHeight, BitmapInterpolationMode.MediumQuality);
+        }
+
+        private static async Task<Bitmap> CreateScaledBitmapAsync(Bitmap bitmap, int decodeWidth, int decodeHeight, CancellationToken cancellationToken) {
+            if (bitmap == null) return null;
+
+            double imageWidth = bitmap.Size.Width;
+            double imageHeight = bitmap.Size.Height;
+
+            if (decodeWidth <= 0 || decodeHeight <= 0 || imageWidth <= 0 || imageHeight <= 0) {
+                if (Settings.BitmapManagerLogs) {
+                    Log.Information(
+                        "CreateScaledBitmapAsync: bitmap size is {ImageWidth}x{ImageHeight}, container size is {Width}x{Height}. Returning original bitmap.",
+                        imageWidth,
+                        imageHeight,
+                        decodeWidth,
+                        decodeHeight);
+                }
+
                 return bitmap;
             }
 
-            double rw = 0, rh = 0;
-            ElorMath.Resize(iw, ih, dw, dh, out rw, out rh);
+            ElorMath.Resize(imageWidth, imageHeight, decodeWidth, decodeHeight, out double resizedWidth, out double resizedHeight);
 
-            if (Settings.BitmapManagerLogs) Log.Information($"GetResizedBitmap: bitmap size is {iw}x{ih}, container size is {dw}x{dh}, resized to {rw}x{rh}.");
+            if (Settings.BitmapManagerLogs) {
+                Log.Information(
+                    "CreateScaledBitmapAsync: bitmap size is {ImageWidth}x{ImageHeight}, container size is {Width}x{Height}, resized to {ResizedWidth}x{ResizedHeight}.",
+                    imageWidth,
+                    imageHeight,
+                    decodeWidth,
+                    decodeHeight,
+                    resizedWidth,
+                    resizedHeight);
+            }
 
-            // https://github.com/AvaloniaUI/Avalonia/issues/8444
-            Bitmap rbitmap = null;
-            await Task.Factory.StartNew(() => {
-                rbitmap = bitmap.CreateScaledBitmap(new Avalonia.PixelSize((int)rw, (int)rh));
-            }).WaitAsync(new CancellationTokenSource().Token);
-            return rbitmap;
+            return await Task.Run(
+                () => bitmap.CreateScaledBitmap(
+                    new PixelSize((int)resizedWidth, (int)resizedHeight),
+                    BitmapInterpolationMode.MediumQuality),
+                cancellationToken);
         }
 
-        public static async Task<Bitmap> GetBitmapAsync(Uri source, double decodeWidth = 0, double decodeHeight = 0) {
-            if (source == null) return null; // Бывают всякие аватарки и фотки без url)))
-            string key = source.AbsoluteUri;
+        private static void AddToCache(string key, Bitmap bitmap, BitmapCacheKind cacheKind) {
+            if (bitmap == null) return;
 
-            try {
-                return await TryGetCachedBitmapOrDownloadAsync(source, decodeWidth, decodeHeight);
-            } catch (Exception ex) {
-                if (nowLoading.ContainsKey(key)) {
-                    nowLoading[key].Set();
-                    nowLoading[key].Dispose();
-                    ManualResetEventSlim outmres = null;
-                    bool isRemoved2 = nowLoading.Remove(key, out outmres);
-                    if (!isRemoved2) Log.Warning($"GetBitmapAsync: cannot remove MRES for \"{key}\"!");
+            List<Bitmap> bitmapsToDispose = new List<Bitmap>();
+
+            lock (cacheLock) {
+                if (cachedImages.TryGetValue(key, out CacheEntry existingEntry)) {
+                    existingEntry.Touch(DateTime.UtcNow);
+                    bitmapsToDispose.Add(bitmap);
+                } else {
+                    long size = EstimateBitmapSize(bitmap);
+                    CacheEntry cacheEntry = new CacheEntry(key, bitmap, size, cacheKind, DateTime.UtcNow);
+                    cachedImages.Add(key, cacheEntry);
+                    cachedBytes += size;
                 }
-                Log.Error(ex, $"GetBitmapAsync error! Source: {key}, ({decodeWidth}x{decodeHeight})");
-                return null;
+
+                TrimExpiredEntries(bitmapsToDispose, DateTime.UtcNow);
+                TrimCache(bitmapsToDispose);
+            }
+
+            foreach (var bitmapToDispose in bitmapsToDispose) {
+                bitmapToDispose.Dispose();
+            }
+        }
+
+        private static void TrimExpiredEntries(List<Bitmap> bitmapsToDispose, DateTime utcNow) {
+            if (utcNow - lastExpirationScanUtc < ExpirationScanInterval) return;
+
+            lastExpirationScanUtc = utcNow;
+            List<CacheEntry> expiredEntries = new List<CacheEntry>();
+
+            foreach (var cacheEntry in cachedImages.Values) {
+                if (IsExpired(cacheEntry, utcNow)) expiredEntries.Add(cacheEntry);
+            }
+
+            foreach (var cacheEntry in expiredEntries) {
+                if (!RemoveCacheEntry(cacheEntry)) continue;
+
+                bitmapsToDispose.Add(cacheEntry.Bitmap);
+
+                if (Settings.BitmapManagerLogs) {
+                    Log.Information("Bitmap cache expired {Key} ({Kind}). Cache size: {CacheMb} Mb.", cacheEntry.Key, cacheEntry.Kind, Math.Round((double)cachedBytes / 1048576, 1));
+                }
+            }
+        }
+
+        private static void TrimCache(List<Bitmap> bitmapsToDispose) {
+            long cacheLimitBytes = GetCacheLimitBytes();
+            while (cachedBytes > cacheLimitBytes && lruKeys.Count > 1) {
+                string key = lruKeys.First.Value;
+                if (!cachedImages.TryGetValue(key, out CacheEntry cacheEntry)) {
+                    lruKeys.RemoveFirst();
+                    continue;
+                }
+
+                RemoveCacheEntry(cacheEntry);
+                bitmapsToDispose.Add(cacheEntry.Bitmap);
+
+                if (Settings.BitmapManagerLogs) {
+                    Log.Information("Bitmap cache evicted {Key}. Cache size: {CacheMb} Mb.", key, Math.Round((double)cachedBytes / 1048576, 1));
+                }
+            }
+        }
+
+        private static long EstimateBitmapSize(Bitmap bitmap) {
+            long width = Math.Max(1, bitmap.PixelSize.Width);
+            long height = Math.Max(1, bitmap.PixelSize.Height);
+            return width * height * 4;
+        }
+
+        private static long GetCacheLimitBytes() {
+            return MediaMemoryGovernor.GetBitmapCacheBudgetBytes();
+        }
+
+        private static bool RemoveCacheEntry(CacheEntry cacheEntry) {
+            if (!cachedImages.Remove(cacheEntry.Key)) return false;
+
+            cacheEntry.Detach();
+            cachedBytes = Math.Max(0, cachedBytes - cacheEntry.SizeBytes);
+            return true;
+        }
+
+        private static bool IsExpired(CacheEntry cacheEntry, DateTime utcNow) {
+            TimeSpan ttl = GetCacheTtl(cacheEntry.Kind);
+            return ttl > TimeSpan.Zero && utcNow - cacheEntry.LastAccessUtc >= ttl;
+        }
+
+        private static TimeSpan GetCacheTtl(BitmapCacheKind cacheKind) {
+            int minutes = cacheKind switch {
+                BitmapCacheKind.Avatar => Settings.ImageCacheAvatarTtlMinutes,
+                BitmapCacheKind.Attachment => Settings.ImageCacheAttachmentTtlMinutes,
+                BitmapCacheKind.E2E => Settings.ImageCacheE2ETtlMinutes,
+                _ => Settings.ImageCacheDefaultTtlMinutes
+            };
+
+            return minutes <= 0 ? TimeSpan.Zero : TimeSpan.FromMinutes(minutes);
+        }
+
+        private sealed class CacheEntry {
+            public string Key { get; }
+            public Bitmap Bitmap { get; }
+            public long SizeBytes { get; }
+            public BitmapCacheKind Kind { get; }
+            public DateTime LastAccessUtc { get; private set; }
+            public LinkedListNode<string> Node { get; private set; }
+
+            public CacheEntry(string key, Bitmap bitmap, long sizeBytes, BitmapCacheKind kind, DateTime utcNow) {
+                Key = key;
+                Bitmap = bitmap;
+                SizeBytes = sizeBytes;
+                Kind = kind;
+                LastAccessUtc = utcNow;
+                Node = lruKeys.AddLast(key);
+            }
+
+            public void Touch(DateTime utcNow) {
+                LastAccessUtc = utcNow;
+                if (Node == null) return;
+                lruKeys.Remove(Node);
+                Node = lruKeys.AddLast(Key);
+            }
+
+            public void Detach() {
+                if (Node == null) return;
+                lruKeys.Remove(Node);
+                Node = null;
+            }
+        }
+
+        private readonly struct ImageRequest {
+            public Uri Uri { get; }
+            public string Key { get; }
+            public int DecodeWidth { get; }
+            public int DecodeHeight { get; }
+            public BitmapCacheKind CacheKind { get; }
+
+            private ImageRequest(Uri uri, string key, int decodeWidth, int decodeHeight, BitmapCacheKind cacheKind) {
+                Uri = uri;
+                Key = key;
+                DecodeWidth = decodeWidth;
+                DecodeHeight = decodeHeight;
+                CacheKind = cacheKind;
+            }
+
+            public static ImageRequest Create(Uri uri, double decodeWidth, double decodeHeight, BitmapCacheKind cacheKind) {
+                int width = NormalizeDecodeSize(decodeWidth);
+                int height = NormalizeDecodeSize(decodeHeight);
+                string key = $"{cacheKind}:{uri.AbsoluteUri}|{width}x{height}";
+                return new ImageRequest(uri, key, width, height, cacheKind);
+            }
+
+            private static int NormalizeDecodeSize(double value) {
+                if (value <= 0) return 0;
+                return Math.Max(1, Convert.ToInt32(Math.Ceiling(value * App.Current.DPI)));
             }
         }
     }

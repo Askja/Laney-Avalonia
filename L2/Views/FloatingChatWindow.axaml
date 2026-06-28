@@ -1,0 +1,16 @@
+<vkw:DialogWindow xmlns="https://github.com/avaloniaui"
+                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                  xmlns:vkw="using:VKUI.Windows"
+                  xmlns:views="using:ELOR.Laney.Views"
+                  xmlns:vm="using:ELOR.Laney.ViewModels"
+                  mc:Ignorable="d" d:DesignWidth="420" d:DesignHeight="640"
+                  x:Class="ELOR.Laney.Views.FloatingChatWindow"
+                  x:DataType="vm:ChatViewModel"
+                  Icon="avares://laney/Assets/Logo/icon.ico"
+                  Topmost="True"
+                  ShowInTaskbar="True"
+                  Width="420" Height="640" MinWidth="360" MinHeight="480">
+  <views:ChatView x:Name="ChatView"/>
+</vkw:DialogWindow>

@@ -14,8 +14,9 @@ namespace ELOR.Laney.Core {
                 using (ChaCha20Poly1305 cha = new ChaCha20Poly1305(key)) {
                     byte[] p = Encoding.UTF8.GetBytes(plainText);
                     byte[] e = new byte[p.Length];
-                    byte[] n = p.TakeLast(12).ToArray();
+                    byte[] n = new byte[12];
                     byte[] t = new byte[16];
+                    RandomNumberGenerator.Fill(n);
                     cha.Encrypt(n, p, e, t);
                     return new Tuple<string, string, string>(Convert.ToBase64String(e), Convert.ToBase64String(n), Convert.ToBase64String(t));
                 }

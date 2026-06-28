@@ -1,0 +1,160 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vkui="using:VKUI.Controls"
+             xmlns:vm="using:ELOR.Laney.ViewModels.SettingsCategories"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="ELOR.Laney.Views.SettingsCategories.Memory" x:DataType="vm:MemoryViewModel">
+  <ScrollViewer>
+    <StackPanel>
+      <Border Classes="Group" VerticalAlignment="Top">
+        <StackPanel>
+          <Grid Classes="GroupHeader" ColumnDefinitions="* Auto Auto" ColumnSpacing="8">
+            <TextBlock Text="Performance budget"/>
+            <TextBlock Grid.Column="1" Classes="Caption1" VerticalAlignment="Center" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="{Binding LastUpdatedText}"/>
+            <Button Grid.Column="2" Classes="Tertiary" Width="36" Height="32" Padding="0" Command="{Binding RefreshPerformanceBudgetCommand}" ToolTip.Tip="Обновить метрики">
+              <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon20RecentOutline}"/>
+            </Button>
+          </Grid>
+          <vkui:Cell Header="Процесс" Subtitle="{Binding ProcessBudgetText}">
+            <vkui:Cell.After>
+              <TextBlock Classes="Subhead" FontWeight="SemiBold" Text="{Binding WorkingSetText}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Managed heap" Subtitle="{Binding ManagedHeapBudgetText}">
+            <vkui:Cell.After>
+              <TextBlock Classes="Caption1" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="{Binding GcBudgetText}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Media governor" Subtitle="{Binding MediaBudgetText}">
+            <vkui:Cell.After>
+              <TextBlock Classes="Subhead" FontWeight="SemiBold" Text="{Binding MediaBudgetPressureText}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Bitmap cache" Subtitle="{Binding BitmapCacheBudgetText}">
+            <vkui:Cell.After>
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Classes="Subhead" FontWeight="SemiBold" VerticalAlignment="Center" Text="{Binding BitmapCachePressureText}"/>
+                <Button Classes="Tertiary" Width="36" Height="32" Padding="0" Command="{Binding ClearBitmapCacheCommand}" ToolTip.Tip="Очистить bitmap-кэш">
+                  <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon20DeleteOutline}"/>
+                </Button>
+              </StackPanel>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <TextBlock Classes="Caption1" Margin="12,0,12,8" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="{Binding BitmapCacheBreakdownText}"/>
+          <vkui:Cell Header="Waveform cache" Subtitle="{Binding WaveformBudgetText}">
+            <vkui:Cell.After>
+              <TextBlock Classes="Caption1" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="voice"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Animations / prefetch" Subtitle="{Binding LocalAnimationBudgetText}">
+            <vkui:Cell.After>
+              <TextBlock Classes="Caption1" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="{Binding PrefetchBudgetText}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Network queues" Subtitle="{Binding NetworkBudgetText}">
+            <vkui:Cell.After>
+              <TextBlock Classes="Subhead" FontWeight="SemiBold" Text="{Binding NetworkBudgetBadge}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="History statistics index" Subtitle="{Binding HistoryIndexStateText}">
+            <vkui:Cell.After>
+              <TextBlock Classes="Subhead" FontWeight="SemiBold" Text="{Binding HistoryIndexBadge}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <TextBlock Classes="Caption1" Margin="12,0,12,2" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="{Binding HistoryIndexProgressText}"/>
+          <TextBlock Classes="Caption1" Margin="12,0,12,2" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="{Binding HistoryIndexCountersText}"/>
+          <TextBlock Classes="Caption1" Margin="12,0,12,8" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="{Binding HistoryIndexPolicyText}"/>
+          <vkui:Cell Header="Decode / animation policy" Subtitle="{Binding DecodeAnimationBudgetText}">
+            <vkui:Cell.After>
+              <TextBlock Classes="Caption1" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="{Binding ModeBudgetText}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="Group" VerticalAlignment="Top">
+        <StackPanel>
+          <Grid Classes="GroupHeader">
+            <TextBlock Text="Режимы экономии"/>
+          </Grid>
+          <vkui:Cell Header="Low motion" Subtitle="Отключает анимацию стикеров и тяжелые декоративные движения.">
+            <vkui:Cell.After>
+              <ToggleSwitch IsChecked="{Binding LowMotionMode, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Low memory" Subtitle="Снижает RAM лимит кеша и укорачивает TTL тяжелых картинок.">
+            <vkui:Cell.After>
+              <ToggleSwitch IsChecked="{Binding LowMemoryMode, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="Group" VerticalAlignment="Top">
+        <StackPanel>
+          <Grid Classes="GroupHeader">
+            <TextBlock Text="Изображения"/>
+          </Grid>
+          <vkui:Cell Header="Последовательная загрузка" Subtitle="Меньше пиков RAM/IO, медленнее прогрев картинок.">
+            <vkui:Cell.After>
+              <ToggleSwitch IsChecked="{Binding LoadImagesSequential, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Media budget, MB" Subtitle="Общий лимит картинок, анимаций, waveform и будущего prefetch; диапазон 64-1024.">
+            <vkui:Cell.After>
+              <TextBox Width="96" Text="{Binding MediaMemoryBudgetMbText, Mode=TwoWay}" PlaceholderText="256"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="RAM лимит кеша, MB" Subtitle="Картинки и аватары; диапазон 16-512.">
+            <vkui:Cell.After>
+              <TextBox Width="96" Text="{Binding ImageCacheRamLimitMbText, Mode=TwoWay}" PlaceholderText="192"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="Group" VerticalAlignment="Top">
+        <StackPanel>
+          <Grid Classes="GroupHeader">
+            <TextBlock Text="TTL кеша, минуты"/>
+          </Grid>
+          <vkui:Cell Header="По умолчанию">
+            <vkui:Cell.After>
+              <TextBox Width="96" Text="{Binding ImageCacheDefaultTtlMinutesText, Mode=TwoWay}" PlaceholderText="240"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Аватары">
+            <vkui:Cell.After>
+              <TextBox Width="96" Text="{Binding ImageCacheAvatarTtlMinutesText, Mode=TwoWay}" PlaceholderText="1440"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Вложения">
+            <vkui:Cell.After>
+              <TextBox Width="96" Text="{Binding ImageCacheAttachmentTtlMinutesText, Mode=TwoWay}" PlaceholderText="120"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="E2E вложения" Subtitle="По умолчанию короткий TTL, чтобы не держать лишнее в памяти.">
+            <vkui:Cell.After>
+              <TextBox Width="96" Text="{Binding ImageCacheE2ETtlMinutesText, Mode=TwoWay}" PlaceholderText="10"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="Group" VerticalAlignment="Top">
+        <StackPanel>
+          <Grid Classes="GroupHeader">
+            <TextBlock Text="Оверлеи"/>
+          </Grid>
+          <vkui:Cell Header="Показывать RAM" Subtitle="Локальный счетчик в debug overlay.">
+            <vkui:Cell.After>
+              <ToggleSwitch IsChecked="{Binding ShowRAMUsage, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

@@ -1,0 +1,78 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vkui="using:VKUI.Controls"
+             xmlns:vm="using:ELOR.Laney.ViewModels.SettingsCategories"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="ELOR.Laney.Views.SettingsCategories.AttachmentVault"
+             x:DataType="vm:AttachmentsViewModel">
+  <ScrollViewer>
+    <StackPanel>
+      <Border Classes="Group" VerticalAlignment="Top">
+        <StackPanel>
+          <Grid Classes="GroupHeader">
+            <TextBlock Text="Attachment vault"/>
+          </Grid>
+          <vkui:Cell Header="Скачанные вложения" Subtitle="{Binding Summary}">
+            <vkui:Cell.After>
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button Classes="Secondary" Command="{Binding RefreshCommand}">
+                  <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon20RecentOutline}"/>
+                </Button>
+                <Button Classes="Secondary" Command="{Binding CleanupMissingCommand}">
+                  <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon20DeleteOutline}"/>
+                </Button>
+              </StackPanel>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <Border Margin="12,0,12,12">
+            <TextBox Classes="Search" PlaceholderText="Поиск по имени, типу, тегу, URL, peer/sender/cmid или SHA-256"
+                     Text="{Binding SearchQuery, Mode=TwoWay}"/>
+          </Border>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="Group" VerticalAlignment="Top">
+        <StackPanel>
+          <Grid Classes="GroupHeader">
+            <TextBlock Text="Файлы"/>
+          </Grid>
+          <ItemsControl ItemsSource="{Binding Items}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:AttachmentVaultItemViewModel">
+                <Border Margin="12,0,12,8" Padding="10" CornerRadius="8"
+                        Background="{DynamicResource VKModalCardBackgroundBrush}"
+                        BorderBrush="{DynamicResource VKSeparatorAlphaBrush}"
+                        BorderThickness="1">
+                  <Grid ColumnDefinitions="Auto * Auto" RowDefinitions="Auto Auto Auto" ColumnSpacing="10">
+                    <vkui:VKIcon Grid.RowSpan="3" Width="28" Height="28" VerticalAlignment="Top"
+                                 Foreground="{DynamicResource VKIconSecondaryBrush}"
+                                 Id="{x:Static vkui:VKIconNames.Icon20DocumentOutline}"/>
+                    <TextBlock Grid.Column="1" FontWeight="Medium" TextTrimming="CharacterEllipsis" Text="{Binding Title}"/>
+                    <TextBlock Grid.Row="1" Grid.Column="1" Classes="Caption1" Foreground="{DynamicResource VKTextSecondaryBrush}" TextWrapping="Wrap" Text="{Binding Subtitle}"/>
+                    <TextBlock Grid.Row="2" Grid.Column="1" Classes="Caption1" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="{Binding StatusText}"/>
+                    <StackPanel Grid.Column="2" Grid.RowSpan="2" Orientation="Horizontal" Spacing="4">
+                      <Button Classes="Tertiary" Width="36" Height="36" Padding="0" ToolTip.Tip="Открыть" Click="OpenAttachment_Click">
+                        <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon20ViewOutline}"/>
+                      </Button>
+                      <Button Classes="Tertiary" Width="36" Height="36" Padding="0" ToolTip.Tip="Показать в папке" Click="RevealAttachment_Click">
+                        <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon20LinkCircleOutline}"/>
+                      </Button>
+                    </StackPanel>
+                    <StackPanel Grid.Row="2" Grid.Column="2" Orientation="Horizontal" Spacing="4">
+                      <TextBox Width="150" PlaceholderText="теги" Text="{Binding TagsText, Mode=TwoWay}"/>
+                      <Button Classes="Tertiary" Width="36" Height="36" Padding="0" ToolTip.Tip="Сохранить теги" Click="SaveTags_Click">
+                        <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon20Check}"/>
+                      </Button>
+                    </StackPanel>
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

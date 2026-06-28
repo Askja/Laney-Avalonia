@@ -16,7 +16,7 @@
 
     <ListBox Grid.Row="2" ItemTemplate="{StaticResource DefaultGroupItemTemplate}" ItemsSource="{Binding Groups}" SelectionMode="Multiple,Toggle" Selection="{Binding SelectedGroups}"/>
     <vkui:Spinner Grid.Row="2" HorizontalAlignment="Center" Width="32" Height="32" IsVisible="{Binding IsLoading, Mode=OneWay}"/>
-    <vkui:Placeholder Grid.Row="2" VerticalAlignment="Center"
+    <vkui:Placeholder Classes="Compact" Grid.Row="2" VerticalAlignment="Center"
                           IsVisible="{Binding Placeholder, Mode=OneWay, FallbackValue=False, Converter={x:Static ObjectConverters.IsNotNull}}"
                           Icon="{Binding Placeholder.Icon, Mode=OneWay}"
                           Header="{Binding Placeholder.Header, Mode=OneWay}"

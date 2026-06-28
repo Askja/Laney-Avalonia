@@ -1,0 +1,137 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vkui="using:VKUI.Controls"
+             xmlns:vm="using:ELOR.Laney.ViewModels.SettingsCategories"
+             xmlns:mdl="using:ELOR.Laney.DataModels"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="ELOR.Laney.Views.SettingsCategories.Chats" x:DataType="vm:ChatsViewModel">
+  <ScrollViewer>
+    <StackPanel>
+      <Border Classes="Group" VerticalAlignment="Top">
+        <StackPanel>
+          <Grid Classes="GroupHeader">
+            <TextBlock Text="Панели чата"/>
+          </Grid>
+          <vkui:Cell Header="Header: поиск">
+            <vkui:Cell.After>
+              <ToggleSwitch IsChecked="{Binding ChatHeaderActionSearch, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Header: профиль" Subtitle="Отдельная кнопка профиля рядом с заголовком.">
+            <vkui:Cell.After>
+              <ToggleSwitch IsChecked="{Binding ChatHeaderActionProfile, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Header: меню действий" Subtitle="Тема, вложения, E2E, архив и прочее без правого клика.">
+            <vkui:Cell.After>
+              <ToggleSwitch IsChecked="{Binding ChatHeaderActionMore, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="Group" VerticalAlignment="Top">
+        <StackPanel>
+          <Grid Classes="GroupHeader">
+            <TextBlock Text="Список чатов"/>
+          </Grid>
+          <vkui:Cell Header="Размер списка" Subtitle="Высота строк и размер аватаров.">
+            <vkui:Cell.After>
+              <ComboBox Classes="Alternate" ItemsSource="{Binding ChatListDensityOptions}" SelectedItem="{Binding CurrentChatListDensity, Mode=TwoWay}">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="mdl:TwoStringTuple">
+                    <TextBlock Text="{Binding Item2}"/>
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Макет списка" Subtitle="Classic, compact, Telegram-like, media-rich или split-folder.">
+            <vkui:Cell.After>
+              <ComboBox Classes="Alternate" ItemsSource="{Binding ChatListLayoutOptions}" SelectedItem="{Binding CurrentChatListLayout, Mode=TwoWay}">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="mdl:TwoStringTuple">
+                    <TextBlock Text="{Binding Item2}"/>
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Ширина списка" Subtitle="280-560 px, можно также тянуть разделитель мышью.">
+            <vkui:Cell.After>
+              <TextBox Width="96" Text="{Binding ChatListWidthText, Mode=TwoWay}" PlaceholderText="380"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Форма аватаров" Subtitle="Круг, squircle, rounded square или sharp.">
+            <vkui:Cell.After>
+              <ComboBox Classes="Alternate" ItemsSource="{Binding ChatListAvatarShapeOptions}" SelectedItem="{Binding CurrentChatListAvatarShape, Mode=TwoWay}">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="mdl:TwoStringTuple">
+                    <TextBlock Text="{Binding Item2}"/>
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Размер аватаров в списке" Subtitle="Можно наследовать от плотности списка или задать отдельно.">
+            <vkui:Cell.After>
+              <ComboBox Classes="Alternate" ItemsSource="{Binding ChatListAvatarSizeOptions}" SelectedItem="{Binding CurrentChatListAvatarSize, Mode=TwoWay}">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="mdl:TwoStringTuple">
+                    <TextBlock Text="{Binding Item2}"/>
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Шрифт списка чатов" Subtitle="Отдельно от размера аватаров и высоты строк.">
+            <vkui:Cell.After>
+              <ComboBox Classes="Alternate" ItemsSource="{Binding ChatListFontSizeOptions}" SelectedItem="{Binding CurrentChatListFontSize, Mode=TwoWay}">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="mdl:TwoStringTuple">
+                    <TextBlock Text="{Binding Item2}"/>
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="2 строки в списке">
+            <vkui:Cell.Before>
+              <RadioButton GroupName="ChatListRows" IsChecked="{Binding !ChatItemMoreRows, Mode=TwoWay}"/>
+            </vkui:Cell.Before>
+          </vkui:Cell>
+          <vkui:Cell Header="3 строки в списке">
+            <vkui:Cell.Before>
+              <RadioButton GroupName="ChatListRows" IsChecked="{Binding ChatItemMoreRows, Mode=TwoWay}"/>
+            </vkui:Cell.Before>
+          </vkui:Cell>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="Group" VerticalAlignment="Top">
+        <StackPanel>
+          <Grid Classes="GroupHeader">
+            <TextBlock Text="Вложения и OCR"/>
+          </Grid>
+          <vkui:Cell Header="Локальный OCR" Subtitle="Tesseract CLI, картинки не отправляются наружу.">
+            <vkui:Cell.After>
+              <ToggleSwitch IsChecked="{Binding LocalOcrEnabled, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Tesseract" Subtitle="Путь к tesseract.exe или пусто для PATH.">
+            <vkui:Cell.After>
+              <TextBox Width="260" Text="{Binding LocalOcrTesseractPath, Mode=TwoWay}" PlaceholderText="C:\Program Files\Tesseract-OCR\tesseract.exe"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Язык OCR" Subtitle="Например: rus+eng, eng.">
+            <vkui:Cell.After>
+              <TextBox Width="96" Text="{Binding LocalOcrLanguage, Mode=TwoWay}" PlaceholderText="rus+eng"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

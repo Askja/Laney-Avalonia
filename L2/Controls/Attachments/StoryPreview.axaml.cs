@@ -8,6 +8,11 @@ namespace ELOR.Laney.Controls.Attachments {
     public partial class StoryPreview : UserControl {
         Story story;
 
+        public StoryPreview() {
+            InitializeComponent();
+            if (!Design.IsDesignMode) throw new ArgumentException();
+        }
+
         public StoryPreview(Story story) {
             InitializeComponent();
             this.story = story;
@@ -56,7 +61,7 @@ namespace ELOR.Laney.Controls.Attachments {
 
             if (preview == null) return;
 
-            new System.Action(async () => await PreviewRoot.SetImageBackgroundAsync(preview, PreviewRoot.Width, PreviewRoot.Height))();
+            ImageLoader.SetBackgroundSource(PreviewRoot, preview);
         }
 
         private void SetRestrictionInfo(string info) {

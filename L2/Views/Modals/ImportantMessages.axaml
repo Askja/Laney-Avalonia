@@ -31,7 +31,7 @@
     <Separator Grid.Row="1" VerticalAlignment="Bottom"/>
     
     <Border Grid.Row="1" IsVisible="{Binding Placeholder, Mode=OneWay, FallbackValue=False, Converter={x:Static ObjectConverters.IsNotNull}}">
-      <vkui:Placeholder VerticalAlignment="Center"
+      <vkui:Placeholder Classes="Compact" VerticalAlignment="Center"
                               Icon="{Binding Placeholder.Icon, Mode=OneWay}"
                               Header="{Binding Placeholder.Header, Mode=OneWay}"
                               Text="{Binding Placeholder.Text, Mode=OneWay}">

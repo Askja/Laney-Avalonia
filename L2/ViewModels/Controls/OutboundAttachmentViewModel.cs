@@ -19,7 +19,7 @@ using VKUI.Controls;
 
 namespace ELOR.Laney.ViewModels.Controls {
     public enum OutboundAttachmentType { Attachment, ForwardedMessages, Place }
-    public enum OutboundAttachmentUploadFileType { Photo, Video, Doc, AudioMessage, Audio }
+    public enum OutboundAttachmentUploadFileType { Photo, Video, Doc, AudioMessage, Audio, Graffiti }
 
     public class OutboundAttachmentViewModel : CommonViewModel {
         private VKSession session;
@@ -104,7 +104,7 @@ namespace ELOR.Laney.ViewModels.Controls {
         private void SetUp(Photo p) {
             IconId = VKIconNames.Icon24Gallery;
             Type = OutboundAttachmentType.Attachment;
-            new System.Action(async () => PreviewImage = await BitmapManager.GetBitmapAsync(p.GetSizeAndUriForThumbnail(width, height).Uri, width, height))();
+            new System.Action(async () => PreviewImage = await BitmapManager.GetBitmapAsync(p.GetSizeAndUriForThumbnail(width, height).Uri, width, height, BitmapCacheKind.Attachment))();
             Attachment = p;
         }
 
@@ -112,7 +112,7 @@ namespace ELOR.Laney.ViewModels.Controls {
             IconId = VKIconNames.Icon24Video;
             Type = OutboundAttachmentType.Attachment;
             DisplayName = v.Title;
-            if (v.Image != null) new System.Action(async () => PreviewImage = await BitmapManager.GetBitmapAsync(v.GetSizeAndUriForThumbnail(width, height).Uri, width, height))();
+            if (v.Image != null) new System.Action(async () => PreviewImage = await BitmapManager.GetBitmapAsync(v.GetSizeAndUriForThumbnail(width, height).Uri, width, height, BitmapCacheKind.Attachment))();
             ExtraInfo = v.DurationTime.ToString(@"h\:mm\:ss");
             Attachment = v;
         }
@@ -121,7 +121,7 @@ namespace ELOR.Laney.ViewModels.Controls {
             IconId = VKIconNames.Icon24Document;
             Type = OutboundAttachmentType.Attachment;
             if (d.Preview != null) {
-                new System.Action(async () => PreviewImage = await BitmapManager.GetBitmapAsync(d.GetSizeAndUriForThumbnail(width, height).Uri, width, height))();
+                new System.Action(async () => PreviewImage = await BitmapManager.GetBitmapAsync(d.GetSizeAndUriForThumbnail(width, height).Uri, width, height, BitmapCacheKind.Attachment))();
                 ExtraInfo = d.Extension.ToUpper();
             } else {
                 DisplayName = d.Title;
@@ -188,10 +188,20 @@ namespace ELOR.Laney.ViewModels.Controls {
                     uploadFileType = OutboundAttachmentUploadFileType.Doc;
                     IconId = VKIconNames.Icon24Document;
                     break;
+                case Constants.GraffitiUploadCommand:
+                    uploadFileType = OutboundAttachmentUploadFileType.Graffiti;
+                    IconId = VKIconNames.Icon24BrushOutline;
+                    DisplayName = Assets.i18n.Resources.graffiti;
+                    break;
+                case Constants.AudioMessageUploadCommand:
+                    uploadFileType = OutboundAttachmentUploadFileType.AudioMessage;
+                    IconId = VKIconNames.Icon24Voice;
+                    DisplayName = "Голосовое сообщение";
+                    break;
             }
 
             new System.Action(async () => {
-                if (type == Constants.PhotoUploadCommand) {
+                if (type == Constants.PhotoUploadCommand || type == Constants.GraffitiUploadCommand) {
                     await Task.Delay(100); // надо, чтобы UI вложения появился перед получением превьюхи
                     Stream stream = await file.OpenReadAsync();
                     Bitmap bitmap = await stream.TryGetBitmapFromStreamAsync(width);
@@ -242,7 +252,11 @@ namespace ELOR.Laney.ViewModels.Controls {
                         break;
                     case OutboundAttachmentUploadFileType.Doc:
                     case OutboundAttachmentUploadFileType.AudioMessage:
-                        server = await session.API.Docs.GetMessagesUploadServerAsync(session.GroupId, 0, uploadFileType == OutboundAttachmentUploadFileType.AudioMessage);
+                    case OutboundAttachmentUploadFileType.Graffiti:
+                        string uploadType = null;
+                        if (uploadFileType == OutboundAttachmentUploadFileType.AudioMessage) uploadType = "audio_message";
+                        if (uploadFileType == OutboundAttachmentUploadFileType.Graffiti) uploadType = "graffiti";
+                        server = await session.API.Docs.GetMessagesUploadServerAsync(session.GroupId, 0, uploadType);
                         uploader = new VKHttpClientFileUploader("file", server.Uri, file);
                         uploader.UploadFailed += Uploader_UploadFailed;
                         uploader.ProgressChanged += Uploader_ProgressChanged;

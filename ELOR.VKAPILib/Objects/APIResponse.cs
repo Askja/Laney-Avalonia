@@ -19,7 +19,10 @@ namespace ELOR.VKAPILib.Objects {
         public int Code { get; set; }
 
         [JsonPropertyName("error_msg")]
-        public string Message { get; set; }
+        public string ErrorMessage { get; set; }
+
+        [JsonIgnore]
+        public override string Message { get { return String.IsNullOrEmpty(ErrorMessage) ? base.Message : ErrorMessage; } }
 
         [JsonPropertyName("captcha_sid")]
         public string CaptchaSID { get; set; }

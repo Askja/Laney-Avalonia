@@ -56,6 +56,8 @@ namespace ELOR.VKAPILib {
     [JsonSerializable(typeof(ResolveScreenNameResult))]
     [JsonSerializable(typeof(SetChatPhotoResponse))]
     [JsonSerializable(typeof(StickersKeywordsResponse))]
+    [JsonSerializable(typeof(StoreProduct))]
+    [JsonSerializable(typeof(StoreProductPrice))]
     [JsonSerializable(typeof(StoreProductsList))]
     [JsonSerializable(typeof(User))]
     [JsonSerializable(typeof(List<User>))]

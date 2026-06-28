@@ -1,0 +1,53 @@
+<vkw:DialogWindow xmlns="https://github.com/avaloniaui"
+                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                  xmlns:vkw="using:VKUI.Windows"
+                  xmlns:vkui="using:VKUI.Controls"
+                  xmlns:vmm="using:ELOR.Laney.ViewModels.Modals"
+                  mc:Ignorable="d" d:DesignWidth="560" d:DesignHeight="480"
+                  x:Class="ELOR.Laney.Views.Modals.CommandPalette"
+                  Width="560" Height="480" CanResize="False" WindowStartupLocation="CenterOwner"
+                  Background="{DynamicResource VKModalCardBackgroundBrush}"
+                  Title="Командная палитра">
+  <Grid x:Name="Root" RowDefinitions="Auto Auto *">
+    <vkui:WindowTitleBar x:Name="TitleBar" CanShowTitle="False" CanMove="True"/>
+
+    <TextBox x:Name="QueryBox" Grid.Row="1" Margin="16,10,16,8" Classes="Search"
+             PlaceholderText="Найти действие"
+             KeyDown="QueryBox_KeyDown"
+             PropertyChanged="QueryBox_PropertyChanged"/>
+
+    <Grid Grid.Row="2">
+      <ListBox x:Name="ActionsList" Margin="8,0,8,8" SelectionMode="AlwaysSelected">
+        <ListBox.Styles>
+          <Style Selector="ListBoxItem">
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0"/>
+          </Style>
+        </ListBox.Styles>
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="vmm:CommandPaletteAction">
+            <Button Classes="Tertiary" Padding="12,8" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Click="Action_Click">
+              <Grid ColumnDefinitions="Auto *">
+                <vkui:VKIcon Width="28" Height="28" Margin="0,3,12,0" Id="{Binding IconId}" Foreground="{DynamicResource VKIconOutlineMediumBrush}"/>
+                <StackPanel Grid.Column="1">
+                  <TextBlock Classes="Subhead" FontWeight="Medium" Foreground="{DynamicResource VKTextPrimaryBrush}" Text="{Binding Title}"/>
+                  <TextBlock Classes="Caption1" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="{Binding Subtitle}" TextTrimming="CharacterEllipsis"/>
+                </StackPanel>
+              </Grid>
+            </Button>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+
+      <vkui:Placeholder x:Name="EmptyPlaceholder" Classes="Compact" VerticalAlignment="Center" IsVisible="False"
+                        Header="Ничего не найдено"
+                        Text="Попробуй другой запрос. Да, даже палитра не читает мысли.">
+        <vkui:Placeholder.Icon>
+          <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon28SearchOutline}"/>
+        </vkui:Placeholder.Icon>
+      </vkui:Placeholder>
+    </Grid>
+  </Grid>
+</vkw:DialogWindow>

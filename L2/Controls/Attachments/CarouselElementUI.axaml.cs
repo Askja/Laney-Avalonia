@@ -16,14 +16,21 @@ namespace ELOR.Laney.Controls.Attachments {
             set => SetValue(ElementProperty, value);
         }
 
+        public long PeerId { get; set; }
+
+        public int MessageId { get; set; }
+
+        public long AuthorId { get; set; }
+
         public CarouselElementUI() {
             InitializeComponent();
             PropertyChanged += CarouselElementUI_PropertyChanged;
             Unloaded += CarouselElementUI_Unloaded;
         }
 
-        private void RootButton_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e) {
-            ExceptionHelper.ShowNotImplementedDialog(VKSession.GetByDataContext(this).ModalWindow);
+        private async void RootButton_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e) {
+            e.Handled = true;
+            await BotButtonActionHandler.HandleAsync(this, Element?.Action, PeerId, MessageId, AuthorId);
         }
 
         private void CarouselElementUI_Unloaded(object sender, Avalonia.Interactivity.RoutedEventArgs e) {
@@ -34,10 +41,10 @@ namespace ELOR.Laney.Controls.Attachments {
         private void CarouselElementUI_PropertyChanged(object sender, AvaloniaPropertyChangedEventArgs e) {
             if (e.Property == ElementProperty && Element != null) {
                 var photo = Element.Photo.GetSizeAndUriForThumbnail(CardImage.Width, CardImage.Height).Uri;
-                new System.Action(async () => await CardImage.SetImageBackgroundAsync(photo, CardImage.Width, CardImage.Height))();
+                ImageLoader.SetBackgroundSource(CardImage, photo);
 
                 Buttons.Children.Clear();
-                VKAPIHelper.GenerateButtons(Buttons, Element.Buttons);
+                VKAPIHelper.GenerateButtons(Buttons, Element.Buttons, button => BotButtonActionHandler.HandleAsync(this, button, PeerId, MessageId, AuthorId));
             }
         }
     }

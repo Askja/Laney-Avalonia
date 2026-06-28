@@ -378,6 +378,21 @@
   <data name="chats" xml:space="preserve">
     <value>Чати</value>
   </data>
+  <data name="chat_filter_unread" xml:space="preserve">
+    <value>Непрочитані</value>
+  </data>
+  <data name="chat_filter_important" xml:space="preserve">
+    <value>Важливі</value>
+  </data>
+  <data name="chat_filter_unanswered" xml:space="preserve">
+    <value>Без відповіді</value>
+  </data>
+  <data name="chat_filter_empty" xml:space="preserve">
+    <value>У цьому фільтрі чатів немає</value>
+  </data>
+  <data name="laney_only_badge" xml:space="preserve">
+    <value>Тільки Laney</value>
+  </data>
   <data name="private_messages" xml:space="preserve">
     <value>Приватні повідомлення</value>
   </data>
@@ -1035,11 +1050,222 @@
   <data name="settings_appearance" xml:space="preserve">
     <value>Зовнішній вигляд</value>
   </data>
+  <data name="settings_chats" xml:space="preserve">
+    <value>Чати</value>
+  </data>
+  <data name="settings_messages" xml:space="preserve">
+    <value>Повідомлення</value>
+  </data>
   <data name="settings_notifications" xml:space="preserve">
     <value>Сповіщення</value>
   </data>
   <data name="settings_privacy" xml:space="preserve">
     <value>Конфіденційність</value>
+  </data>
+  <data name="settings_stickers" xml:space="preserve">
+    <value>Стікери</value>
+  </data>
+  <data name="settings_attachments" xml:space="preserve">
+    <value>Вкладення</value>
+  </data>
+  <data name="settings_audio" xml:space="preserve">
+    <value>Аудіо</value>
+  </data>
+  <data name="settings_automation" xml:space="preserve">
+    <value>Автоматизація</value>
+  </data>
+  <data name="settings_performance" xml:space="preserve">
+    <value>Продуктивність</value>
+  </data>
+  <data name="settings_network" xml:space="preserve">
+    <value>Мережа</value>
+  </data>
+  <data name="settings_security" xml:space="preserve">
+    <value>Безпека</value>
+  </data>
+  <data name="settings_experiments" xml:space="preserve">
+    <value>Експерименти</value>
+  </data>
+  <data name="settings_debug" xml:space="preserve">
+    <value>Debug</value>
+  </data>
+  <data name="settings_open_section" xml:space="preserve">
+    <value>Відкрити розділ налаштувань</value>
+  </data>
+  <data name="settings_search_result_section" xml:space="preserve">
+    <value>Розділ: {0}</value>
+  </data>
+  <data name="settings_search_placeholder" xml:space="preserve">
+    <value>Пошук налаштувань</value>
+  </data>
+  <data name="settings_search_empty_title" xml:space="preserve">
+    <value>Нічого не знайдено</value>
+  </data>
+  <data name="settings_search_empty_text" xml:space="preserve">
+    <value>Спробуй інше слово. Налаштування не телепати.</value>
+  </data>
+  <data name="cm_local_quiet" xml:space="preserve"><value>Локальна тиша</value></data>
+  <data name="cm_local_quiet_subtitle" xml:space="preserve"><value>Заглушити toast і звук локально на час; VK не чіпаємо</value></data>
+  <data name="cm_until" xml:space="preserve"><value>До {0}</value></data>
+  <data name="cm_antispam_enable" xml:space="preserve"><value>Увімкнути антиспам</value></data>
+  <data name="cm_antispam_disable" xml:space="preserve"><value>Вимкнути антиспам</value></data>
+  <data name="cm_antispam_subtitle" xml:space="preserve"><value>Локально ховати повтори та link+spam-keyword</value></data>
+  <data name="cm_theme_profile" xml:space="preserve"><value>Оформлення у профілі</value></data>
+  <data name="cm_theme_profile_subtitle" xml:space="preserve"><value>Фон, зображення, щільність, шрифт і bubble style</value></data>
+  <data name="cm_attachments_gallery" xml:space="preserve"><value>Галерея вкладень</value></data>
+  <data name="cm_attachments_gallery_subtitle" xml:space="preserve"><value>Локально за завантаженою історією, з фільтром за типами</value></data>
+  <data name="cm_download_attachments" xml:space="preserve"><value>Завантажити вкладення</value></data>
+  <data name="cm_download_attachments_subtitle" xml:space="preserve"><value>Завантажена історія, фільтри, дедуп, sidecar JSON</value></data>
+  <data name="cm_send_gift" xml:space="preserve"><value>Надіслати подарунок</value></data>
+  <data name="cm_send_gift_to_author" xml:space="preserve"><value>Надіслати подарунок автору</value></data>
+  <data name="cm_send_gift_subtitle" xml:space="preserve"><value>Відкрити вибір подарунка VK</value></data>
+  <data name="cm_archive" xml:space="preserve"><value>В архів</value></data>
+  <data name="cm_archive_subtitle" xml:space="preserve"><value>Сховати зі звичайних папок локально</value></data>
+  <data name="cm_unarchive" xml:space="preserve"><value>Повернути з архіву</value></data>
+  <data name="cm_unarchive_subtitle" xml:space="preserve"><value>Знову показувати у звичайних папках</value></data>
+  <data name="cm_e2e_profile" xml:space="preserve"><value>Laney E2E у профілі</value></data>
+  <data name="cm_e2e_profile_subtitle" xml:space="preserve"><value>Ключі, handshake, fingerprint і backup</value></data>
+  <data name="cm_open_split_view" xml:space="preserve"><value>Відкрити у другому слоті</value></data>
+  <data name="cm_open_split_view_subtitle" xml:space="preserve"><value>Два чати поруч без окремого вікна</value></data>
+  <data name="cm_open_floating_window" xml:space="preserve"><value>Відкрити міні-вікно</value></data>
+  <data name="cm_open_floating_window_subtitle" xml:space="preserve"><value>Поверх усіх вікон, окремий компактний чат</value></data>
+  <data name="cm_jump_to_date" xml:space="preserve"><value>Перейти до дати</value></data>
+  <data name="cm_jump_to_date_subtitle" xml:space="preserve"><value>Знайти найближче повідомлення без повного backfill</value></data>
+  <data name="cm_section_debug" xml:space="preserve"><value>Налагодження</value></data>
+  <data name="cm_section_status_notifications" xml:space="preserve"><value>Статус і сповіщення</value></data>
+  <data name="cm_section_appearance_security" xml:space="preserve"><value>Оформлення і безпека</value></data>
+  <data name="cm_section_workspace" xml:space="preserve"><value>Робочий простір</value></data>
+  <data name="cm_section_attachments" xml:space="preserve"><value>Вкладення</value></data>
+  <data name="cm_section_local_rules" xml:space="preserve"><value>Локальні правила</value></data>
+  <data name="cm_section_danger_zone" xml:space="preserve"><value>Небезпечна зона</value></data>
+  <data name="cm_section_activity" xml:space="preserve"><value>Активність</value></data>
+  <data name="cm_section_reply_forward" xml:space="preserve"><value>Відповідь і пересилання</value></data>
+  <data name="cm_section_copying" xml:space="preserve"><value>Копіювання</value></data>
+  <data name="cm_section_organization" xml:space="preserve"><value>Організація</value></data>
+  <data name="cm_section_diagnostics" xml:space="preserve"><value>Діагностика</value></data>
+  <data name="cm_section_quick_actions" xml:space="preserve"><value>Швидкі дії</value></data>
+  <data name="cm_section_local" xml:space="preserve"><value>Локально</value></data>
+  <data name="cm_local_reaction" xml:space="preserve"><value>Laney-only реакція</value></data>
+  <data name="cm_local_reaction_subtitle" xml:space="preserve"><value>Локально, у VK не надсилається</value></data>
+  <data name="cm_quick_reactions" xml:space="preserve"><value>Швидкі реакції</value></data>
+  <data name="cm_quick_reactions_subtitle" xml:space="preserve"><value>Персональний набір для цього чату</value></data>
+  <data name="cm_clean_copy" xml:space="preserve"><value>Копія без автора</value></data>
+  <data name="cm_clean_copy_subtitle" xml:space="preserve"><value>Нове повідомлення; несумісні типи буде пропущено</value></data>
+  <data name="cm_copy_plain_text" xml:space="preserve"><value>Копіювати текст</value></data>
+  <data name="cm_copy_plain_text_subtitle" xml:space="preserve"><value>Без форматування</value></data>
+  <data name="cm_copy_markdown_text" xml:space="preserve"><value>Копіювати Markdown</value></data>
+  <data name="cm_copy_markdown_text_subtitle" xml:space="preserve"><value>З маркерами форматування</value></data>
+  <data name="cm_copy_message_link" xml:space="preserve"><value>Копіювати посилання на повідомлення</value></data>
+  <data name="cm_copy_all_links" xml:space="preserve"><value>Копіювати всі посилання</value></data>
+  <data name="cm_todo" xml:space="preserve"><value>У todo</value></data>
+  <data name="cm_remind" xml:space="preserve"><value>Нагадати</value></data>
+  <data name="cm_soft_delete" xml:space="preserve"><value>Сховати локально</value></data>
+  <data name="cm_mute_sender" xml:space="preserve"><value>Mute автора</value></data>
+  <data name="cm_mute_sender_subtitle" xml:space="preserve"><value>Без локальних сповіщень від автора в цьому чаті</value></data>
+  <data name="cm_shadowban_sender" xml:space="preserve"><value>Тіньовий бан автора</value></data>
+  <data name="cm_shadowban_sender_subtitle" xml:space="preserve"><value>Сховати його повідомлення тільки в цьому чаті</value></data>
+  <data name="cm_delete_dry_run" xml:space="preserve"><value>Симулятор видалення</value></data>
+  <data name="cm_self_destruct" xml:space="preserve"><value>Self-destruct</value></data>
+  <data name="cm_message_inspector" xml:space="preserve"><value>Інспектор повідомлення</value></data>
+  <data name="cm_message_inspector_subtitle" xml:space="preserve"><value>Payload, вкладення, reactions, read/debug info</value></data>
+  <data name="cm_bulk_cleanup" xml:space="preserve"><value>Масове очищення</value></data>
+  <data name="cm_attachment_search" xml:space="preserve"><value>Знайти вкладення</value></data>
+  <data name="cm_audio_message_from_file" xml:space="preserve"><value>Голосове з файла</value></data>
+  <data name="cm_import_telegram_stickers" xml:space="preserve"><value>Імпорт Telegram-стікерів</value></data>
+  <data name="cm_mini_pack_builder" xml:space="preserve"><value>Конструктор мініпака</value></data>
+  <data name="cm_image_editor" xml:space="preserve"><value>Редактор зображення</value></data>
+  <data name="cm_local_photo_album" xml:space="preserve"><value>Фото/альбом з диска</value></data>
+  <data name="cm_frequent_files" xml:space="preserve"><value>Часті файли</value></data>
+  <data name="cm_file_as_document" xml:space="preserve"><value>Файл як документ</value></data>
+  <data name="cm_e2e_document" xml:space="preserve"><value>E2E-документ</value></data>
+  <data name="cm_section_local_files" xml:space="preserve"><value>Локальні файли</value></data>
+  <data name="cm_section_stickers_images" xml:space="preserve"><value>Стікери і зображення</value></data>
+  <data name="cm_section_extra" xml:space="preserve"><value>Додатково</value></data>
+  <data name="cm_pinned_in_composer" xml:space="preserve"><value>Закріплено в composer</value></data>
+  <data name="cm_quick_reply_chat" xml:space="preserve"><value>Швидка відповідь цього чату</value></data>
+  <data name="cm_frequent_phrase" xml:space="preserve"><value>Часта фраза</value></data>
+  <data name="cm_recent_snippet" xml:space="preserve"><value>Recent snippet</value></data>
+  <data name="cm_template_later" xml:space="preserve"><value>Шаблон: відповім пізніше</value></data>
+  <data name="cm_template_call" xml:space="preserve"><value>Шаблон: дзвінок</value></data>
+  <data name="cm_make_todo_from_text" xml:space="preserve"><value>Зробити todo з тексту</value></data>
+  <data name="cm_make_reminder_from_text" xml:space="preserve"><value>Зробити нагадування з тексту</value></data>
+  <data name="cm_schedule_15m" xml:space="preserve"><value>Відкласти на 15 хвилин</value></data>
+  <data name="cm_schedule_1h" xml:space="preserve"><value>Відкласти на 1 годину</value></data>
+  <data name="cm_repeat_daily" xml:space="preserve"><value>Повторювати щодня</value></data>
+  <data name="cm_first_time_24h" xml:space="preserve"><value>Перший раз через 24 години</value></data>
+  <data name="cm_save_quick_reply" xml:space="preserve"><value>Зберегти швидку відповідь</value></data>
+  <data name="cm_only_this_chat" xml:space="preserve"><value>Тільки для цього чату</value></data>
+  <data name="cm_save_filter_reply" xml:space="preserve"><value>Зберегти відповідь для папки</value></data>
+  <data name="cm_save_person_reply" xml:space="preserve"><value>Зберегти відповідь людині</value></data>
+  <data name="cm_need_sender_or_history" xml:space="preserve"><value>Потрібен sender id або історія</value></data>
+  <data name="cm_pin_current_text" xml:space="preserve"><value>Закріпити поточний текст</value></data>
+  <data name="cm_show_above_composer" xml:space="preserve"><value>Показувати над composer</value></data>
+  <data name="cm_clear_quick_replies" xml:space="preserve"><value>Очистити швидкі відповіді</value></data>
+  <data name="cm_clear_filter_replies" xml:space="preserve"><value>Очистити відповіді папки</value></data>
+  <data name="cm_clear_person_replies" xml:space="preserve"><value>Очистити відповіді людині</value></data>
+  <data name="cm_clear_pinned_reply" xml:space="preserve"><value>Зняти закріплену відповідь</value></data>
+  <data name="cm_prepare_encrypt" xml:space="preserve"><value>Підготувати /encrypt</value></data>
+  <data name="cm_quiet_15m" xml:space="preserve"><value>Тихо на 15 хвилин</value></data>
+  <data name="cm_quiet_1h" xml:space="preserve"><value>Тихо на 1 годину</value></data>
+  <data name="cm_quiet_until_tomorrow" xml:space="preserve"><value>Тихо до завтра</value></data>
+  <data name="cm_quiet_clear" xml:space="preserve"><value>Зняти локальну тишу</value></data>
+  <data name="cm_quiet_clear_subtitle" xml:space="preserve"><value>Toast і звук знову працюватимуть за звичайними правилами</value></data>
+  <data name="cm_quiet_cleared_title" xml:space="preserve"><value>Локальну тишу знято</value></data>
+  <data name="cm_quiet_cleared_body" xml:space="preserve"><value>VK не чіпали.</value></data>
+  <data name="cm_quiet_applied_title" xml:space="preserve"><value>Чат заглушено локально</value></data>
+  <data name="cm_quiet_applied_body" xml:space="preserve"><value>До {0}. VK не турбували.</value></data>
+  <data name="cm_e2e_change_key_profile" xml:space="preserve"><value>Змінити ключ/профіль</value></data>
+  <data name="cm_e2e_setup" xml:space="preserve"><value>Налаштувати E2E</value></data>
+  <data name="cm_e2e_profile_mode_subtitle" xml:space="preserve"><value>Balanced, Paranoid або Legacy-compatible</value></data>
+  <data name="cm_e2e_copy_handshake" xml:space="preserve"><value>X25519 handshake: скопіювати мій токен</value></data>
+  <data name="cm_e2e_copy_handshake_subtitle" xml:space="preserve"><value>Нормальний обмін ключами через VK/QR/clipboard</value></data>
+  <data name="cm_e2e_import_handshake" xml:space="preserve"><value>X25519 handshake: імпортувати токен</value></data>
+  <data name="cm_e2e_import_handshake_subtitle" xml:space="preserve"><value>Встав токен співрозмовника й отримай відповідний</value></data>
+  <data name="cm_e2e_import_backup" xml:space="preserve"><value>Імпорт trusted-device backup</value></data>
+  <data name="cm_e2e_import_backup_subtitle" xml:space="preserve"><value>Відновити ключі із зашифрованого backup-token</value></data>
+  <data name="cm_e2e_fingerprint" xml:space="preserve"><value>Fingerprint і SAS</value></data>
+  <data name="cm_e2e_fingerprint_subtitle" xml:space="preserve"><value>Ручна звірка ключа</value></data>
+  <data name="cm_e2e_unverify" xml:space="preserve"><value>Зняти позначку звірки</value></data>
+  <data name="cm_e2e_verify" xml:space="preserve"><value>Позначити ключ звіреним</value></data>
+  <data name="cm_e2e_unverify_subtitle" xml:space="preserve"><value>Якщо fingerprint більше не довіряєш</value></data>
+  <data name="cm_e2e_verify_subtitle" xml:space="preserve"><value>Після звірки SAS/fingerprint зі співрозмовником</value></data>
+  <data name="cm_e2e_auto_encrypt_enabled" xml:space="preserve"><value>Автошифрування тексту увімкнено</value></data>
+  <data name="cm_e2e_auto_encrypt" xml:space="preserve"><value>Автошифрувати вихідний текст</value></data>
+  <data name="cm_e2e_auto_encrypt_subtitle" xml:space="preserve"><value>Звичайне надсилання стане Laney E2E payload</value></data>
+  <data name="cm_e2e_rotate_keys" xml:space="preserve"><value>Повернути X25519-ключі</value></data>
+  <data name="cm_e2e_rotate_keys_subtitle" xml:space="preserve"><value>Створити новий handshake-token, стару звірку зняти</value></data>
+  <data name="cm_e2e_export_backup" xml:space="preserve"><value>Експорт trusted-device backup</value></data>
+  <data name="cm_e2e_export_backup_subtitle" xml:space="preserve"><value>Зашифроване перенесення ключів на свій другий клієнт</value></data>
+  <data name="cm_e2e_reset_chat" xml:space="preserve"><value>Скинути E2E для чату</value></data>
+  <data name="cm_e2e_reset_chat_subtitle" xml:space="preserve"><value>Видалити локальні ключі і статус</value></data>
+  <data name="cm_attachment_preview" xml:space="preserve"><value>Швидкий preview</value></data>
+  <data name="cm_attachment_open_original" xml:space="preserve"><value>Відкрити оригінал</value></data>
+  <data name="cm_attachment_copy_link" xml:space="preserve"><value>Скопіювати посилання</value></data>
+  <data name="session_dev_show_captcha" xml:space="preserve"><value>Показати капчу</value></data>
+  <data name="session_dev_show_in_app_notification" xml:space="preserve"><value>Показати сповіщення в застосунку</value></data>
+  <data name="session_dev_show_system_notification" xml:space="preserve"><value>Показати системне сповіщення</value></data>
+  <data name="session_dev_invalidate_lp_key" xml:space="preserve"><value>Скинути LongPoll-ключ</value></data>
+  <data name="session_dev_clear_images_cache" xml:space="preserve"><value>Очистити кеш зображень</value></data>
+  <data name="session_dev_clear_cached_names" xml:space="preserve"><value>Очистити кеш імен користувачів/груп</value></data>
+  <data name="session_dev_open_emoji_stickers_window" xml:space="preserve"><value>Відкрити emoji/стікери в окремому вікні</value></data>
+  <data name="session_dev_emoji_stickers_title" xml:space="preserve"><value>Emoji і стікери</value></data>
+  <data name="session_dev_field_test" xml:space="preserve"><value>Field test</value></data>
+  <data name="session_dev_result" xml:space="preserve"><value>Результат</value></data>
+  <data name="session_dev_sending_message" xml:space="preserve"><value>Надсилання повідомлення</value></data>
+  <data name="session_dev_text_label" xml:space="preserve"><value>Текст</value></data>
+  <data name="session_dev_toast_body" xml:space="preserve"><value>Ура, кролик Gex! Так, тестове сповіщення живе.</value></data>
+  <data name="session_dev_toast_context" xml:space="preserve"><value>у чаті "Geckos"</value></data>
+  <data name="privacy_not_available" xml:space="preserve">
+    <value>Налаштування конфіденційності недоступні в цьому режимі.</value>
+  </data>
+  <data name="privacy_no_settings" xml:space="preserve">
+    <value>VK не повернув налаштування конфіденційності для цього акаунта.</value>
+  </data>
+  <data name="panic_lock_title" xml:space="preserve">
+    <value>Laney заблоковано</value>
+  </data>
+  <data name="panic_lock_unlock" xml:space="preserve">
+    <value>Розблокувати</value>
   </data>
   <data name="settings_blacklist" xml:space="preserve">
     <value>Чорний список</value>
@@ -1163,6 +1389,12 @@
   </data>
   <data name="delete_for_all" xml:space="preserve">
     <value>Видалити для всіх</value>
+  </data>
+  <data name="msg_scrub_before_delete" xml:space="preserve">
+    <value>Замінити текст перед видаленням</value>
+  </data>
+  <data name="msg_scrubbed_text" xml:space="preserve">
+    <value>[видалено]</value>
   </data>
   <data name="message_deleted_single" xml:space="preserve">
     <value>Повідомлення видалено.</value>

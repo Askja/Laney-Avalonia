@@ -13,6 +13,11 @@ namespace ELOR.Laney;
 public partial class GroupMessageTemplates : UserControl {
     VKSession session;
 
+    public GroupMessageTemplates() {
+        InitializeComponent();
+        if (!Design.IsDesignMode) throw new ArgumentException();
+    }
+
     public GroupMessageTemplates(VKSession session, User user, User admin, string groupName) {
         InitializeComponent();
         this.session = session;

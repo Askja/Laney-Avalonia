@@ -1,0 +1,201 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vkui="using:VKUI.Controls"
+             xmlns:vm="using:ELOR.Laney.ViewModels.SettingsCategories"
+             xmlns:mdl="using:ELOR.Laney.DataModels"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="ELOR.Laney.Views.SettingsCategories.Messages" x:DataType="vm:ChatsViewModel">
+  <ScrollViewer>
+    <StackPanel>
+      <Border Classes="Group" VerticalAlignment="Top">
+        <StackPanel>
+          <Grid Classes="GroupHeader">
+            <TextBlock Text="Отправка"/>
+          </Grid>
+          <vkui:Cell Header="Enter отправляет" Subtitle="Shift+Enter оставляет перенос строки.">
+            <vkui:Cell.Before>
+              <RadioButton GroupName="EnterBtnMessages" IsChecked="{Binding SentViaEnter, Mode=TwoWay}"/>
+            </vkui:Cell.Before>
+          </vkui:Cell>
+          <vkui:Cell Header="Ctrl+Enter отправляет" Subtitle="Enter оставляет перенос строки.">
+            <vkui:Cell.Before>
+              <RadioButton GroupName="EnterBtnMessages" IsChecked="{Binding !SentViaEnter, Mode=TwoWay}"/>
+            </vkui:Cell.Before>
+          </vkui:Cell>
+          <vkui:Cell Header="Не парсить ссылки">
+            <vkui:Cell.After>
+              <ToggleSwitch IsChecked="{Binding DontParseLinks, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Отключить упоминания">
+            <vkui:Cell.After>
+              <ToggleSwitch IsChecked="{Binding DisableMentions, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="Group" VerticalAlignment="Top">
+        <StackPanel>
+          <Grid Classes="GroupHeader">
+            <TextBlock Text="Composer"/>
+          </Grid>
+          <vkui:Cell Header="Форматирование" Subtitle="Кнопка B/I/code/strike рядом с полем ввода.">
+            <vkui:Cell.After>
+              <ToggleSwitch IsChecked="{Binding ComposerActionFormatting, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Быстрые действия" Subtitle="Шаблоны, todo, reminder, quick replies и /encrypt.">
+            <vkui:Cell.After>
+              <ToggleSwitch IsChecked="{Binding ComposerActionQuick, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Шаблоны группы" Subtitle="Кнопка шаблонов для group-session.">
+            <vkui:Cell.After>
+              <ToggleSwitch IsChecked="{Binding ComposerActionGroupTemplates, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Стикеры" Subtitle="Emoji, VK-стикеры и локальные паки.">
+            <vkui:Cell.After>
+              <ToggleSwitch IsChecked="{Binding ComposerActionStickers, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="Group" VerticalAlignment="Top">
+        <StackPanel>
+          <Grid Classes="GroupHeader">
+            <TextBlock Text="Bubble"/>
+          </Grid>
+          <vkui:Cell Header="Размер аватаров в сообщениях" Subtitle="Отдельно от списка чатов, чтобы не ломать плотность ленты.">
+            <vkui:Cell.After>
+              <ComboBox Classes="Alternate" ItemsSource="{Binding MessageAvatarSizeOptions}" SelectedItem="{Binding CurrentMessageAvatarSize, Mode=TwoWay}">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="mdl:TwoStringTuple">
+                    <TextBlock Text="{Binding Item2}"/>
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Шрифт сообщений" Subtitle="Глобальный размер текста bubble; личная тема чата может переопределить его.">
+            <vkui:Cell.After>
+              <ComboBox Classes="Alternate" ItemsSource="{Binding MessageFontSizeOptions}" SelectedItem="{Binding CurrentMessageFontSize, Mode=TwoWay}">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="mdl:TwoStringTuple">
+                    <TextBlock Text="{Binding Item2}"/>
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Ширина bubble" Subtitle="Максимальная ширина текстовых сообщений.">
+            <vkui:Cell.After>
+              <ComboBox Classes="Alternate" ItemsSource="{Binding MessageBubbleWidthOptions}" SelectedItem="{Binding CurrentMessageBubbleWidth, Mode=TwoWay}">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="mdl:TwoStringTuple">
+                    <TextBlock Text="{Binding Item2}"/>
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Плотность bubble" Subtitle="Отступы между сообщениями и внутри текста.">
+            <vkui:Cell.After>
+              <ComboBox Classes="Alternate" ItemsSource="{Binding MessageBubbleDensityOptions}" SelectedItem="{Binding CurrentMessageBubbleDensity, Mode=TwoWay}">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="mdl:TwoStringTuple">
+                    <TextBlock Text="{Binding Item2}"/>
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Стиль bubble" Subtitle="VK, Telegram, Minimal, Outline или Flat.">
+            <vkui:Cell.After>
+              <ComboBox Classes="Alternate" ItemsSource="{Binding MessageBubbleStyleOptions}" SelectedItem="{Binding CurrentMessageBubbleStyle, Mode=TwoWay}">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="mdl:TwoStringTuple">
+                    <TextBlock Text="{Binding Item2}"/>
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Прозрачность bubble" Subtitle="Фон сообщений поверх картинки чата.">
+            <vkui:Cell.After>
+              <ComboBox Classes="Alternate" ItemsSource="{Binding MessageBubbleOpacityOptions}" SelectedItem="{Binding CurrentMessageBubbleOpacity, Mode=TwoWay}">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="mdl:TwoStringTuple">
+                    <TextBlock Text="{Binding Item2}"/>
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Авто-цвет bubble" Subtitle="Подбирать цвет исходящих под фон чата, если цвет не задан вручную.">
+            <vkui:Cell.After>
+              <ToggleSwitch IsChecked="{Binding MessageBubbleAutoColor, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="Group" VerticalAlignment="Top">
+        <StackPanel>
+          <Grid Classes="GroupHeader">
+            <TextBlock Text="Горячие клавиши"/>
+          </Grid>
+          <vkui:Cell Header="Command palette" Subtitle="Например: Ctrl+P">
+            <vkui:Cell.After>
+              <TextBox Width="150" Text="{Binding KeymapCommandPalette, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Глобальный поиск" Subtitle="Например: Ctrl+Shift+F">
+            <vkui:Cell.After>
+              <TextBox Width="150" Text="{Binding KeymapGlobalSearch, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Поиск в чате">
+            <vkui:Cell.After>
+              <TextBox Width="150" Text="{Binding KeymapChatSearch, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Фокус composer">
+            <vkui:Cell.After>
+              <TextBox Width="150" Text="{Binding KeymapFocusComposer, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Вложения">
+            <vkui:Cell.After>
+              <TextBox Width="150" Text="{Binding KeymapAttachments, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Стикеры">
+            <vkui:Cell.After>
+              <TextBox Width="150" Text="{Binding KeymapStickers, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Настройки">
+            <vkui:Cell.After>
+              <TextBox Width="150" Text="{Binding KeymapSettings, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Panic lock">
+            <vkui:Cell.After>
+              <TextBox Width="150" Text="{Binding KeymapPanicLock, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Назад из чата" Subtitle="Можно несколько через ;">
+            <vkui:Cell.After>
+              <TextBox Width="150" Text="{Binding KeymapBack, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

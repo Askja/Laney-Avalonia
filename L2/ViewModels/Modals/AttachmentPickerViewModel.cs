@@ -44,6 +44,7 @@ namespace ELOR.Laney.ViewModels.Modals {
 
         public AttachmentPickerViewModel(VKSession session, Window owner) {
             this.session = session;
+            ownerWindow = owner;
             PropertyChanged += async (a, b) => {
                 switch (b.PropertyName) {
                     case nameof(SelectedPhotoAlbum): Photos.Items.Clear(); noMorePhotos = false; await LoadPhotosAsync(); break;

@@ -38,10 +38,18 @@ namespace ELOR.VKAPILib.Methods {
         /// <summary>Returns the server address for document upload.</summary>
         /// <param name="peerId">Destination ID.</param>
         public async Task<VkUploadServer> GetMessagesUploadServerAsync(long groupId, long peerId, bool isAudioMessage = false) {
+            string type = isAudioMessage ? "audio_message" : null;
+            return await GetMessagesUploadServerAsync(groupId, peerId, type);
+        }
+
+        /// <summary>Returns the server address for document upload.</summary>
+        /// <param name="peerId">Destination ID.</param>
+        /// <param name="type">Upload type: doc, audio_message or graffiti.</param>
+        public async Task<VkUploadServer> GetMessagesUploadServerAsync(long groupId, long peerId, string type) {
             Dictionary<string, string> parameters = new Dictionary<string, string>();
             if (groupId > 0) parameters.Add("group_id", groupId.ToString());
             if (peerId > 0) parameters.Add("peer_id", peerId.ToString());
-            if (isAudioMessage) parameters.Add("type", "audio_message");
+            if (!String.IsNullOrEmpty(type)) parameters.Add("type", type);
             return await API.CallMethodAsync<VkUploadServer>("docs.getMessagesUploadServer", parameters);
         }
 

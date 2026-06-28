@@ -378,6 +378,21 @@
   <data name="chats" xml:space="preserve">
     <value>Chats</value>
   </data>
+  <data name="chat_filter_unread" xml:space="preserve">
+    <value>Unread</value>
+  </data>
+  <data name="chat_filter_important" xml:space="preserve">
+    <value>Important</value>
+  </data>
+  <data name="chat_filter_unanswered" xml:space="preserve">
+    <value>Unanswered</value>
+  </data>
+  <data name="chat_filter_empty" xml:space="preserve">
+    <value>No chats in this filter</value>
+  </data>
+  <data name="laney_only_badge" xml:space="preserve">
+    <value>Laney only</value>
+  </data>
   <data name="private_messages" xml:space="preserve">
     <value>Private messages</value>
   </data>
@@ -1038,11 +1053,222 @@
   <data name="settings_appearance" xml:space="preserve">
     <value>Appearance</value>
   </data>
+  <data name="settings_chats" xml:space="preserve">
+    <value>Chats</value>
+  </data>
+  <data name="settings_messages" xml:space="preserve">
+    <value>Messages</value>
+  </data>
   <data name="settings_notifications" xml:space="preserve">
     <value>Notifications</value>
   </data>
   <data name="settings_privacy" xml:space="preserve">
     <value>Privacy</value>
+  </data>
+  <data name="settings_stickers" xml:space="preserve">
+    <value>Stickers</value>
+  </data>
+  <data name="settings_attachments" xml:space="preserve">
+    <value>Attachments</value>
+  </data>
+  <data name="settings_audio" xml:space="preserve">
+    <value>Audio</value>
+  </data>
+  <data name="settings_automation" xml:space="preserve">
+    <value>Automation</value>
+  </data>
+  <data name="settings_performance" xml:space="preserve">
+    <value>Performance</value>
+  </data>
+  <data name="settings_network" xml:space="preserve">
+    <value>Network</value>
+  </data>
+  <data name="settings_security" xml:space="preserve">
+    <value>Security</value>
+  </data>
+  <data name="settings_experiments" xml:space="preserve">
+    <value>Experiments</value>
+  </data>
+  <data name="settings_debug" xml:space="preserve">
+    <value>Debug</value>
+  </data>
+  <data name="settings_open_section" xml:space="preserve">
+    <value>Open settings section</value>
+  </data>
+  <data name="settings_search_result_section" xml:space="preserve">
+    <value>Section: {0}</value>
+  </data>
+  <data name="settings_search_placeholder" xml:space="preserve">
+    <value>Search settings</value>
+  </data>
+  <data name="settings_search_empty_title" xml:space="preserve">
+    <value>Nothing found</value>
+  </data>
+  <data name="settings_search_empty_text" xml:space="preserve">
+    <value>Try another word. Settings are not telepaths.</value>
+  </data>
+  <data name="cm_local_quiet" xml:space="preserve"><value>Local quiet</value></data>
+  <data name="cm_local_quiet_subtitle" xml:space="preserve"><value>Mute toast and sound locally for a while; VK is not changed</value></data>
+  <data name="cm_until" xml:space="preserve"><value>Until {0}</value></data>
+  <data name="cm_antispam_enable" xml:space="preserve"><value>Enable anti-spam</value></data>
+  <data name="cm_antispam_disable" xml:space="preserve"><value>Disable anti-spam</value></data>
+  <data name="cm_antispam_subtitle" xml:space="preserve"><value>Hide repeats and link+spam-keyword locally</value></data>
+  <data name="cm_theme_profile" xml:space="preserve"><value>Appearance in profile</value></data>
+  <data name="cm_theme_profile_subtitle" xml:space="preserve"><value>Background, image, density, font, and bubble style</value></data>
+  <data name="cm_attachments_gallery" xml:space="preserve"><value>Attachments gallery</value></data>
+  <data name="cm_attachments_gallery_subtitle" xml:space="preserve"><value>Local loaded history with type filters</value></data>
+  <data name="cm_download_attachments" xml:space="preserve"><value>Download attachments</value></data>
+  <data name="cm_download_attachments_subtitle" xml:space="preserve"><value>Loaded history, filters, dedupe, sidecar JSON</value></data>
+  <data name="cm_send_gift" xml:space="preserve"><value>Send gift</value></data>
+  <data name="cm_send_gift_to_author" xml:space="preserve"><value>Send gift to author</value></data>
+  <data name="cm_send_gift_subtitle" xml:space="preserve"><value>Open VK gift selection</value></data>
+  <data name="cm_archive" xml:space="preserve"><value>Archive</value></data>
+  <data name="cm_archive_subtitle" xml:space="preserve"><value>Hide from normal folders locally</value></data>
+  <data name="cm_unarchive" xml:space="preserve"><value>Return from archive</value></data>
+  <data name="cm_unarchive_subtitle" xml:space="preserve"><value>Show in normal folders again</value></data>
+  <data name="cm_e2e_profile" xml:space="preserve"><value>Laney E2E in profile</value></data>
+  <data name="cm_e2e_profile_subtitle" xml:space="preserve"><value>Keys, handshake, fingerprint, and backup</value></data>
+  <data name="cm_open_split_view" xml:space="preserve"><value>Open in second slot</value></data>
+  <data name="cm_open_split_view_subtitle" xml:space="preserve"><value>Two chats side by side without a separate window</value></data>
+  <data name="cm_open_floating_window" xml:space="preserve"><value>Open mini window</value></data>
+  <data name="cm_open_floating_window_subtitle" xml:space="preserve"><value>Always-on-top compact chat</value></data>
+  <data name="cm_jump_to_date" xml:space="preserve"><value>Jump to date</value></data>
+  <data name="cm_jump_to_date_subtitle" xml:space="preserve"><value>Find the closest message without full backfill</value></data>
+  <data name="cm_section_debug" xml:space="preserve"><value>Debug</value></data>
+  <data name="cm_section_status_notifications" xml:space="preserve"><value>Status and notifications</value></data>
+  <data name="cm_section_appearance_security" xml:space="preserve"><value>Appearance and security</value></data>
+  <data name="cm_section_workspace" xml:space="preserve"><value>Workspace</value></data>
+  <data name="cm_section_attachments" xml:space="preserve"><value>Attachments</value></data>
+  <data name="cm_section_local_rules" xml:space="preserve"><value>Local rules</value></data>
+  <data name="cm_section_danger_zone" xml:space="preserve"><value>Danger zone</value></data>
+  <data name="cm_section_activity" xml:space="preserve"><value>Activity</value></data>
+  <data name="cm_section_reply_forward" xml:space="preserve"><value>Reply and forward</value></data>
+  <data name="cm_section_copying" xml:space="preserve"><value>Copying</value></data>
+  <data name="cm_section_organization" xml:space="preserve"><value>Organization</value></data>
+  <data name="cm_section_diagnostics" xml:space="preserve"><value>Diagnostics</value></data>
+  <data name="cm_section_quick_actions" xml:space="preserve"><value>Quick actions</value></data>
+  <data name="cm_section_local" xml:space="preserve"><value>Local</value></data>
+  <data name="cm_local_reaction" xml:space="preserve"><value>Laney-only reaction</value></data>
+  <data name="cm_local_reaction_subtitle" xml:space="preserve"><value>Local only, not sent to VK</value></data>
+  <data name="cm_quick_reactions" xml:space="preserve"><value>Quick reactions</value></data>
+  <data name="cm_quick_reactions_subtitle" xml:space="preserve"><value>Personal set for this chat</value></data>
+  <data name="cm_clean_copy" xml:space="preserve"><value>Copy without author</value></data>
+  <data name="cm_clean_copy_subtitle" xml:space="preserve"><value>New message; incompatible types will be skipped</value></data>
+  <data name="cm_copy_plain_text" xml:space="preserve"><value>Copy text</value></data>
+  <data name="cm_copy_plain_text_subtitle" xml:space="preserve"><value>No formatting</value></data>
+  <data name="cm_copy_markdown_text" xml:space="preserve"><value>Copy Markdown</value></data>
+  <data name="cm_copy_markdown_text_subtitle" xml:space="preserve"><value>With formatting markers</value></data>
+  <data name="cm_copy_message_link" xml:space="preserve"><value>Copy message link</value></data>
+  <data name="cm_copy_all_links" xml:space="preserve"><value>Copy all links</value></data>
+  <data name="cm_todo" xml:space="preserve"><value>To todo</value></data>
+  <data name="cm_remind" xml:space="preserve"><value>Remind</value></data>
+  <data name="cm_soft_delete" xml:space="preserve"><value>Hide locally</value></data>
+  <data name="cm_mute_sender" xml:space="preserve"><value>Mute author</value></data>
+  <data name="cm_mute_sender_subtitle" xml:space="preserve"><value>No local notifications from this author in this chat</value></data>
+  <data name="cm_shadowban_sender" xml:space="preserve"><value>Shadow-ban author</value></data>
+  <data name="cm_shadowban_sender_subtitle" xml:space="preserve"><value>Hide this author's messages only in this chat</value></data>
+  <data name="cm_delete_dry_run" xml:space="preserve"><value>Delete simulator</value></data>
+  <data name="cm_self_destruct" xml:space="preserve"><value>Self-destruct</value></data>
+  <data name="cm_message_inspector" xml:space="preserve"><value>Message inspector</value></data>
+  <data name="cm_message_inspector_subtitle" xml:space="preserve"><value>Payload, attachments, reactions, read/debug info</value></data>
+  <data name="cm_bulk_cleanup" xml:space="preserve"><value>Bulk cleanup</value></data>
+  <data name="cm_attachment_search" xml:space="preserve"><value>Find attachment</value></data>
+  <data name="cm_audio_message_from_file" xml:space="preserve"><value>Voice message from file</value></data>
+  <data name="cm_import_telegram_stickers" xml:space="preserve"><value>Import Telegram stickers</value></data>
+  <data name="cm_mini_pack_builder" xml:space="preserve"><value>Mini-pack builder</value></data>
+  <data name="cm_image_editor" xml:space="preserve"><value>Image editor</value></data>
+  <data name="cm_local_photo_album" xml:space="preserve"><value>Photo/album from disk</value></data>
+  <data name="cm_frequent_files" xml:space="preserve"><value>Frequent files</value></data>
+  <data name="cm_file_as_document" xml:space="preserve"><value>File as document</value></data>
+  <data name="cm_e2e_document" xml:space="preserve"><value>E2E document</value></data>
+  <data name="cm_section_local_files" xml:space="preserve"><value>Local files</value></data>
+  <data name="cm_section_stickers_images" xml:space="preserve"><value>Stickers and images</value></data>
+  <data name="cm_section_extra" xml:space="preserve"><value>Extra</value></data>
+  <data name="cm_pinned_in_composer" xml:space="preserve"><value>Pinned in composer</value></data>
+  <data name="cm_quick_reply_chat" xml:space="preserve"><value>Quick reply for this chat</value></data>
+  <data name="cm_frequent_phrase" xml:space="preserve"><value>Frequent phrase</value></data>
+  <data name="cm_recent_snippet" xml:space="preserve"><value>Recent snippet</value></data>
+  <data name="cm_template_later" xml:space="preserve"><value>Template: I'll answer later</value></data>
+  <data name="cm_template_call" xml:space="preserve"><value>Template: call</value></data>
+  <data name="cm_make_todo_from_text" xml:space="preserve"><value>Make todo from text</value></data>
+  <data name="cm_make_reminder_from_text" xml:space="preserve"><value>Make reminder from text</value></data>
+  <data name="cm_schedule_15m" xml:space="preserve"><value>Schedule in 15 minutes</value></data>
+  <data name="cm_schedule_1h" xml:space="preserve"><value>Schedule in 1 hour</value></data>
+  <data name="cm_repeat_daily" xml:space="preserve"><value>Repeat daily</value></data>
+  <data name="cm_first_time_24h" xml:space="preserve"><value>First time in 24 hours</value></data>
+  <data name="cm_save_quick_reply" xml:space="preserve"><value>Save quick reply</value></data>
+  <data name="cm_only_this_chat" xml:space="preserve"><value>Only for this chat</value></data>
+  <data name="cm_save_filter_reply" xml:space="preserve"><value>Save reply for folder</value></data>
+  <data name="cm_save_person_reply" xml:space="preserve"><value>Save reply for person</value></data>
+  <data name="cm_need_sender_or_history" xml:space="preserve"><value>Need sender id or history</value></data>
+  <data name="cm_pin_current_text" xml:space="preserve"><value>Pin current text</value></data>
+  <data name="cm_show_above_composer" xml:space="preserve"><value>Show above composer</value></data>
+  <data name="cm_clear_quick_replies" xml:space="preserve"><value>Clear quick replies</value></data>
+  <data name="cm_clear_filter_replies" xml:space="preserve"><value>Clear folder replies</value></data>
+  <data name="cm_clear_person_replies" xml:space="preserve"><value>Clear person replies</value></data>
+  <data name="cm_clear_pinned_reply" xml:space="preserve"><value>Unpin reply</value></data>
+  <data name="cm_prepare_encrypt" xml:space="preserve"><value>Prepare /encrypt</value></data>
+  <data name="cm_quiet_15m" xml:space="preserve"><value>Quiet for 15 minutes</value></data>
+  <data name="cm_quiet_1h" xml:space="preserve"><value>Quiet for 1 hour</value></data>
+  <data name="cm_quiet_until_tomorrow" xml:space="preserve"><value>Quiet until tomorrow</value></data>
+  <data name="cm_quiet_clear" xml:space="preserve"><value>Disable local quiet</value></data>
+  <data name="cm_quiet_clear_subtitle" xml:space="preserve"><value>Toast and sound will follow the usual rules again</value></data>
+  <data name="cm_quiet_cleared_title" xml:space="preserve"><value>Local quiet disabled</value></data>
+  <data name="cm_quiet_cleared_body" xml:space="preserve"><value>VK was not touched.</value></data>
+  <data name="cm_quiet_applied_title" xml:space="preserve"><value>Chat muted locally</value></data>
+  <data name="cm_quiet_applied_body" xml:space="preserve"><value>Until {0}. VK was not touched.</value></data>
+  <data name="cm_e2e_change_key_profile" xml:space="preserve"><value>Change key/profile</value></data>
+  <data name="cm_e2e_setup" xml:space="preserve"><value>Set up E2E</value></data>
+  <data name="cm_e2e_profile_mode_subtitle" xml:space="preserve"><value>Balanced, Paranoid, or Legacy-compatible</value></data>
+  <data name="cm_e2e_copy_handshake" xml:space="preserve"><value>X25519 handshake: copy my token</value></data>
+  <data name="cm_e2e_copy_handshake_subtitle" xml:space="preserve"><value>Normal key exchange via VK/QR/clipboard</value></data>
+  <data name="cm_e2e_import_handshake" xml:space="preserve"><value>X25519 handshake: import token</value></data>
+  <data name="cm_e2e_import_handshake_subtitle" xml:space="preserve"><value>Paste peer token and get the response</value></data>
+  <data name="cm_e2e_import_backup" xml:space="preserve"><value>Import trusted-device backup</value></data>
+  <data name="cm_e2e_import_backup_subtitle" xml:space="preserve"><value>Restore keys from encrypted backup token</value></data>
+  <data name="cm_e2e_fingerprint" xml:space="preserve"><value>Fingerprint and SAS</value></data>
+  <data name="cm_e2e_fingerprint_subtitle" xml:space="preserve"><value>Manual key check</value></data>
+  <data name="cm_e2e_unverify" xml:space="preserve"><value>Remove verification mark</value></data>
+  <data name="cm_e2e_verify" xml:space="preserve"><value>Mark key as verified</value></data>
+  <data name="cm_e2e_unverify_subtitle" xml:space="preserve"><value>If you no longer trust the fingerprint</value></data>
+  <data name="cm_e2e_verify_subtitle" xml:space="preserve"><value>After checking SAS/fingerprint with the peer</value></data>
+  <data name="cm_e2e_auto_encrypt_enabled" xml:space="preserve"><value>Text auto-encryption enabled</value></data>
+  <data name="cm_e2e_auto_encrypt" xml:space="preserve"><value>Auto-encrypt outgoing text</value></data>
+  <data name="cm_e2e_auto_encrypt_subtitle" xml:space="preserve"><value>Normal send becomes a Laney E2E payload</value></data>
+  <data name="cm_e2e_rotate_keys" xml:space="preserve"><value>Rotate X25519 keys</value></data>
+  <data name="cm_e2e_rotate_keys_subtitle" xml:space="preserve"><value>Create a new handshake token and clear old verification</value></data>
+  <data name="cm_e2e_export_backup" xml:space="preserve"><value>Export trusted-device backup</value></data>
+  <data name="cm_e2e_export_backup_subtitle" xml:space="preserve"><value>Encrypted key transfer to your second client</value></data>
+  <data name="cm_e2e_reset_chat" xml:space="preserve"><value>Reset E2E for chat</value></data>
+  <data name="cm_e2e_reset_chat_subtitle" xml:space="preserve"><value>Delete local keys and status</value></data>
+  <data name="cm_attachment_preview" xml:space="preserve"><value>Quick preview</value></data>
+  <data name="cm_attachment_open_original" xml:space="preserve"><value>Open original</value></data>
+  <data name="cm_attachment_copy_link" xml:space="preserve"><value>Copy link</value></data>
+  <data name="session_dev_show_captcha" xml:space="preserve"><value>Show captcha</value></data>
+  <data name="session_dev_show_in_app_notification" xml:space="preserve"><value>Show in-app notification</value></data>
+  <data name="session_dev_show_system_notification" xml:space="preserve"><value>Show system notification</value></data>
+  <data name="session_dev_invalidate_lp_key" xml:space="preserve"><value>Invalidate LP key</value></data>
+  <data name="session_dev_clear_images_cache" xml:space="preserve"><value>Clear images cache</value></data>
+  <data name="session_dev_clear_cached_names" xml:space="preserve"><value>Clear cached user/group names</value></data>
+  <data name="session_dev_open_emoji_stickers_window" xml:space="preserve"><value>Open emoji/stickers panel in a separate window</value></data>
+  <data name="session_dev_emoji_stickers_title" xml:space="preserve"><value>Emoji and stickers</value></data>
+  <data name="session_dev_field_test" xml:space="preserve"><value>Field test</value></data>
+  <data name="session_dev_result" xml:space="preserve"><value>Result</value></data>
+  <data name="session_dev_sending_message" xml:space="preserve"><value>Sending message</value></data>
+  <data name="session_dev_text_label" xml:space="preserve"><value>Text</value></data>
+  <data name="session_dev_toast_body" xml:space="preserve"><value>Hurray for bunny Gex! He sure is a funny Gex!</value></data>
+  <data name="session_dev_toast_context" xml:space="preserve"><value>in chat "Geckos"</value></data>
+  <data name="privacy_not_available" xml:space="preserve">
+    <value>Privacy settings are unavailable in this mode.</value>
+  </data>
+  <data name="privacy_no_settings" xml:space="preserve">
+    <value>VK returned no privacy settings for this account.</value>
+  </data>
+  <data name="panic_lock_title" xml:space="preserve">
+    <value>Laney is locked</value>
+  </data>
+  <data name="panic_lock_unlock" xml:space="preserve">
+    <value>Unlock</value>
   </data>
   <data name="settings_blacklist" xml:space="preserve">
     <value>Black list</value>
@@ -1166,6 +1392,12 @@
   </data>
   <data name="delete_for_all" xml:space="preserve">
     <value>Delete for everyone</value>
+  </data>
+  <data name="msg_scrub_before_delete" xml:space="preserve">
+    <value>Replace text before deleting</value>
+  </data>
+  <data name="msg_scrubbed_text" xml:space="preserve">
+    <value>[deleted]</value>
   </data>
   <data name="message_deleted_single" xml:space="preserve">
     <value>Message deleted.</value>

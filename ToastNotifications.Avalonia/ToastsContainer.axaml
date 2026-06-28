@@ -6,6 +6,6 @@
         x:Class="ToastNotifications.Avalonia.ToastsContainer"
         MinWidth="384" MaxWidth="384" Width="384"
         Background="Transparent" TransparencyLevelHint="Transparent" ShowInTaskbar="False"
-        Height="0" SystemDecorations="None" Topmost="True" Title="Toast notifications host">
+        Height="0" WindowDecorations="None" Topmost="True" Title="Toast notifications host">
   <StackPanel x:Name="NotificationItems" Width="384" Margin="0"/>
 </Window>

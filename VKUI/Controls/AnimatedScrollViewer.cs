@@ -21,7 +21,7 @@ namespace VKUI.Controls {
 
             _offsetTransitions = new VectorTransition() {
                 Property = OffsetProperty,
-                Duration = new TimeSpan(0, 0, 0, 0, 250)
+                Duration = new TimeSpan(0, 0, 0, 0, 160)
             };
 
             Transitions = new Transitions();

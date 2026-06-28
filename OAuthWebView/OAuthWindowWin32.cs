@@ -47,8 +47,6 @@ namespace OAuthWebView {
         [STAThread]
         internal int Start(string url, Rectangle pos, string localDataPath) {
             HINSTANCE hInstance = GetModuleHandle(String.Empty);
-            ushort classId;
-
 
             WNDCLASS wc = new() {
                 lpfnWndProc = WndProc,
@@ -57,9 +55,9 @@ namespace OAuthWebView {
                 hbrBackground = HBRUSH.NULL,
                 style = WindowClassStyles.CS_VREDRAW | WindowClassStyles.CS_HREDRAW
             };
-            classId = RegisterClass(wc);
+            var classId = RegisterClass(wc);
 
-            if (classId == 0) throw new Exception("class not registered");
+            if (classId.Equals(default)) throw new Exception("class not registered");
 
             hwnd = CreateWindowEx(
                     0,

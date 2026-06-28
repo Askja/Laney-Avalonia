@@ -20,17 +20,5 @@ namespace VKUI.Controls {
 
         #endregion
 
-        protected override void OnApplyTemplate(TemplateAppliedEventArgs e) {
-            StackPanel dismissArea = e.NameScope.Find<StackPanel>("DismissArea");
-            dismissArea.PointerReleased += DismissArea_PointerReleased;
-
-            base.OnApplyTemplate(e);
-        }
-
-        private void DismissArea_PointerReleased(object sender, Avalonia.Input.PointerReleasedEventArgs e) {
-            StackPanel dismissArea = sender as StackPanel;
-            dismissArea.PointerReleased -= DismissArea_PointerReleased;
-            if (ParentFlyout != null) ParentFlyout.Hide();
-        }
     }
 }

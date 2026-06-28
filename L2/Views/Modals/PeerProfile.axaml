@@ -5,14 +5,16 @@
         xmlns:i18n="using:ELOR.Laney.Assets.i18n"
         xmlns:controls="using:ELOR.Laney.Controls"
         xmlns:atch="using:ELOR.Laney.Controls.Attachments"
+        xmlns:mdl="using:ELOR.Laney.DataModels"
         xmlns:vmc="using:ELOR.Laney.ViewModels"
         xmlns:vm="using:ELOR.Laney.ViewModels.Modals"
+        xmlns:core="using:ELOR.Laney.Core"
         xmlns:vko="using:ELOR.VKAPILib.Objects"
         xmlns:vkw="using:VKUI.Windows"
         xmlns:vkui="using:VKUI.Controls"
         mc:Ignorable="d" d:DesignWidth="540" d:DesignHeight="700"
         x:Class="ELOR.Laney.Views.Modals.PeerProfile" x:DataType="vm:PeerProfileViewModel"
-        Width="540" Height="700"
+        Width="660" Height="740" MinWidth="560" MinHeight="640"
         Title="{x:Static i18n:Resources.wnd_peerprofile}">
 
   <vkw:DialogWindow.Resources>
@@ -70,6 +72,36 @@
           </StackPanel>
         </Grid>
       </Button>
+    </DataTemplate>
+
+    <DataTemplate x:Key="AppearanceOptionTemplate" x:DataType="core:AppearanceOption">
+      <StackPanel Orientation="Horizontal">
+        <Border Width="16" Height="16" CornerRadius="4" Background="{Binding PreviewBrush}" BorderBrush="{DynamicResource VKImageBorderBrush}" BorderThickness="1" Margin="0,0,8,0"/>
+        <TextBlock Text="{Binding Title}"/>
+      </StackPanel>
+    </DataTemplate>
+
+    <DataTemplate x:Key="ChatStatisticTileTemplate" x:DataType="vm:ChatStatisticTile">
+      <Border Margin="4" Padding="12" CornerRadius="8" Background="{DynamicResource VKModalCardBackgroundBrush}" BorderBrush="{DynamicResource VKSeparatorAlphaBrush}" BorderThickness="1">
+        <Grid ColumnDefinitions="Auto *">
+          <vkui:VKIcon Width="20" Height="20" Margin="0,1,10,0" VerticalAlignment="Top" Foreground="{DynamicResource VKAccentBrush}" Id="{Binding IconId}"/>
+          <StackPanel Grid.Column="1">
+            <TextBlock Classes="Caption1" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="{Binding Label}"/>
+            <TextBlock Margin="0,2,0,0" FontSize="22" LineHeight="26" FontWeight="SemiBold" Foreground="{DynamicResource VKTextPrimaryBrush}" Text="{Binding Value}"/>
+            <TextBlock Margin="0,3,0,0" Classes="Caption1" Foreground="{DynamicResource VKTextSecondaryBrush}" TextWrapping="Wrap" MaxLines="2" Text="{Binding Subtitle}"/>
+          </StackPanel>
+        </Grid>
+      </Border>
+    </DataTemplate>
+
+    <DataTemplate x:Key="ChatStatisticBarTemplate" x:DataType="vm:ChatStatisticBar">
+      <Grid Margin="0,5" RowDefinitions="Auto Auto">
+        <Grid ColumnDefinitions="* Auto">
+          <TextBlock Classes="Subhead" Foreground="{DynamicResource VKTextPrimaryBrush}" Text="{Binding Label}" TextTrimming="CharacterEllipsis"/>
+          <TextBlock Grid.Column="1" Margin="12,0,0,0" Classes="Caption1" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="{Binding ValueText}"/>
+        </Grid>
+        <ProgressBar Grid.Row="1" Margin="0,5,0,0" Height="4" Minimum="0" Maximum="100" Value="{Binding Percent}"/>
+      </Grid>
     </DataTemplate>
   </vkw:DialogWindow.Resources>
   
@@ -130,7 +162,340 @@
     <TabControl x:Name="Tabs" Grid.Row="2" Margin="0,2,0,0" SelectionChanged="Tabs_SelectionChanged" IsVisible="{Binding Header, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" Classes="Accent">
       <TabItem x:Name="UserInfoTab" Header="{x:Static i18n:Resources.info}">
         <ScrollViewer>
-          <ItemsControl Margin="0,-3,0,6" ItemsSource="{Binding Information}" ItemTemplate="{StaticResource PeerInfoTemplate}"/>
+          <StackPanel Margin="0,-3,0,6">
+            <Grid Margin="12,8,12,10" RowDefinitions="Auto Auto Auto Auto Auto Auto" ColumnDefinitions="Auto *">
+              <vkui:VKIcon Margin="0,0,12,0" VerticalAlignment="Top" Foreground="{DynamicResource VKIconSecondaryBrush}" Id="{x:Static vkui:VKIconNames.Icon20UserOutline}"/>
+              <TextBlock Grid.Column="1" Margin="0,1,0,6" FontWeight="Medium" Foreground="{DynamicResource VKTextPrimaryBrush}" Text="Локальная идентичность"/>
+              <TextBox Grid.Row="1" Grid.Column="1" Margin="0,0,0,8"
+                       Text="{Binding LocalAlias, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                       PlaceholderText="Алиас только в Laney"/>
+              <TextBox Grid.Row="2" Grid.Column="1" Margin="0,0,0,8"
+                       Text="{Binding LocalAvatar, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                       PlaceholderText="Локальный путь или URL аватарки"/>
+              <TextBox Grid.Row="3" Grid.Column="1"
+                       Text="{Binding LocalTags, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                       PlaceholderText="Теги: work, family, shop"/>
+              <TextBlock Grid.Row="4" Grid.Column="1" Margin="0,6,0,0" Classes="Caption1" Foreground="{DynamicResource VKTextSecondaryBrush}"
+                         Text="Пустые поля вернут имя и аватар из VK."/>
+              <TextBlock Grid.Row="5" Grid.Column="1" Margin="0,4,0,0" Classes="Caption1" Foreground="{DynamicResource VKTextSecondaryBrush}"
+                         Text="Теги через запятую: попадут в быстрые фильтры списка чатов."/>
+            </Grid>
+            <Grid Margin="12,8,12,10" RowDefinitions="Auto Auto Auto Auto" ColumnDefinitions="Auto *" IsVisible="{Binding IsOwnUserProfile}">
+              <vkui:VKIcon Margin="0,0,12,0" VerticalAlignment="Top" Foreground="{DynamicResource VKIconSecondaryBrush}" Id="{x:Static vkui:VKIconNames.Icon20MentionOutline}"/>
+              <TextBlock Grid.Column="1" Margin="0,1,0,6" FontWeight="Medium" Foreground="{DynamicResource VKTextPrimaryBrush}" Text="Профиль VK"/>
+              <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="* Auto Auto">
+                <TextBox Text="{Binding ProfileStatusDraft, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" PlaceholderText="Статус VK"/>
+                <Button Grid.Column="1" Classes="Tertiary" Width="40" Height="36" Margin="8,0,0,0" Command="{Binding UpdateProfileStatusCommand}" ToolTip.Tip="Сохранить статус в VK">
+                  <vkui:VKIcon Classes="ButtonIn" Id="{x:Static vkui:VKIconNames.Icon20Check}"/>
+                </Button>
+                <Button Grid.Column="2" Classes="Tertiary" Width="40" Height="36" Margin="4,0,0,0" Command="{Binding ClearProfileStatusCommand}" ToolTip.Tip="Очистить статус VK">
+                  <vkui:VKIcon Classes="ButtonIn" Id="{x:Static vkui:VKIconNames.Icon20DeleteOutline}"/>
+                </Button>
+              </Grid>
+              <Grid Grid.Row="2" Grid.Column="1" Margin="0,8,0,0" ColumnDefinitions="* * Auto" ColumnSpacing="8">
+                <TextBox Text="{Binding ProfileFirstNameDraft, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" PlaceholderText="Имя"/>
+                <TextBox Grid.Column="1" Text="{Binding ProfileLastNameDraft, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" PlaceholderText="Фамилия"/>
+                <Button Grid.Column="2" Classes="Tertiary" Width="40" Height="36" Command="{Binding UpdateProfileInfoCommand}" ToolTip.Tip="Сохранить имя и фамилию в VK">
+                  <vkui:VKIcon Classes="ButtonIn" Id="{x:Static vkui:VKIconNames.Icon20Check}"/>
+                </Button>
+              </Grid>
+              <Grid Grid.Row="3" Grid.Column="1" Margin="0,8,0,0" ColumnDefinitions="Auto *">
+                <Button Classes="Tertiary" Width="40" Height="36" Padding="0" Command="{Binding UpdateProfilePhotoCommand}" ToolTip.Tip="Загрузить фото профиля VK">
+                  <vkui:VKIcon Classes="ButtonIn" Id="{x:Static vkui:VKIconNames.Icon20CameraOutline}"/>
+                </Button>
+                <TextBlock Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" Classes="Caption1" Foreground="{DynamicResource VKTextSecondaryBrush}" TextWrapping="Wrap" Text="Имя может уйти на модерацию VK; фото загрузится через официальный owner-photo upload."/>
+              </Grid>
+            </Grid>
+            <Grid Margin="12,8,12,10" RowDefinitions="Auto Auto Auto" ColumnDefinitions="Auto *">
+              <vkui:VKIcon Margin="0,0,12,0" VerticalAlignment="Top" Foreground="{DynamicResource VKIconSecondaryBrush}" Id="{x:Static vkui:VKIconNames.Icon20WriteOutline}"/>
+              <TextBlock Grid.Column="1" Margin="0,1,0,6" FontWeight="Medium" Foreground="{DynamicResource VKTextPrimaryBrush}" Text="Локальная заметка"/>
+              <TextBox x:Name="LocalNoteBox" Grid.Row="1" Grid.Column="1" MinHeight="76" MaxHeight="140" TextWrapping="Wrap" AcceptsReturn="True"
+                       Text="{Binding LocalNote, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                       PlaceholderText="Видно только тебе. В ВК не отправляется."/>
+              <StackPanel Grid.Row="2" Grid.Column="1" Margin="0,8,0,0" IsVisible="{Binding HasLocalNoteHistory}">
+                <Grid ColumnDefinitions="* Auto">
+                  <TextBlock VerticalAlignment="Center" Classes="Caption1" FontWeight="Medium" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="История заметок"/>
+                  <Button Grid.Column="1" Classes="Tertiary" Width="36" Height="32" Command="{Binding ClearLocalNoteHistoryCommand}" ToolTip.Tip="Очистить историю">
+                    <vkui:VKIcon Classes="ButtonIn" Id="{x:Static vkui:VKIconNames.Icon20DeleteOutline}"/>
+                  </Button>
+                </Grid>
+                <ItemsControl ItemsSource="{Binding LocalNoteHistory}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <Grid ColumnDefinitions="* Auto" Margin="0,4,0,0">
+                        <StackPanel>
+                          <TextBlock Classes="Caption1" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="{Binding DateText}"/>
+                          <TextBlock Margin="0,2,0,0" TextWrapping="Wrap" Foreground="{DynamicResource VKTextPrimaryBrush}" Text="{Binding Text}"/>
+                        </StackPanel>
+                        <Button Grid.Column="1" Classes="Tertiary" Width="36" Height="32" Margin="8,0,0,0" Command="{Binding RestoreCommand}" ToolTip.Tip="Вернуть эту заметку">
+                          <vkui:VKIcon Classes="ButtonIn" Id="{x:Static vkui:VKIconNames.Icon20RecentOutline}"/>
+                        </Button>
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </Grid>
+            <Grid Margin="12,8,12,10" ColumnDefinitions="Auto *">
+              <vkui:VKIcon Margin="0,0,12,0" VerticalAlignment="Top" Foreground="{DynamicResource VKIconSecondaryBrush}" Id="{x:Static vkui:VKIconNames.Icon20ServicesOutline}"/>
+              <StackPanel Grid.Column="1">
+                <TextBlock Margin="0,1,0,6" FontWeight="Medium" Foreground="{DynamicResource VKTextPrimaryBrush}" Text="Локальное оформление"/>
+                <TextBlock Classes="Caption1" Margin="0,0,0,6" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="Применяется только в Laney и не меняет настройки VK."/>
+                <Border Margin="-12,0,0,8" Height="154" CornerRadius="14" ClipToBounds="True" Background="{Binding LocalAppearancePreviewBackground}">
+                  <Grid>
+                    <Border controls:ImageLoader.BackgroundSource="{Binding LocalBackgroundImageUri}" controls:ImageLoader.BackgroundBlurRadius="{Binding LocalAppearancePreviewBlurRadius}" Opacity="{Binding LocalAppearancePreviewImageOpacity}"/>
+                    <Border Background="#000000" Opacity="{Binding LocalAppearancePreviewDimOpacity}"/>
+                    <Border Background="#FFFFFF" Opacity="{Binding LocalAppearancePreviewBrightnessOpacity}"/>
+                    <StackPanel VerticalAlignment="Bottom" Margin="14" Spacing="8">
+                      <Border HorizontalAlignment="Left" MaxWidth="310" Background="{DynamicResource VKImBubbleIncomingBrush}" CornerRadius="14,14,14,4" Padding="12,8">
+                        <TextBlock Foreground="{DynamicResource VKTextPrimaryBrush}" Text="Так будет выглядеть входящее сообщение"/>
+                      </Border>
+                      <Border HorizontalAlignment="Right" MaxWidth="310" Background="{Binding LocalAppearancePreviewOutgoing}" CornerRadius="14,14,4,14" Padding="12,8">
+                        <TextBlock Foreground="{DynamicResource VKTextPrimaryBrush}" Text="А так - твой ответ"/>
+                      </Border>
+                    </StackPanel>
+                  </Grid>
+                </Border>
+                <vkui:Cell Margin="-12,0,0,0" Header="Фон" Subtitle="Подложка сообщений в этом чате.">
+                  <vkui:Cell.After>
+                    <ComboBox Classes="Alternate" Width="190" MaxDropDownHeight="260" ItemsSource="{Binding PeerChatBackgroundOptions}" SelectedItem="{Binding CurrentPeerChatBackground, Mode=TwoWay}" ItemTemplate="{StaticResource AppearanceOptionTemplate}"/>
+                  </vkui:Cell.After>
+                </vkui:Cell>
+                <vkui:Cell Margin="-12,0,0,0" Header="Картинка фона" Subtitle="Локальный путь или URL. VK не трогаем.">
+                  <vkui:Cell.After>
+                    <TextBox Width="260" Text="{Binding LocalBackgroundImage, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" PlaceholderText="C:\Images\chat.jpg или https://..."/>
+                  </vkui:Cell.After>
+                </vkui:Cell>
+                <vkui:Cell Margin="-12,0,0,0" Header="Затемнение" Subtitle="Темная подложка поверх картинки.">
+                  <vkui:Cell.After>
+                    <ComboBox Classes="Alternate" Width="190" ItemsSource="{Binding PeerBackgroundDimOptions}" SelectedItem="{Binding CurrentPeerBackgroundDim, Mode=TwoWay}">
+                      <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="mdl:TwoStringTuple">
+                          <TextBlock Text="{Binding Item2}"/>
+                        </DataTemplate>
+                      </ComboBox.ItemTemplate>
+                    </ComboBox>
+                  </vkui:Cell.After>
+                </vkui:Cell>
+                <vkui:Cell Margin="-12,0,0,0" Header="Blur" Subtitle="Размытие фоновой картинки после downscale.">
+                  <vkui:Cell.After>
+                    <ComboBox Classes="Alternate" Width="190" ItemsSource="{Binding PeerBackgroundBlurOptions}" SelectedItem="{Binding CurrentPeerBackgroundBlur, Mode=TwoWay}">
+                      <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="mdl:TwoStringTuple">
+                          <TextBlock Text="{Binding Item2}"/>
+                        </DataTemplate>
+                      </ComboBox.ItemTemplate>
+                    </ComboBox>
+                  </vkui:Cell.After>
+                </vkui:Cell>
+                <vkui:Cell Margin="-12,0,0,0" Header="Яркость" Subtitle="Белая/темная коррекция поверх картинки.">
+                  <vkui:Cell.After>
+                    <ComboBox Classes="Alternate" Width="190" ItemsSource="{Binding PeerBackgroundBrightnessOptions}" SelectedItem="{Binding CurrentPeerBackgroundBrightness, Mode=TwoWay}">
+                      <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="mdl:TwoStringTuple">
+                          <TextBlock Text="{Binding Item2}"/>
+                        </DataTemplate>
+                      </ComboBox.ItemTemplate>
+                    </ComboBox>
+                  </vkui:Cell.After>
+                </vkui:Cell>
+                <vkui:Cell Margin="-12,0,0,0" Header="Акцент" Subtitle="Цвет ссылок, выделений и действий в этом чате.">
+                  <vkui:Cell.After>
+                    <ComboBox Classes="Alternate" Width="190" MaxDropDownHeight="260" ItemsSource="{Binding PeerAccentOptions}" SelectedItem="{Binding CurrentPeerAccent, Mode=TwoWay}" ItemTemplate="{StaticResource AppearanceOptionTemplate}"/>
+                  </vkui:Cell.After>
+                </vkui:Cell>
+                <vkui:Cell Margin="-12,0,0,0" Header="Плотность" Subtitle="Отступы между сообщениями.">
+                  <vkui:Cell.After>
+                    <ComboBox Classes="Alternate" Width="190" MaxDropDownHeight="260" ItemsSource="{Binding PeerChatDensityOptions}" SelectedItem="{Binding CurrentPeerChatDensity, Mode=TwoWay}" ItemTemplate="{StaticResource AppearanceOptionTemplate}"/>
+                  </vkui:Cell.After>
+                </vkui:Cell>
+                <vkui:Cell Margin="-12,0,0,0" Header="Шрифт" Subtitle="Размер текста сообщений.">
+                  <vkui:Cell.After>
+                    <ComboBox Classes="Alternate" Width="190" MaxDropDownHeight="260" ItemsSource="{Binding PeerChatFontOptions}" SelectedItem="{Binding CurrentPeerChatFont, Mode=TwoWay}" ItemTemplate="{StaticResource AppearanceOptionTemplate}"/>
+                  </vkui:Cell.After>
+                </vkui:Cell>
+                <vkui:Cell Margin="-12,0,0,0" Header="Bubble" Subtitle="Форма пузырей сообщений.">
+                  <vkui:Cell.After>
+                    <ComboBox Classes="Alternate" Width="190" MaxDropDownHeight="260" ItemsSource="{Binding PeerBubbleStyleOptions}" SelectedItem="{Binding CurrentPeerBubbleStyle, Mode=TwoWay}" ItemTemplate="{StaticResource AppearanceOptionTemplate}"/>
+                  </vkui:Cell.After>
+                </vkui:Cell>
+                <vkui:Cell Margin="-12,0,0,0" Header="Исходящие" Subtitle="Цвет твоих сообщений.">
+                  <vkui:Cell.After>
+                    <ComboBox Classes="Alternate" Width="190" MaxDropDownHeight="260" ItemsSource="{Binding PeerBubbleColorOptions}" SelectedItem="{Binding CurrentPeerBubbleColor, Mode=TwoWay}" ItemTemplate="{StaticResource AppearanceOptionTemplate}"/>
+                  </vkui:Cell.After>
+                </vkui:Cell>
+                <vkui:Cell Margin="-12,0,0,0" Header="Emoji-пак" Subtitle="Переопределение picker только для этого чата.">
+                  <vkui:Cell.After>
+                    <ComboBox Classes="Alternate" Width="190" MaxDropDownHeight="260" ItemsSource="{Binding PeerEmojiPackOptions}" SelectedItem="{Binding CurrentPeerEmojiPack, Mode=TwoWay}">
+                      <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="mdl:TwoStringTuple">
+                          <TextBlock Text="{Binding Item2}"/>
+                        </DataTemplate>
+                      </ComboBox.ItemTemplate>
+                    </ComboBox>
+                  </vkui:Cell.After>
+                </vkui:Cell>
+                <Grid Margin="-12,8,0,0" ColumnDefinitions="* Auto Auto">
+                  <TextBlock VerticalAlignment="Center" Classes="Caption1" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="Изменения применяются только после сохранения."/>
+                  <Button Grid.Column="1" Classes="Secondary" Margin="8,0,0,0" Command="{Binding ResetLocalAppearanceCommand}" IsEnabled="{Binding HasLocalAppearanceDraftChanges}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <vkui:VKIcon Width="20" Height="20" Id="{x:Static vkui:VKIconNames.Icon20DeleteOutline}"/>
+                      <TextBlock Text="Отменить"/>
+                    </StackPanel>
+                  </Button>
+                  <Button Grid.Column="2" Classes="Primary" Margin="8,0,0,0" Command="{Binding ApplyLocalAppearanceCommand}" IsEnabled="{Binding HasLocalAppearanceDraftChanges}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <vkui:VKIcon Width="20" Height="20" Id="{x:Static vkui:VKIconNames.Icon20Check}"/>
+                      <TextBlock Text="Применить"/>
+                    </StackPanel>
+                  </Button>
+                </Grid>
+              </StackPanel>
+            </Grid>
+            <Grid Margin="12,8,12,10" ColumnDefinitions="Auto *" IsVisible="{Binding IsE2ESectionVisible}">
+              <vkui:VKIcon Margin="0,0,12,0" VerticalAlignment="Top" Foreground="{DynamicResource VKIconSecondaryBrush}" Id="{x:Static vkui:VKIconNames.Icon20LockOutline}"/>
+              <StackPanel Grid.Column="1">
+                <TextBlock Margin="0,1,0,6" FontWeight="Medium" Foreground="{DynamicResource VKTextPrimaryBrush}" Text="Laney E2E"/>
+                <TextBlock Classes="Caption1" Margin="0,0,0,8" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="Локальное end-to-end шифрование для этого диалога. VK видит только payload."/>
+                <Border Margin="-12,0,0,8" Padding="12" CornerRadius="10" Background="{DynamicResource LaneySurfaceRaisedBrush}" BorderBrush="{DynamicResource LaneyBorderSubtleBrush}" BorderThickness="1">
+                  <Grid RowDefinitions="Auto Auto Auto" ColumnDefinitions="* *">
+                    <StackPanel>
+                      <TextBlock Classes="Caption1" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="Статус"/>
+                      <TextBlock Margin="0,2,0,0" FontWeight="Medium" Foreground="{DynamicResource VKTextPrimaryBrush}" Text="{Binding E2EStatusText}" TextWrapping="Wrap"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Margin="12,0,0,0">
+                      <TextBlock Classes="Caption1" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="Профиль"/>
+                      <TextBlock Margin="0,2,0,0" FontWeight="Medium" Foreground="{DynamicResource VKTextPrimaryBrush}" Text="{Binding E2EProfileText}" TextWrapping="Wrap"/>
+                    </StackPanel>
+                    <StackPanel Grid.Row="1" Margin="0,10,0,0">
+                      <TextBlock Classes="Caption1" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="SAS"/>
+                      <TextBlock Margin="0,2,0,0" Foreground="{DynamicResource VKTextPrimaryBrush}" Text="{Binding E2ESasText}"/>
+                    </StackPanel>
+                    <StackPanel Grid.Row="1" Grid.Column="1" Margin="12,10,0,0">
+                      <TextBlock Classes="Caption1" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="Fingerprint"/>
+                      <TextBlock Margin="0,2,0,0" FontFamily="Consolas" FontSize="12" LineHeight="15" Foreground="{DynamicResource VKTextPrimaryBrush}" Text="{Binding E2EFingerprintText}" TextWrapping="Wrap" MaxLines="3"/>
+                    </StackPanel>
+                    <Grid Grid.Row="2" Grid.ColumnSpan="2" Margin="0,10,0,0" ColumnDefinitions="* *">
+                      <vkui:Cell Margin="-12,0,0,0" Header="Автошифрование" Subtitle="Обычная отправка станет Laney E2E payload.">
+                        <vkui:Cell.After>
+                          <ToggleSwitch IsChecked="{Binding E2EAutoEncryptText, Mode=TwoWay}" IsEnabled="{Binding E2EConfigured}"/>
+                        </vkui:Cell.After>
+                      </vkui:Cell>
+                      <vkui:Cell Grid.Column="1" Margin="0,0,-12,0" Header="Ключ сверен" Subtitle="После проверки SAS/fingerprint.">
+                        <vkui:Cell.After>
+                          <ToggleSwitch IsChecked="{Binding E2EVerified, Mode=TwoWay}" IsEnabled="{Binding E2EConfigured}"/>
+                        </vkui:Cell.After>
+                      </vkui:Cell>
+                    </Grid>
+                  </Grid>
+                </Border>
+                <UniformGrid Columns="2" Margin="-12,0,0,0">
+                  <Button x:Name="E2ESetupButton" Classes="Secondary" Margin="0,0,8,8" Command="{Binding ConfigureE2ECommand}" IsEnabled="{Binding CanUseE2EActions}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <vkui:VKIcon Width="20" Height="20" Id="{x:Static vkui:VKIconNames.Icon20WriteOutline}"/>
+                      <TextBlock Text="Настроить"/>
+                    </StackPanel>
+                  </Button>
+                  <Button x:Name="E2ECreateHandshakeButton" Classes="Secondary" Margin="0,0,0,8" Command="{Binding CreateE2EHandshakeCommand}" IsEnabled="{Binding CanUseE2EActions}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <vkui:VKIcon Width="20" Height="20" Id="{x:Static vkui:VKIconNames.Icon20ShareOutline}"/>
+                      <TextBlock Text="Создать handshake"/>
+                    </StackPanel>
+                  </Button>
+                  <Button x:Name="E2EImportHandshakeButton" Classes="Secondary" Margin="0,0,8,8" Command="{Binding ImportE2EHandshakeCommand}" IsEnabled="{Binding CanUseE2EActions}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <vkui:VKIcon Width="20" Height="20" Id="{x:Static vkui:VKIconNames.Icon20DocumentOutline}"/>
+                      <TextBlock Text="Импорт handshake"/>
+                    </StackPanel>
+                  </Button>
+                  <Button x:Name="E2EFingerprintButton" Classes="Secondary" Margin="0,0,0,8" Command="{Binding ShowE2EFingerprintCommand}" IsEnabled="{Binding E2EConfigured}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <vkui:VKIcon Width="20" Height="20" Id="{x:Static vkui:VKIconNames.Icon20InfoCircleOutline}"/>
+                      <TextBlock Text="Fingerprint"/>
+                    </StackPanel>
+                  </Button>
+                  <Button x:Name="E2ERotateButton" Classes="Secondary" Margin="0,0,8,8" Command="{Binding RotateE2EKeysCommand}" IsEnabled="{Binding E2EConfigured}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <vkui:VKIcon Width="20" Height="20" Id="{x:Static vkui:VKIconNames.Icon24RepeatOutline}"/>
+                      <TextBlock Text="Ротация ключей"/>
+                    </StackPanel>
+                  </Button>
+                  <Button x:Name="E2EExportBackupButton" Classes="Secondary" Margin="0,0,0,8" Command="{Binding ExportE2EBackupCommand}" IsEnabled="{Binding E2EConfigured}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <vkui:VKIcon Width="20" Height="20" Id="{x:Static vkui:VKIconNames.Icon20LockOutline}"/>
+                      <TextBlock Text="Экспорт backup"/>
+                    </StackPanel>
+                  </Button>
+                  <Button x:Name="E2EImportBackupButton" Classes="Secondary" Margin="0,0,8,0" Command="{Binding ImportE2EBackupCommand}" IsEnabled="{Binding CanUseE2EActions}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <vkui:VKIcon Width="20" Height="20" Id="{x:Static vkui:VKIconNames.Icon20DocumentOutline}"/>
+                      <TextBlock Text="Импорт backup"/>
+                    </StackPanel>
+                  </Button>
+                  <Button x:Name="E2EResetButton" Classes="Secondary" Margin="0,0,0,0" Command="{Binding ResetE2ECommand}" IsEnabled="{Binding E2EConfigured}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <vkui:VKIcon Width="20" Height="20" Id="{x:Static vkui:VKIconNames.Icon20DeleteOutline}"/>
+                      <TextBlock Text="Сброс"/>
+                    </StackPanel>
+                  </Button>
+                </UniformGrid>
+              </StackPanel>
+            </Grid>
+            <Grid Margin="12,8,12,10" ColumnDefinitions="Auto *">
+              <vkui:VKIcon Margin="0,0,12,0" VerticalAlignment="Top" Foreground="{DynamicResource VKIconSecondaryBrush}" Id="{x:Static vkui:VKIconNames.Icon20BlockOutline}"/>
+              <StackPanel Grid.Column="1">
+                <TextBlock Margin="0,1,0,6" FontWeight="Medium" Foreground="{DynamicResource VKTextPrimaryBrush}" Text="Локальная приватность"/>
+                <TextBlock Classes="Caption1" Margin="0,0,0,8" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="Mute и shadow-ban только в этом чате. VK ничего не получает."/>
+                <vkui:Cell Margin="-12,0,0,4" Header="Анти-спам" Subtitle="Для групповых чатов: скрывать повторы и link+spam-keyword локально.">
+                  <vkui:Cell.After>
+                    <ToggleSwitch IsChecked="{Binding AntiSpamEnabled, Mode=TwoWay}"/>
+                  </vkui:Cell.After>
+                </vkui:Cell>
+                <TextBlock Classes="Caption1" Margin="0,0,0,4" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="Mute: ID через запятую."/>
+                <Grid ColumnDefinitions="* Auto">
+                  <TextBox Text="{Binding MutedSendersText, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" PlaceholderText="123, -456"/>
+                  <Button Grid.Column="1" Classes="Tertiary" Width="44" Margin="8,0,0,0" Command="{Binding ClearMutedSendersCommand}" IsEnabled="{Binding HasMutedSenders}" ToolTip.Tip="Очистить mute">
+                    <vkui:VKIcon Classes="ButtonIn" Id="{x:Static vkui:VKIconNames.Icon20DeleteOutline}"/>
+                  </Button>
+                </Grid>
+                <TextBlock Classes="Caption1" Margin="0,8,0,4" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="Quiet words: слово или /regex/ по строкам. Только глушит уведомления."/>
+                <Grid ColumnDefinitions="* Auto">
+                  <TextBox MinHeight="56" MaxHeight="100" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding QuietTextRules, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" PlaceholderText="спам или /казино|крипта/"/>
+                  <Button Grid.Column="1" Classes="Tertiary" Width="44" Margin="8,0,0,0" VerticalAlignment="Top" Command="{Binding ClearQuietTextRulesCommand}" IsEnabled="{Binding HasQuietTextRules}" ToolTip.Tip="Очистить quiet words">
+                    <vkui:VKIcon Classes="ButtonIn" Id="{x:Static vkui:VKIconNames.Icon20DeleteOutline}"/>
+                  </Button>
+                </Grid>
+                <TextBlock Classes="Caption1" Margin="0,8,0,4" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="Shadow-ban: ID через запятую."/>
+                <Grid ColumnDefinitions="* Auto">
+                  <TextBox Text="{Binding ShadowBannedSendersText, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" PlaceholderText="123, -456"/>
+                  <Button Grid.Column="1" Classes="Tertiary" Width="44" Margin="8,0,0,0" Command="{Binding ClearShadowBannedSendersCommand}" IsEnabled="{Binding HasShadowBannedSenders}" ToolTip.Tip="Очистить shadow-ban">
+                    <vkui:VKIcon Classes="ButtonIn" Id="{x:Static vkui:VKIconNames.Icon20DeleteOutline}"/>
+                  </Button>
+                </Grid>
+                <TextBlock Classes="Caption1" Margin="0,8,0,4" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="Текст: слово или /regex/ по строкам."/>
+                <Grid ColumnDefinitions="* Auto">
+                  <TextBox MinHeight="72" MaxHeight="120" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding ShadowBannedTextRules, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" PlaceholderText="спам или /казино|крипта/"/>
+                  <Button Grid.Column="1" Classes="Tertiary" Width="44" Margin="8,0,0,0" VerticalAlignment="Top" Command="{Binding ClearShadowBannedTextRulesCommand}" IsEnabled="{Binding HasShadowBannedTextRules}" ToolTip.Tip="Очистить текстовые правила">
+                    <vkui:VKIcon Classes="ButtonIn" Id="{x:Static vkui:VKIconNames.Icon20DeleteOutline}"/>
+                  </Button>
+                </Grid>
+                <TextBlock Classes="Caption1" Margin="0,8,0,4" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="Вложения."/>
+                <Grid ColumnDefinitions="* Auto">
+                  <UniformGrid Columns="2">
+                    <CheckBox Margin="0,0,8,4" Content="Голосовые" IsChecked="{Binding ShadowBanVoiceMessages, Mode=TwoWay}"/>
+                    <CheckBox Margin="0,0,8,4" Content="Ссылки" IsChecked="{Binding ShadowBanLinks, Mode=TwoWay}"/>
+                    <CheckBox Margin="0,0,8,4" Content="Стикеры" IsChecked="{Binding ShadowBanStickers, Mode=TwoWay}"/>
+                    <CheckBox Margin="0,0,8,4" Content="Граффити" IsChecked="{Binding ShadowBanGraffiti, Mode=TwoWay}"/>
+                    <CheckBox Margin="0,0,8,0" Content="Форварды" IsChecked="{Binding ShadowBanForwardedMessages, Mode=TwoWay}"/>
+                  </UniformGrid>
+                  <Button Grid.Column="1" Classes="Tertiary" Width="44" Margin="8,0,0,0" VerticalAlignment="Top" Command="{Binding ClearShadowBannedAttachmentKindsCommand}" IsEnabled="{Binding HasShadowBannedAttachmentKinds}" ToolTip.Tip="Очистить типы вложений">
+                    <vkui:VKIcon Classes="ButtonIn" Id="{x:Static vkui:VKIconNames.Icon20DeleteOutline}"/>
+                  </Button>
+                </Grid>
+              </StackPanel>
+            </Grid>
+            <ItemsControl ItemsSource="{Binding Information}" ItemTemplate="{StaticResource PeerInfoTemplate}"/>
+          </StackPanel>
         </ScrollViewer>
       </TabItem>
       <TabItem x:Name="ChatMembersTab">
@@ -142,7 +507,7 @@
         </TabItem.Header>
         <Border DataContext="{Binding ChatMembers}">
           <Grid RowDefinitions="Auto *" x:DataType="vm:ChatMembersTabViewModel">
-            <TextBox Classes="Search" Margin="12,2,12,0" Text="{Binding SearchQuery}" IsVisible="{Binding SearchAvailable}" Watermark="{x:Static i18n:Resources.pp_search_members}"/>
+            <TextBox Classes="Search" Margin="12,2,12,0" Text="{Binding SearchQuery}" IsVisible="{Binding SearchAvailable}" PlaceholderText="{x:Static i18n:Resources.pp_search_members}"/>
             <ScrollViewer Grid.Row="1">
               <StackPanel>
                 <ItemsRepeater Margin="0,6" ItemsSource="{Binding Items}" ItemTemplate="{StaticResource DefaultEntityItemTemplate}">
@@ -156,7 +521,7 @@
                 </Border>
 
                 <Border IsVisible="{Binding Placeholder, Mode=OneWay, FallbackValue=False, Converter={x:Static ObjectConverters.IsNotNull}}" Background="{DynamicResource VKBackgroundContentBrush}">
-                  <vkui:Placeholder VerticalAlignment="Center"
+                  <vkui:Placeholder Classes="Compact" VerticalAlignment="Center"
                                           Icon="{Binding Placeholder.Icon, Mode=OneWay}"
                                           Header="{Binding Placeholder.Header, Mode=OneWay}"
                                           Text="{Binding Placeholder.Text, Mode=OneWay}">
@@ -169,6 +534,37 @@
             </ScrollViewer>
           </Grid>
         </Border>
+      </TabItem>
+
+      <TabItem Header="Статистика" IsVisible="{Binding IsChatStatisticsVisible}">
+        <ScrollViewer>
+          <StackPanel Margin="12,8,12,12">
+            <ItemsControl ItemsSource="{Binding ChatStatisticTiles}" ItemTemplate="{StaticResource ChatStatisticTileTemplate}" IsVisible="{Binding HasChatStatisticDashboard}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <UniformGrid Columns="2"/>
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+            </ItemsControl>
+
+            <Border Margin="4,10,4,0" Padding="12" CornerRadius="8" Background="{DynamicResource VKModalCardBackgroundBrush}" BorderBrush="{DynamicResource VKSeparatorAlphaBrush}" BorderThickness="1" IsVisible="{Binding HasChatStatisticMix}">
+              <StackPanel>
+                <TextBlock FontWeight="Medium" Foreground="{DynamicResource VKTextPrimaryBrush}" Text="Состав выборки"/>
+                <ItemsControl Margin="0,6,0,0" ItemsSource="{Binding ChatStatisticMix}" ItemTemplate="{StaticResource ChatStatisticBarTemplate}"/>
+              </StackPanel>
+            </Border>
+
+            <Border Margin="4,10,4,0" Padding="12" CornerRadius="8" Background="{DynamicResource VKModalCardBackgroundBrush}" BorderBrush="{DynamicResource VKSeparatorAlphaBrush}" BorderThickness="1" IsVisible="{Binding HasChatStatisticAttachments}">
+              <StackPanel>
+                <TextBlock FontWeight="Medium" Foreground="{DynamicResource VKTextPrimaryBrush}" Text="Вложения"/>
+                <ItemsControl Margin="0,6,0,0" ItemsSource="{Binding ChatStatisticAttachments}" ItemTemplate="{StaticResource ChatStatisticBarTemplate}"/>
+              </StackPanel>
+            </Border>
+
+            <TextBlock Margin="4,14,4,4" FontWeight="Medium" Foreground="{DynamicResource VKTextPrimaryBrush}" Text="Детали"/>
+            <ItemsControl ItemsSource="{Binding ChatStatistics}" ItemTemplate="{StaticResource PeerInfoTemplate}"/>
+          </StackPanel>
+        </ScrollViewer>
       </TabItem>
       
       <TabItem Tag="1" Header="{x:Static i18n:Resources.photo}">
@@ -185,7 +581,7 @@
             </Border>
 
             <Border IsVisible="{Binding Placeholder, Mode=OneWay, FallbackValue=False, Converter={x:Static ObjectConverters.IsNotNull}}" Background="{DynamicResource VKBackgroundContentBrush}">
-              <vkui:Placeholder VerticalAlignment="Center"
+              <vkui:Placeholder Classes="Compact" VerticalAlignment="Center"
                                       Icon="{Binding Placeholder.Icon, Mode=OneWay}"
                                       Header="{Binding Placeholder.Header, Mode=OneWay}"
                                       Text="{Binding Placeholder.Text, Mode=OneWay}">
@@ -212,7 +608,7 @@
             </Border>
 
             <Border IsVisible="{Binding Placeholder, Mode=OneWay, FallbackValue=False, Converter={x:Static ObjectConverters.IsNotNull}}" Background="{DynamicResource VKBackgroundContentBrush}">
-              <vkui:Placeholder VerticalAlignment="Center"
+              <vkui:Placeholder Classes="Compact" VerticalAlignment="Center"
                                       Icon="{Binding Placeholder.Icon, Mode=OneWay}"
                                       Header="{Binding Placeholder.Header, Mode=OneWay}"
                                       Text="{Binding Placeholder.Text, Mode=OneWay}">
@@ -239,7 +635,7 @@
             </Border>
 
             <Border IsVisible="{Binding Placeholder, Mode=OneWay, FallbackValue=False, Converter={x:Static ObjectConverters.IsNotNull}}" Background="{DynamicResource VKBackgroundContentBrush}">
-              <vkui:Placeholder VerticalAlignment="Center"
+              <vkui:Placeholder Classes="Compact" VerticalAlignment="Center"
                                       Icon="{Binding Placeholder.Icon, Mode=OneWay}"
                                       Header="{Binding Placeholder.Header, Mode=OneWay}"
                                       Text="{Binding Placeholder.Text, Mode=OneWay}">
@@ -266,7 +662,7 @@
             </Border>
 
             <Border IsVisible="{Binding Placeholder, Mode=OneWay, FallbackValue=False, Converter={x:Static ObjectConverters.IsNotNull}}" Background="{DynamicResource VKBackgroundContentBrush}">
-              <vkui:Placeholder VerticalAlignment="Center"
+              <vkui:Placeholder Classes="Compact" VerticalAlignment="Center"
                                       Icon="{Binding Placeholder.Icon, Mode=OneWay}"
                                       Header="{Binding Placeholder.Header, Mode=OneWay}"
                                       Text="{Binding Placeholder.Text, Mode=OneWay}">
@@ -293,7 +689,7 @@
             </Border>
 
             <Border IsVisible="{Binding Placeholder, Mode=OneWay, FallbackValue=False, Converter={x:Static ObjectConverters.IsNotNull}}" Background="{DynamicResource VKBackgroundContentBrush}">
-              <vkui:Placeholder VerticalAlignment="Center"
+              <vkui:Placeholder Classes="Compact" VerticalAlignment="Center"
                                       Icon="{Binding Placeholder.Icon, Mode=OneWay}"
                                       Header="{Binding Placeholder.Header, Mode=OneWay}"
                                       Text="{Binding Placeholder.Text, Mode=OneWay}">
@@ -312,7 +708,7 @@
     </Border>
 
     <Border Grid.RowSpan="3" IsVisible="{Binding Placeholder, Mode=OneWay, FallbackValue=False, Converter={x:Static ObjectConverters.IsNotNull}}" Background="{DynamicResource VKBackgroundContentBrush}">
-      <vkui:Placeholder VerticalAlignment="Center"
+      <vkui:Placeholder Classes="Compact" VerticalAlignment="Center"
                               Icon="{Binding Placeholder.Icon, Mode=OneWay}"
                               Header="{Binding Placeholder.Header, Mode=OneWay}"
                               Text="{Binding Placeholder.Text, Mode=OneWay}">

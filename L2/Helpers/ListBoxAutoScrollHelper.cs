@@ -69,7 +69,7 @@ namespace ELOR.Laney.Helpers {
                         }
                         Debug.WriteLine($"Index for focused element in ListBox: {index}");
                         if (index > 0) {
-                            listBox.ScrollIntoView(index);
+                            listBox.ScrollIntoView(itemDC);
                         }
                     }
                 })();

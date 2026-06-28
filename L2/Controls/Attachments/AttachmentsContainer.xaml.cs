@@ -11,6 +11,7 @@ using ELOR.Laney.Extensions;
 using ELOR.Laney.Helpers;
 using ELOR.Laney.ViewModels;
 using ELOR.Laney.Views.Media;
+using ELOR.Laney.Views.Modals;
 using ELOR.VKAPILib.Objects;
 using System;
 using System.Collections.Generic;
@@ -218,7 +219,7 @@ namespace ELOR.Laney.Controls.Attachments {
                     Canvas.SetLeft(imgBtn, rect.Left);
                     Canvas.SetTop(imgBtn, rect.Top);
                     AddPreviewInfo(preview, imgBtn);
-                    if (p.Uri != null) _ = imgBtn.SetImageBackgroundAsync(p.Uri, rect.Width, rect.Height);
+                    if (p.Uri != null) ImageLoader.SetBackgroundSource(imgBtn, p.Uri);
                     imgBtn.Click += ImgBtn_Click;
                     canvas.Children.Add(imgBtn);
                     i++;
@@ -259,7 +260,7 @@ namespace ELOR.Laney.Controls.Attachments {
                     RadiusX = 14, RadiusY = 14,
                     Name = graffiti.ObjectType
                 };
-                grImage.SetImageFill(graffiti.Uri, grImage.Width, grImage.Height);
+                ImageLoader.SetFillSource(grImage, graffiti.Uri);
                 StandartAttachments.Children.Add(grImage);
             }
 
@@ -273,7 +274,10 @@ namespace ELOR.Laney.Controls.Attachments {
                     Subtitle = def,
                     Name = wp.ObjectType
                 };
-                ba.Click += async (a, b) => await Launcher.LaunchUrl($"https://vk.com/wall{wp.OwnerId}_{wp.Id}");
+                ba.Click += async (a, b) => {
+                    StandaloneMessageViewer viewer = new StandaloneMessageViewer(session, wp);
+                    await viewer.ShowDialog(session.ModalWindow);
+                };
                 StandartAttachments.Children.Add(ba);
             }
 
@@ -350,7 +354,10 @@ namespace ELOR.Laney.Controls.Attachments {
                     Subtitle = $"{Assets.i18n.Resources.poll} {def}",
                     Name = poll.ObjectType,
                 };
-                ba.Click += async (a, b) => await Launcher.LaunchUrl($"https://vk.com/poll{poll.OwnerId}_{poll.Id}");
+                ba.Click += async (a, b) => {
+                    VKSession ownerSession = session ?? VKSession.GetByDataContext(Parent as Control);
+                    await PollDialogHelper.ShowPollAsync(ownerSession, poll);
+                };
                 StandartAttachments.Children.Add(ba);
             }
 
@@ -403,7 +410,7 @@ namespace ELOR.Laney.Controls.Attachments {
                             Subtitle = def,
                             Name = st.ObjectType
                         };
-                        ba.Click += (a, b) => ExceptionHelper.ShowNotImplementedDialog(session.ModalWindow);
+                        ba.Click += async (a, b) => await OpenStoryPreviewAsync(st);
                         StandartAttachments.Children.Add(ba);
                     } else {
                         ExtendedAttachment ea = new ExtendedAttachment {
@@ -414,8 +421,8 @@ namespace ELOR.Laney.Controls.Attachments {
                             ActionButtonText = Assets.i18n.Resources.watch,
                             Name = st.ObjectType
                         };
-                        ea.ActionButtonClick += (a, b) => ExceptionHelper.ShowNotImplementedDialog(session.ModalWindow);
-                        ea.Click += (a, b) => ExceptionHelper.ShowNotImplementedDialog(session.ModalWindow);
+                        ea.ActionButtonClick += async (a, b) => await OpenStoryPreviewAsync(st);
+                        ea.Click += async (a, b) => await OpenStoryPreviewAsync(st);
                         StandartAttachments.Children.Add(ea);
                     }
                 }
@@ -502,7 +509,7 @@ namespace ELOR.Laney.Controls.Attachments {
                     Name = d.ObjectType
                 };
 
-                ba.Click += async (a, b) => await Launcher.LaunchUrl(d.Url);
+                ba.Click += async (a, b) => await DocumentPreviewHelper.ShowAsync(session ?? VKSession.GetByDataContext(this), d);
                 StandartAttachments.Children.Add(ba);
             }
 
@@ -547,6 +554,22 @@ namespace ELOR.Laney.Controls.Attachments {
             }
 
             StandartAttachments.IsVisible = StandartAttachments.Children.Count > 0;
+        }
+
+        private async System.Threading.Tasks.Task OpenStoryPreviewAsync(Story story) {
+            VKSession ownerSession = session ?? VKSession.GetByDataContext(Parent as Control);
+            if (ownerSession == null || story == null) return;
+
+            StoryPreview preview = new StoryPreview(story) {
+                DataContext = ownerSession,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Margin = new Thickness(0, 8)
+            };
+
+            VKUIDialog dialog = new VKUIDialog(Assets.i18n.Resources.story, null, [Assets.i18n.Resources.close], 1) {
+                DialogContent = preview
+            };
+            await dialog.ShowDialog<int>(ownerSession.ModalWindow);
         }
 
         private void AddPreviewInfo(IPreview preview, Button button) {

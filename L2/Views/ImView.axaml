@@ -3,6 +3,7 @@
              xmlns:i18n="using:ELOR.Laney.Assets.i18n"
              xmlns:controls="using:ELOR.Laney.Controls"
              xmlns:core="using:ELOR.Laney.Core"
+             xmlns:mdl="using:ELOR.Laney.DataModels"
              xmlns:vm="using:ELOR.Laney.ViewModels"
              xmlns:fb="using:Avalonia.Labs.Panels"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -14,14 +15,14 @@
   <vkui:Page.Resources>
     <!-- Шаблон для элементов списка бесед (двухстрочный) -->
     <DataTemplate x:Key="ChatItemTemplate2Row" x:DataType="vm:ChatViewModel">
-      <Grid Height="64" ColumnDefinitions="Auto *" Background="Transparent" ContextRequested="ChatContextRequested" PointerPressed="ChatPointerPressed" PointerReleased="ChatPointerReleased">
-        <vkui:Avatar Width="48" Height="48" Margin="12,8,0,8" VerticalAlignment="Top" Initials="{Binding Initials}" Background="{Binding PeerId, Converter={StaticResource agc}}" Foreground="White" controls:ImageLoader.Image="{Binding Avatar}"/>
-        <ContentControl ContentTemplate="{Binding Online, Converter={StaticResource oic}}" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,2,8"/>
-        <StackPanel x:Name="Info" Grid.Column="1" Margin="12,11,0,11">
-          <Grid x:Name="FirstLine" Height="22" ColumnDefinitions="* Auto">
+      <Grid Height="{DynamicResource LaneyChatListItemHeight2Row}" ColumnDefinitions="Auto *" Background="Transparent" ContextRequested="ChatContextRequested" PointerPressed="ChatPointerPressed" PointerReleased="ChatPointerReleased">
+        <vkui:Avatar Width="{DynamicResource LaneyChatListAvatarSize}" Height="{DynamicResource LaneyChatListAvatarSize}" Margin="{DynamicResource LaneyChatListAvatarMargin2Row}" CornerRadius="{DynamicResource LaneyChatListAvatarCornerRadius}" VerticalAlignment="Top" Initials="{Binding DisplayInitials}" Background="{Binding DisplayAvatarSeed, Converter={StaticResource agc}}" Foreground="White" controls:ImageLoader.Image="{Binding DisplayAvatar}"/>
+        <ContentControl ContentTemplate="{Binding Online, Converter={StaticResource oic}}" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="{DynamicResource LaneyChatListOnlineMargin2Row}"/>
+        <StackPanel x:Name="Info" Grid.Column="1" Margin="{DynamicResource LaneyChatListInfoMargin2Row}">
+          <Grid x:Name="FirstLine" Height="{DynamicResource LaneyChatListFirstLineHeight}" ColumnDefinitions="* Auto">
             <fb:FlexPanel x:Name="ChatNameContainer" Direction="Row" JustifyContent="FlexStart" Wrap="NoWrap" HorizontalAlignment="Left">
-              <TextBlock x:Name="ChatName" ClipToBounds="True" Classes="Default" Margin="0,1,0,0" FontWeight="Medium" Text="{Binding Title}" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource VKTextPrimaryBrush}"/>
-              <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon16Verified}" Foreground="{DynamicResource VKAccentBrush}" IsVisible="{Binding IsVerified}" Margin="5,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+              <TextBlock x:Name="ChatName" ClipToBounds="True" Classes="Default" Margin="0,1,0,0" FontWeight="Medium" FontSize="{DynamicResource LaneyChatListTitleFontSize}" LineHeight="{DynamicResource LaneyChatListTitleLineHeight}" Text="{Binding DisplayTitle}" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource VKTextPrimaryBrush}"/>
+              <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon16Verified}" Foreground="{DynamicResource LaneyAccentBrush}" IsVisible="{Binding IsVerified}" Margin="5,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center"/>
               <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon16MessageCross}" Foreground="{DynamicResource VKIconTertiaryBrush}" Margin="5,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" IsVisible="{Binding ChatSettings.WritingDisabled.Value, FallbackValue=False}"/>
               <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon16Muted}" Foreground="{DynamicResource VKIconTertiaryBrush}" Margin="5,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" IsVisible="{Binding PushSettings.DisabledForever}"/>
             </fb:FlexPanel>
@@ -37,15 +38,15 @@
                 </Border.IsVisible>
                 <vkui:VKIcon Id="{Binding LastMessage.State, Converter={StaticResource ric}}"/>
               </Border>
-              <TextBlock x:Name="LastMessageTime" Classes="Subhead" Margin="0,2" FontWeight="Regular" Foreground="{DynamicResource VKTextTertiaryBrush}" MaxLines="1" Text="{Binding LastMessage.SentTime, Converter={StaticResource dc}, ConverterParameter=t}"/>
+              <TextBlock x:Name="LastMessageTime" Classes="Subhead" Margin="0,2" FontWeight="Regular" FontSize="{DynamicResource LaneyChatListTimeFontSize}" LineHeight="{DynamicResource LaneyChatListTitleLineHeight}" Foreground="{DynamicResource LaneyTextSubtleBrush}" MaxLines="1" Text="{Binding LastMessage.SentTime, Converter={StaticResource dc}, ConverterParameter=t}"/>
             </StackPanel>
           </Grid>
 
-          <Grid x:Name="SecondLine" Margin="0,2,0,0" Height="18" ColumnDefinitions="* Auto">
-            <TextBlock x:Name="LastMessage" ClipToBounds="True" Classes="Subhead" FontWeight="Regular" HorizontalAlignment="Left" MinHeight="18" Margin="0,0,12,0" IsVisible="{Binding ActivityStatus, Converter={x:Static StringConverters.IsNullOrEmpty}}" Foreground="{DynamicResource VKTextSubheadBrush}" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxLines="1" Inlines="{Binding LastMessage, Converter={StaticResource micc}}"/>
-            <TextBlock x:Name="ActivityStatusText" ClipToBounds="True" Classes="Subhead" FontWeight="Regular" HorizontalAlignment="Left" IsVisible="{Binding ActivityStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" Foreground="{DynamicResource VKAccentBrush}" Text="{Binding ActivityStatus}" TextTrimming="CharacterEllipsis"/>
+          <Grid x:Name="SecondLine" Margin="0,2,0,0" Height="{DynamicResource LaneyChatListSecondLineHeight}" ColumnDefinitions="* Auto">
+            <TextBlock x:Name="LastMessage" ClipToBounds="True" Classes="Subhead" Classes.MentionedPreview="{Binding HasMention}" FontWeight="Regular" FontSize="{DynamicResource LaneyChatListSubtitleFontSize}" LineHeight="{DynamicResource LaneyChatListSubtitleLineHeight}" HorizontalAlignment="Left" MinHeight="{DynamicResource LaneyChatListSecondLineHeight}" Margin="0,0,12,0" IsVisible="{Binding ActivityStatus, Converter={x:Static StringConverters.IsNullOrEmpty}}" Foreground="{DynamicResource LaneyTextMutedBrush}" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxLines="1" Inlines="{Binding LastMessage, Converter={StaticResource micc}}"/>
+            <TextBlock x:Name="ActivityStatusText" ClipToBounds="True" Classes="Subhead" FontWeight="Regular" FontSize="{DynamicResource LaneyChatListSubtitleFontSize}" LineHeight="{DynamicResource LaneyChatListSubtitleLineHeight}" HorizontalAlignment="Left" IsVisible="{Binding ActivityStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" Foreground="{DynamicResource LaneyAccentBrush}" Text="{Binding DisplayActivityStatus}" TextTrimming="CharacterEllipsis"/>
 
-            <Path x:Name="PinIndicator" Grid.Column="1" IsVisible="{Binding IsPinned}" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="1,1,13,1" Fill="{DynamicResource VKIconSecondaryAlphaBrush}" Data="{StaticResource Icon16Pin}"/>
+            <Path x:Name="PinIndicator" Grid.Column="1" IsVisible="{Binding IsPinned}" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="1,1,13,1" Fill="{DynamicResource LaneyTextSubtleBrush}" Data="{StaticResource Icon16Pin}"/>
             <StackPanel x:Name="Indicators" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,0,12,0">
               <Grid x:Name="UnreadReactionsIndicatorContainer" IsVisible="{Binding UnreadReactions, Converter={x:Static ObjectConverters.IsNotNull}}" Margin="8,0,0,0">
                 <Border x:Name="UnreadReactionsIndicator" Width="18" Height="18" CornerRadius="9" Background="{DynamicResource VKCounterPrimaryBackgroundBrush}">
@@ -69,16 +70,136 @@
       </Grid>
     </DataTemplate>
 
+    <!-- Плотный шаблон списка бесед: меньше визуального шума, быстрее сканировать рабочие чаты. -->
+    <DataTemplate x:Key="ChatItemTemplateCompact" x:DataType="vm:ChatViewModel">
+      <Grid Height="{DynamicResource LaneyChatListItemHeight2Row}" ColumnDefinitions="Auto *" Background="Transparent" ContextRequested="ChatContextRequested" PointerPressed="ChatPointerPressed" PointerReleased="ChatPointerReleased">
+        <vkui:Avatar Width="{DynamicResource LaneyChatListAvatarSize}" Height="{DynamicResource LaneyChatListAvatarSize}" Margin="{DynamicResource LaneyChatListAvatarMargin2Row}" CornerRadius="{DynamicResource LaneyChatListAvatarCornerRadius}" VerticalAlignment="Top" Initials="{Binding DisplayInitials}" Background="{Binding DisplayAvatarSeed, Converter={StaticResource agc}}" Foreground="White" controls:ImageLoader.Image="{Binding DisplayAvatar}"/>
+        <ContentControl ContentTemplate="{Binding Online, Converter={StaticResource oic}}" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="{DynamicResource LaneyChatListOnlineMargin2Row}"/>
+        <Grid Grid.Column="1" Margin="{DynamicResource LaneyChatListInfoMargin2Row}" RowDefinitions="Auto Auto">
+          <Grid x:Name="FirstLine" Height="{DynamicResource LaneyChatListFirstLineHeight}" ColumnDefinitions="* Auto">
+            <fb:FlexPanel x:Name="ChatNameContainer" Direction="Row" JustifyContent="FlexStart" Wrap="NoWrap" HorizontalAlignment="Left">
+              <TextBlock x:Name="ChatName" ClipToBounds="True" Classes="Default" Margin="0,1,0,0" FontWeight="Medium" FontSize="{DynamicResource LaneyChatListTitleFontSize}" LineHeight="{DynamicResource LaneyChatListTitleLineHeight}" Text="{Binding DisplayTitle}" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource VKTextPrimaryBrush}"/>
+              <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon16Verified}" Foreground="{DynamicResource LaneyAccentBrush}" IsVisible="{Binding IsVerified}" Margin="5,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+              <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon16MessageCross}" Foreground="{DynamicResource VKIconTertiaryBrush}" Margin="5,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" IsVisible="{Binding ChatSettings.WritingDisabled.Value, FallbackValue=False}"/>
+              <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon16Muted}" Foreground="{DynamicResource VKIconTertiaryBrush}" Margin="5,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" IsVisible="{Binding PushSettings.DisabledForever}"/>
+            </fb:FlexPanel>
+            <TextBlock x:Name="LastMessageTime" Grid.Column="1" Classes="Subhead" Margin="10,2,12,0" FontWeight="Regular" FontSize="{DynamicResource LaneyChatListTimeFontSize}" LineHeight="{DynamicResource LaneyChatListTitleLineHeight}" Foreground="{DynamicResource LaneyTextSubtleBrush}" MaxLines="1" Text="{Binding LastMessage.SentTime, Converter={StaticResource dc}, ConverterParameter=t}"/>
+          </Grid>
+
+          <Grid x:Name="SecondLine" Grid.Row="1" Height="{DynamicResource LaneyChatListSecondLineHeight}" ColumnDefinitions="* Auto">
+            <TextBlock x:Name="LastMessage" ClipToBounds="True" Classes="Subhead" Classes.MentionedPreview="{Binding HasMention}" FontWeight="Regular" FontSize="{DynamicResource LaneyChatListSubtitleFontSize}" LineHeight="{DynamicResource LaneyChatListSubtitleLineHeight}" HorizontalAlignment="Left" MinHeight="{DynamicResource LaneyChatListSecondLineHeight}" Margin="0,0,12,0" IsVisible="{Binding ActivityStatus, Converter={x:Static StringConverters.IsNullOrEmpty}}" Foreground="{DynamicResource LaneyTextMutedBrush}" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxLines="1" Inlines="{Binding LastMessage, Converter={StaticResource micc}}"/>
+            <TextBlock x:Name="ActivityStatusText" ClipToBounds="True" Classes="Subhead" FontWeight="Regular" FontSize="{DynamicResource LaneyChatListSubtitleFontSize}" LineHeight="{DynamicResource LaneyChatListSubtitleLineHeight}" HorizontalAlignment="Left" IsVisible="{Binding ActivityStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" Foreground="{DynamicResource LaneyAccentBrush}" Text="{Binding DisplayActivityStatus}" TextTrimming="CharacterEllipsis"/>
+
+            <StackPanel x:Name="Indicators" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,0,12,0">
+              <Border x:Name="ReadIndicator" IsVisible="{Binding LastMessage, Converter={StaticResource rivc}}" VerticalAlignment="Top" Margin="0,1,8,0">
+                <vkui:VKIcon Id="{Binding LastMessage.State, Converter={StaticResource ric}}"/>
+              </Border>
+              <Grid x:Name="UnreadReactionsIndicatorContainer" IsVisible="{Binding UnreadReactions, Converter={x:Static ObjectConverters.IsNotNull}}" Margin="8,0,0,0">
+                <Border x:Name="UnreadReactionsIndicator" Width="18" Height="18" CornerRadius="9" Background="{DynamicResource VKCounterPrimaryBackgroundBrush}">
+                  <vkui:VKIcon Margin="3" Id="{x:Static vkui:VKIconNames.Icon12Stars}" Foreground="{DynamicResource VKCounterPrimaryTextBrush}"/>
+                </Border>
+              </Grid>
+              <Grid x:Name="MentionIndicatorContainer" IsVisible="{Binding MentionIconId, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" Margin="8,0,0,0">
+                <Border x:Name="MentionIndicator" Width="18" Height="18" CornerRadius="9" Background="{DynamicResource VKCounterPrimaryBackgroundBrush}">
+                  <vkui:VKIcon Margin="3" Id="{Binding MentionIconId}" Foreground="{DynamicResource VKCounterPrimaryTextBrush}"/>
+                </Border>
+              </Grid>
+              <Grid x:Name="UnreadMessagesIndicatorContainer" IsVisible="{Binding !!UnreadMessagesCount}">
+                <Border x:Name="UnreadMessagesIndicator" Margin="8,0,0,0" Classes.Unmuted="{Binding !PushSettings.DisabledForever}" Classes.Muted="{Binding PushSettings.DisabledForever}" MinWidth="18" Height="18" CornerRadius="9">
+                  <TextBlock FontWeight="Medium" Margin="4,2,4,0" HorizontalAlignment="Center" FontSize="12" LineHeight="12" Text="{Binding UnreadMessagesCount}"/>
+                </Border>
+              </Grid>
+              <Border x:Name="ManuallyUnreadIndicator" IsVisible="{Binding IsMarkedAsUnread}" Margin="8,0,0,0" Width="18" Height="18" CornerRadius="9" Classes.Unmuted="{Binding !PushSettings.DisabledForever}" Classes.Muted="{Binding PushSettings.DisabledForever}"/>
+            </StackPanel>
+          </Grid>
+        </Grid>
+      </Grid>
+    </DataTemplate>
+
+    <!-- Медиа-ориентированный шаблон: видно последнее изображение/стикер/видео без открытия чата. -->
+    <DataTemplate x:Key="ChatItemTemplateMediaRich" x:DataType="vm:ChatViewModel">
+      <Grid Height="{DynamicResource LaneyChatListItemHeight3Row}" ColumnDefinitions="Auto * Auto" Background="Transparent" ContextRequested="ChatContextRequested" PointerPressed="ChatPointerPressed" PointerReleased="ChatPointerReleased">
+        <vkui:Avatar Width="{DynamicResource LaneyChatListAvatarSize}" Height="{DynamicResource LaneyChatListAvatarSize}" Margin="{DynamicResource LaneyChatListAvatarMargin3Row}" CornerRadius="{DynamicResource LaneyChatListAvatarCornerRadius}" VerticalAlignment="Top" Initials="{Binding DisplayInitials}" Background="{Binding DisplayAvatarSeed, Converter={StaticResource agc}}" Foreground="White" controls:ImageLoader.Image="{Binding DisplayAvatar}"/>
+        <ContentControl ContentTemplate="{Binding Online, Converter={StaticResource oic}}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="{DynamicResource LaneyChatListOnlineMargin3Row}"/>
+        <Grid Grid.Column="1" Margin="{DynamicResource LaneyChatListInfoMargin3Row}" RowDefinitions="Auto Auto Auto">
+          <Grid Height="{DynamicResource LaneyChatListFirstLineHeight}" ColumnDefinitions="* Auto">
+            <fb:FlexPanel Direction="Row" JustifyContent="FlexStart" Wrap="NoWrap" HorizontalAlignment="Left">
+              <TextBlock ClipToBounds="True" MaxLines="1" Classes="Default" Margin="0,1,0,0" FontWeight="Medium" FontSize="{DynamicResource LaneyChatListTitleFontSize}" LineHeight="{DynamicResource LaneyChatListTitleLineHeight}" Text="{Binding DisplayTitle}" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource VKTextPrimaryBrush}"/>
+              <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon16Verified}" Foreground="{DynamicResource LaneyAccentBrush}" IsVisible="{Binding IsVerified}" Margin="5,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+              <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon16Muted}" Foreground="{DynamicResource VKIconTertiaryBrush}" Margin="5,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" IsVisible="{Binding PushSettings.DisabledForever}"/>
+            </fb:FlexPanel>
+            <TextBlock Grid.Column="1" Classes="Subhead" Margin="10,2,12,0" FontWeight="Regular" FontSize="{DynamicResource LaneyChatListTimeFontSize}" LineHeight="{DynamicResource LaneyChatListTitleLineHeight}" Foreground="{DynamicResource LaneyTextSubtleBrush}" MaxLines="1" Text="{Binding LastMessage.SentTime, Converter={StaticResource dc}, ConverterParameter=t}"/>
+          </Grid>
+          <TextBlock Grid.Row="1" ClipToBounds="True" Classes="Subhead" Classes.MentionedPreview="{Binding HasMention}" FontWeight="Regular" FontSize="{DynamicResource LaneyChatListSubtitleFontSize}" LineHeight="{DynamicResource LaneyChatListSubtitleLineHeight}" Foreground="{DynamicResource LaneyTextMutedBrush}" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxLines="1" Text="{Binding LastMessage.DisplayPreviewText}"/>
+          <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,4,12,0">
+            <Border Height="18" MinWidth="18" CornerRadius="9" Padding="6,1" Background="{DynamicResource LaneyAccentSoftBrush}" IsVisible="{Binding LastMessage.DisplayPreviewImageUri, Converter={x:Static ObjectConverters.IsNotNull}}">
+              <TextBlock FontSize="11" LineHeight="13" Foreground="{DynamicResource LaneyAccentBrush}" Text="media"/>
+            </Border>
+            <Border Height="18" MinWidth="18" CornerRadius="9" Padding="6,1" Margin="6,0,0,0" Background="{DynamicResource LaneyMutedSurfaceBrush}" IsVisible="{Binding HasLocalTags}">
+              <TextBlock FontSize="11" LineHeight="13" Foreground="{DynamicResource LaneyTextMutedBrush}" Text="{Binding LocalTagsText}" TextTrimming="CharacterEllipsis" MaxWidth="140"/>
+            </Border>
+          </StackPanel>
+        </Grid>
+        <Border Grid.Column="2" Width="48" Height="48" Margin="4,12,12,12" CornerRadius="10" ClipToBounds="True" Background="{DynamicResource LaneyMutedSurfaceBrush}" IsVisible="{Binding LastMessage.DisplayPreviewImageUri, Converter={x:Static ObjectConverters.IsNotNull}}">
+          <Rectangle controls:ImageLoader.FillSource="{Binding LastMessage.DisplayPreviewImageUri}"/>
+        </Border>
+      </Grid>
+    </DataTemplate>
+
+    <!-- Рабочий шаблон с локальными папками: теги, архив и избранное видны прямо в списке. -->
+    <DataTemplate x:Key="ChatItemTemplateSplitFolder" x:DataType="vm:ChatViewModel">
+      <Grid Height="{DynamicResource LaneyChatListItemHeight3Row}" ColumnDefinitions="Auto *" Background="Transparent" ContextRequested="ChatContextRequested" PointerPressed="ChatPointerPressed" PointerReleased="ChatPointerReleased">
+        <vkui:Avatar Width="{DynamicResource LaneyChatListAvatarSize}" Height="{DynamicResource LaneyChatListAvatarSize}" Margin="{DynamicResource LaneyChatListAvatarMargin3Row}" CornerRadius="{DynamicResource LaneyChatListAvatarCornerRadius}" VerticalAlignment="Top" Initials="{Binding DisplayInitials}" Background="{Binding DisplayAvatarSeed, Converter={StaticResource agc}}" Foreground="White" controls:ImageLoader.Image="{Binding DisplayAvatar}"/>
+        <ContentControl ContentTemplate="{Binding Online, Converter={StaticResource oic}}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="{DynamicResource LaneyChatListOnlineMargin3Row}"/>
+        <Grid Grid.Column="1" Margin="{DynamicResource LaneyChatListInfoMargin3Row}" RowDefinitions="Auto Auto Auto">
+          <Grid Height="{DynamicResource LaneyChatListFirstLineHeight}" ColumnDefinitions="* Auto">
+            <fb:FlexPanel Direction="Row" JustifyContent="FlexStart" Wrap="NoWrap" HorizontalAlignment="Left">
+              <TextBlock ClipToBounds="True" MaxLines="1" Classes="Default" Margin="0,1,0,0" FontWeight="Medium" FontSize="{DynamicResource LaneyChatListTitleFontSize}" LineHeight="{DynamicResource LaneyChatListTitleLineHeight}" Text="{Binding DisplayTitle}" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource VKTextPrimaryBrush}"/>
+              <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon16Verified}" Foreground="{DynamicResource LaneyAccentBrush}" IsVisible="{Binding IsVerified}" Margin="5,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+              <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon16Muted}" Foreground="{DynamicResource VKIconTertiaryBrush}" Margin="5,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" IsVisible="{Binding PushSettings.DisabledForever}"/>
+            </fb:FlexPanel>
+            <TextBlock Grid.Column="1" Classes="Subhead" Margin="10,2,12,0" FontWeight="Regular" FontSize="{DynamicResource LaneyChatListTimeFontSize}" LineHeight="{DynamicResource LaneyChatListTitleLineHeight}" Foreground="{DynamicResource LaneyTextSubtleBrush}" MaxLines="1" Text="{Binding LastMessage.SentTime, Converter={StaticResource dc}, ConverterParameter=t}"/>
+          </Grid>
+          <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,2,12,0">
+            <Border Height="18" CornerRadius="9" Padding="6,1" Background="{DynamicResource LaneyAccentSoftBrush}" IsVisible="{Binding IsFavoritesChat}">
+              <TextBlock FontSize="11" LineHeight="13" Foreground="{DynamicResource LaneyAccentBrush}" Text="избранное"/>
+            </Border>
+            <Border Height="18" CornerRadius="9" Padding="6,1" Margin="6,0,0,0" Background="{DynamicResource LaneyWarningSoftBrush}" IsVisible="{Binding IsArchived}">
+              <TextBlock FontSize="11" LineHeight="13" Foreground="{DynamicResource LaneyWarningBrush}" Text="архив"/>
+            </Border>
+            <Border Height="18" CornerRadius="9" Padding="6,1" Margin="6,0,0,0" Background="{DynamicResource LaneyMutedSurfaceBrush}" IsVisible="{Binding HasLocalTags}">
+              <TextBlock FontSize="11" LineHeight="13" Foreground="{DynamicResource LaneyTextMutedBrush}" Text="{Binding LocalTagsText}" TextTrimming="CharacterEllipsis" MaxWidth="190"/>
+            </Border>
+          </StackPanel>
+          <Grid Grid.Row="2" ColumnDefinitions="* Auto">
+            <TextBlock ClipToBounds="True" Classes="Subhead" Classes.MentionedPreview="{Binding HasMention}" FontWeight="Regular" FontSize="{DynamicResource LaneyChatListSubtitleFontSize}" LineHeight="{DynamicResource LaneyChatListSubtitleLineHeight}" Foreground="{DynamicResource LaneyTextMutedBrush}" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxLines="1" Inlines="{Binding LastMessage, Converter={StaticResource micc}}"/>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,0,12,0">
+              <Grid IsVisible="{Binding UnreadReactions, Converter={x:Static ObjectConverters.IsNotNull}}" Margin="8,0,0,0">
+                <Border Width="18" Height="18" CornerRadius="9" Background="{DynamicResource VKCounterPrimaryBackgroundBrush}">
+                  <vkui:VKIcon Margin="3" Id="{x:Static vkui:VKIconNames.Icon12Stars}" Foreground="{DynamicResource VKCounterPrimaryTextBrush}"/>
+                </Border>
+              </Grid>
+              <Grid IsVisible="{Binding !!UnreadMessagesCount}">
+                <Border Margin="8,0,0,0" Classes.Unmuted="{Binding !PushSettings.DisabledForever}" Classes.Muted="{Binding PushSettings.DisabledForever}" MinWidth="18" Height="18" CornerRadius="9">
+                  <TextBlock FontWeight="Medium" Margin="4,2,4,0" HorizontalAlignment="Center" FontSize="12" LineHeight="12" Text="{Binding UnreadMessagesCount}"/>
+                </Border>
+              </Grid>
+            </StackPanel>
+          </Grid>
+        </Grid>
+      </Grid>
+    </DataTemplate>
+
     <!-- Шаблон для элементов списка бесед (трёхстрочный) -->
     <DataTemplate x:Key="ChatItemTemplate3Row" x:DataType="vm:ChatViewModel">
-      <Grid Height="72" ColumnDefinitions="Auto *" Background="Transparent" ContextRequested="ChatContextRequested" PointerPressed="ChatPointerPressed" PointerReleased="ChatPointerReleased">
-        <vkui:Avatar Width="48" Height="48" Margin="12,6,0,6" VerticalAlignment="Top" Initials="{Binding Initials}" Background="{Binding PeerId, Converter={StaticResource agc}}" Foreground="White" controls:ImageLoader.Image="{Binding Avatar}"/>
-        <ContentControl ContentTemplate="{Binding Online, Converter={StaticResource oic}}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,44,2,0"/>
-        <StackPanel x:Name="Info" Grid.Column="1" Margin="12,6,0,0">
-          <Grid x:Name="FirstLine" Height="22" ColumnDefinitions="* Auto">
+      <Grid Height="{DynamicResource LaneyChatListItemHeight3Row}" ColumnDefinitions="Auto *" Background="Transparent" ContextRequested="ChatContextRequested" PointerPressed="ChatPointerPressed" PointerReleased="ChatPointerReleased">
+        <vkui:Avatar Width="{DynamicResource LaneyChatListAvatarSize}" Height="{DynamicResource LaneyChatListAvatarSize}" Margin="{DynamicResource LaneyChatListAvatarMargin3Row}" CornerRadius="{DynamicResource LaneyChatListAvatarCornerRadius}" VerticalAlignment="Top" Initials="{Binding DisplayInitials}" Background="{Binding DisplayAvatarSeed, Converter={StaticResource agc}}" Foreground="White" controls:ImageLoader.Image="{Binding DisplayAvatar}"/>
+        <ContentControl ContentTemplate="{Binding Online, Converter={StaticResource oic}}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="{DynamicResource LaneyChatListOnlineMargin3Row}"/>
+        <StackPanel x:Name="Info" Grid.Column="1" Margin="{DynamicResource LaneyChatListInfoMargin3Row}">
+          <Grid x:Name="FirstLine" Height="{DynamicResource LaneyChatListFirstLineHeight}" ColumnDefinitions="* Auto">
             <fb:FlexPanel x:Name="ChatNameContainer" Direction="Row" JustifyContent="FlexStart" Wrap="NoWrap" HorizontalAlignment="Left">
-              <TextBlock x:Name="ChatName" ClipToBounds="True" MaxLines="1" Classes="Default" Margin="0,1,0,0" FontWeight="Medium" Text="{Binding Title}" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource VKTextPrimaryBrush}"/>
-              <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon16Verified}" Foreground="{DynamicResource VKAccentBrush}" IsVisible="{Binding IsVerified}" Margin="5,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+              <TextBlock x:Name="ChatName" ClipToBounds="True" MaxLines="1" Classes="Default" Margin="0,1,0,0" FontWeight="Medium" FontSize="{DynamicResource LaneyChatListTitleFontSize}" LineHeight="{DynamicResource LaneyChatListTitleLineHeight}" Text="{Binding DisplayTitle}" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource VKTextPrimaryBrush}"/>
+              <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon16Verified}" Foreground="{DynamicResource LaneyAccentBrush}" IsVisible="{Binding IsVerified}" Margin="5,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center"/>
               <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon16MessageCross}" Foreground="{DynamicResource VKIconTertiaryBrush}" Margin="5,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" IsVisible="{Binding ChatSettings.WritingDisabled.Value, FallbackValue=False}"/>
               <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon16Muted}" Foreground="{DynamicResource VKIconTertiaryBrush}" Margin="5,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" IsVisible="{Binding PushSettings.DisabledForever}"/>
             </fb:FlexPanel>
@@ -86,7 +207,7 @@
               <Border x:Name="ReadIndicator" IsVisible="{Binding LastMessage, Converter={StaticResource rivc}}" VerticalAlignment="Top" Margin="0,2,8,0">
                 <vkui:VKIcon Id="{Binding LastMessage.State, Converter={StaticResource ric}}"/>
               </Border>
-              <TextBlock x:Name="LastMessageTime" Classes="Subhead" Margin="0,2" FontWeight="Regular" Foreground="{DynamicResource VKTextTertiaryBrush}" MaxLines="1" Text="{Binding LastMessage.SentTime, Converter={StaticResource dc}, ConverterParameter=t}"/>
+              <TextBlock x:Name="LastMessageTime" Classes="Subhead" Margin="0,2" FontWeight="Regular" FontSize="{DynamicResource LaneyChatListTimeFontSize}" LineHeight="{DynamicResource LaneyChatListTitleLineHeight}" Foreground="{DynamicResource LaneyTextSubtleBrush}" MaxLines="1" Text="{Binding LastMessage.SentTime, Converter={StaticResource dc}, ConverterParameter=t}"/>
             </StackPanel>
           </Grid>
 
@@ -96,10 +217,10 @@
                 <Setter Property="Foreground" Value="{DynamicResource VKTextPrimaryBrush}"/>
               </Style>
             </Grid.Styles>
-            <TextBlock x:Name="LastMessage" ClipToBounds="True" Classes="Subhead" FontWeight="Regular" HorizontalAlignment="Left" MinHeight="18" Margin="0,0,12,0" IsVisible="{Binding ActivityStatus, Converter={x:Static StringConverters.IsNullOrEmpty}}" Foreground="{DynamicResource VKTextSubheadBrush}" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxLines="2" Inlines="{Binding LastMessage, Converter={StaticResource micc}}"/>
-            <TextBlock x:Name="ActivityStatusText" ClipToBounds="True" Classes="Subhead" FontWeight="Regular" HorizontalAlignment="Left" MinHeight="18" IsVisible="{Binding ActivityStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" Foreground="{DynamicResource VKAccentBrush}" TextWrapping="Wrap" Text="{Binding ActivityStatus}" MaxLines="2" TextTrimming="CharacterEllipsis"/>
+            <TextBlock x:Name="LastMessage" ClipToBounds="True" Classes="Subhead" Classes.MentionedPreview="{Binding HasMention}" FontWeight="Regular" FontSize="{DynamicResource LaneyChatListSubtitleFontSize}" LineHeight="{DynamicResource LaneyChatListSubtitleLineHeight}" HorizontalAlignment="Left" MinHeight="{DynamicResource LaneyChatListSecondLineHeight}" Margin="0,0,12,0" IsVisible="{Binding ActivityStatus, Converter={x:Static StringConverters.IsNullOrEmpty}}" Foreground="{DynamicResource LaneyTextMutedBrush}" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxLines="2" Inlines="{Binding LastMessage, Converter={StaticResource micc}}"/>
+            <TextBlock x:Name="ActivityStatusText" ClipToBounds="True" Classes="Subhead" FontWeight="Regular" FontSize="{DynamicResource LaneyChatListSubtitleFontSize}" LineHeight="{DynamicResource LaneyChatListSubtitleLineHeight}" HorizontalAlignment="Left" MinHeight="{DynamicResource LaneyChatListSecondLineHeight}" IsVisible="{Binding ActivityStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" Foreground="{DynamicResource LaneyAccentBrush}" TextWrapping="Wrap" Text="{Binding DisplayActivityStatus}" MaxLines="2" TextTrimming="CharacterEllipsis"/>
 
-            <Path x:Name="PinIndicator" Grid.Column="1" IsVisible="{Binding IsPinned}" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="1,1,13,1" Fill="{DynamicResource VKIconSecondaryAlphaBrush}" Data="{StaticResource Icon16Pin}"/>
+            <Path x:Name="PinIndicator" Grid.Column="1" IsVisible="{Binding IsPinned}" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="1,1,13,1" Fill="{DynamicResource LaneyTextSubtleBrush}" Data="{StaticResource Icon16Pin}"/>
             <StackPanel x:Name="Indicators" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,0,12,0">
               <Grid x:Name="UnreadReactionsIndicatorContainer" IsVisible="{Binding UnreadReactions, Converter={x:Static ObjectConverters.IsNotNull}}" Margin="8,0,0,0">
                 <Border x:Name="UnreadReactionsIndicator" Width="18" Height="18" CornerRadius="9" Background="{DynamicResource VKCounterPrimaryBackgroundBrush}">
@@ -124,11 +245,17 @@
     </DataTemplate>
   </vkui:Page.Resources>
 
-  <Grid RowDefinitions="Auto *">
-    <vkui:PanelHeader VerticalAlignment="Top" Content="{x:Static i18n:Resources.chats}">
+  <Grid RowDefinitions="Auto Auto *" Background="{DynamicResource LaneySurfaceSidebarBrush}">
+    <Grid.Styles>
+      <Style Selector="TextBlock.MentionedPreview">
+        <Setter Property="Foreground" Value="{DynamicResource LaneyAccentBrush}"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+      </Style>
+    </Grid.Styles>
+    <vkui:PanelHeader VerticalAlignment="Top" Content="{x:Static i18n:Resources.chats}" Background="{DynamicResource LaneySurfaceSidebarBrush}" BorderBrush="{DynamicResource LaneyBorderSubtleBrush}">
       <vkui:PanelHeader.LeftButtons>
         <Button x:Name="AvatarButton">
-          <vkui:Avatar Width="32" Height="32" controls:ImageLoader.Image="{Binding Avatar}"/>
+          <vkui:Avatar Width="32" Height="32" Initials="{Binding DisplayInitials}" Background="{Binding DisplayAvatarSeed, Converter={StaticResource agc}}" Foreground="White" controls:ImageLoader.Image="{Binding DisplayAvatar}"/>
         </Button>
       </vkui:PanelHeader.LeftButtons>
       <vkui:PanelHeader.RightButtons>
@@ -141,8 +268,23 @@
       </vkui:PanelHeader.RightButtons>
     </vkui:PanelHeader>
 
-    <Grid x:Name="ChatsListRoot" Grid.Row="1">
+    <Border Grid.Row="1" Padding="12,8" BorderBrush="{DynamicResource LaneyBorderSubtleBrush}" BorderThickness="0,0,0,1">
+      <ComboBox x:Name="ChatsFilterBox" Classes="Alternate" Width="240" HorizontalAlignment="Left" MaxDropDownHeight="280" ItemsSource="{Binding ImViewModel.ChatFilters}" SelectedItem="{Binding ImViewModel.CurrentChatFilter, Mode=TwoWay}">
+        <ComboBox.ItemTemplate>
+          <DataTemplate x:DataType="mdl:TwoStringTuple">
+            <TextBlock Text="{Binding Item2}"/>
+          </DataTemplate>
+        </ComboBox.ItemTemplate>
+      </ComboBox>
+    </Border>
+
+    <Grid x:Name="ChatsListRoot" Grid.Row="2" Background="{DynamicResource LaneySurfaceSidebarBrush}">
       <ListBox x:Name="ChatsList" Classes="FixMargin" SelectionMode="Toggle" AutoScrollToSelectedItem="True" ItemsSource="{Binding ImViewModel.SortedChats}">
+        <ListBox.ItemsPanel>
+          <ItemsPanelTemplate>
+            <VirtualizingStackPanel/>
+          </ItemsPanelTemplate>
+        </ListBox.ItemsPanel>
         <ListBox.Styles>
           <Style Selector="ListBoxItem">
             <Setter Property="Padding" Value="0"/>
@@ -161,6 +303,8 @@
             <Button Classes="Primary" Content="{Binding Placeholder.ActionButton, Mode=OneWay}" Command="{Binding Placeholder.ActionButtonFunc, Mode=OneWay}"/>
           </vkui:Placeholder.Action>
         </vkui:Placeholder>
+        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" Classes="Subhead"
+                   Foreground="{DynamicResource LaneyTextMutedBrush}" Text="{Binding FilterEmptyText}" IsVisible="{Binding ShowFilterEmpty}"/>
       </Grid>
     </Grid>
   </Grid>

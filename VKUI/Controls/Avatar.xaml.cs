@@ -1,7 +1,6 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
-using Avalonia.Controls.Shapes;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using System;
@@ -33,13 +32,13 @@ namespace VKUI.Controls {
 
         #region Template elements
 
-        Ellipse ImageEllipse;
+        Border ImageBorder;
 
         #endregion
 
         protected override void OnApplyTemplate(TemplateAppliedEventArgs e) {
             base.OnApplyTemplate(e);
-            ImageEllipse = e.NameScope.Find<Ellipse>(nameof(ImageEllipse));
+            ImageBorder = e.NameScope.Find<Border>(nameof(ImageBorder));
             SetImage();
         }
 
@@ -54,18 +53,18 @@ namespace VKUI.Controls {
         }
 
         private void SetImage() {
-            if (ImageEllipse == null) return;
+            if (ImageBorder == null) return;
             double size = Math.Min(Bounds.Width, Bounds.Height);
-            ImageEllipse.Width = size;
-            ImageEllipse.Height = size;
+            ImageBorder.Width = size;
+            ImageBorder.Height = size;
 
             if (Image == null) {
-                ImageEllipse.Fill = null;
+                ImageBorder.Background = null;
                 return;
             }
 
             try {
-                ImageEllipse.Fill = new ImageBrush(Image);
+                ImageBorder.Background = new ImageBrush(Image);
             } catch (Exception ex) {
                 Debug.WriteLine($"Error while drawing in Avatar! 0x{ex.HResult.ToString("x8")}");
             }

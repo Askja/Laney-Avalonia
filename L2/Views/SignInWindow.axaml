@@ -10,8 +10,15 @@
         x:Class="ELOR.Laney.Views.SignInWindow"
         Width="420" Height="540"
         CanResize="False"
+        WindowDecorations="None"
         WindowStartupLocation="CenterScreen"
         Icon="avares://laney/Assets/Logo/icon.ico"
+        Background="{DynamicResource VKBackgroundPageBrush}"
         Title="Laney">
-  <vkui:NavigationControl x:Name="AuthFlow"/>
+  <Border BorderBrush="{DynamicResource LaneyBorderSubtleBrush}" BorderThickness="1" Background="{DynamicResource VKBackgroundPageBrush}">
+    <Grid RowDefinitions="Auto *">
+      <vkui:WindowTitleBar x:Name="TitleBar" CanShowTitle="True" CanMove="True"/>
+      <vkui:NavigationControl x:Name="AuthFlow" Grid.Row="1"/>
+    </Grid>
+  </Border>
 </Window>

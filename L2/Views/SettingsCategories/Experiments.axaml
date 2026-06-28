@@ -1,0 +1,100 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vkui="using:VKUI.Controls"
+             xmlns:vm="using:ELOR.Laney.ViewModels.SettingsCategories"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="ELOR.Laney.Views.SettingsCategories.Experiments" x:DataType="vm:ExperimentsViewModel">
+  <ScrollViewer>
+    <StackPanel>
+      <Border Classes="Group" VerticalAlignment="Top">
+        <StackPanel>
+          <Grid Classes="GroupHeader">
+            <TextBlock Text="Feature flags"/>
+          </Grid>
+          <ItemsControl ItemsSource="{Binding FeatureFlags}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:FeatureFlagOption">
+                <vkui:Cell Header="{Binding Title}" Subtitle="{Binding Subtitle}">
+                  <vkui:Cell.After>
+                    <ToggleSwitch IsChecked="{Binding IsEnabled, Mode=TwoWay}"/>
+                  </vkui:Cell.After>
+                </vkui:Cell>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="Group" VerticalAlignment="Top">
+        <StackPanel>
+          <Grid Classes="GroupHeader">
+            <TextBlock Text="Режимы"/>
+          </Grid>
+          <vkui:Cell Header="Streamer mode" Subtitle="Маскировать чувствительные данные на экране.">
+            <vkui:Cell.After>
+              <ToggleSwitch IsChecked="{Binding StreamerMode, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Dev items в меню" Subtitle="Показывать отладочные команды в context/action menu.">
+            <vkui:Cell.After>
+              <ToggleSwitch IsChecked="{Binding ShowDevItemsInContextMenus, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Не отмечать прочитанным" Subtitle="Debug-переключатель поведения чтения.">
+            <vkui:Cell.After>
+              <ToggleSwitch IsChecked="{Binding DisableMarkingMessagesAsRead, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="Group" VerticalAlignment="Top">
+        <StackPanel>
+          <Grid Classes="GroupHeader">
+            <TextBlock Text="Оверлеи"/>
+          </Grid>
+          <vkui:Cell Header="FPS">
+            <vkui:Cell.After>
+              <ToggleSwitch IsChecked="{Binding ShowFPS, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Chat counters">
+            <vkui:Cell.After>
+              <ToggleSwitch IsChecked="{Binding ShowDebugCounters, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Debug в галерее">
+            <vkui:Cell.After>
+              <ToggleSwitch IsChecked="{Binding ShowDebugInfoInGallery, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="Group" VerticalAlignment="Top">
+        <StackPanel>
+          <Grid Classes="GroupHeader">
+            <TextBlock Text="Логи"/>
+          </Grid>
+          <vkui:Cell Header="Core logs">
+            <vkui:Cell.After>
+              <ToggleSwitch IsChecked="{Binding EnableLogs, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="BitmapManager logs">
+            <vkui:Cell.After>
+              <ToggleSwitch IsChecked="{Binding BitmapManagerLogs, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Message rendering logs">
+            <vkui:Cell.After>
+              <ToggleSwitch IsChecked="{Binding MessageRenderingLogs, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

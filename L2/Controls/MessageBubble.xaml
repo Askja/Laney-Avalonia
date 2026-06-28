@@ -11,8 +11,13 @@
     <!-- Set Defaults -->
     <Setter Property="Template">
       <ControlTemplate>
-        <Grid x:Name="MessageUIRoot" ColumnDefinitions="Auto *" Margin="12,4" MaxWidth="984">
+        <Grid x:Name="MessageUIRoot" ColumnDefinitions="Auto *" Margin="{DynamicResource LaneyMessageOuterMargin}" MaxWidth="984">
           <Grid.Styles>
+            <Style Selector="Border#BubbleBackground">
+              <Setter Property="BorderBrush" Value="{DynamicResource LaneyMessageBubbleBorderBrush}"/>
+              <Setter Property="BorderThickness" Value="{DynamicResource LaneyMessageBubbleBorderThickness}"/>
+            </Style>
+
             <Style Selector="Border.IncomingMessageBackground">
               <Setter Property="Background" Value="{DynamicResource MessageBubbleDefaultIncomingBrush}"/>
             </Style>
@@ -31,6 +36,21 @@
               <Setter Property="BorderThickness" Value="1"/>
             </Style>
 
+            <Style Selector="Border.MentionedMeMessageBackground">
+              <Setter Property="BorderBrush" Value="{DynamicResource VKAccentBrush}"/>
+              <Setter Property="BorderThickness" Value="1.5"/>
+            </Style>
+
+            <Style Selector="Border.FavoriteMentionMessageBackground">
+              <Setter Property="BorderBrush" Value="#A78BFA"/>
+              <Setter Property="BorderThickness" Value="1.5"/>
+            </Style>
+
+            <Style Selector="Border.KeywordMessageBackground">
+              <Setter Property="BorderBrush" Value="#F59E0B"/>
+              <Setter Property="BorderThickness" Value="1.5"/>
+            </Style>
+
             <!-- Colors for controls in bubble -->
             <Style Selector="atch|AttachmentsContainer.Incoming atch|BasicAttachment /template/ vkui|VKIcon#BAIcon">
               <Setter Property="Foreground" Value="{DynamicResource MessageBubbleDefaultIncomingBrush}"/>
@@ -43,6 +63,13 @@
             </Style>
             <Style Selector="atch|AttachmentsContainer.Outgoing atch|ExtendedAttachment /template/ TextBlock#EASub">
               <Setter Property="Foreground" Value="{DynamicResource MessageBubbleOutgoingTextSecondaryBrush}"/>
+            </Style>
+
+            <Style Selector="Grid.Outgoing ctb|CTextBlock#MessageText">
+              <Setter Property="Foreground" Value="{DynamicResource MessageBubbleOutgoingTextPrimaryBrush}"/>
+            </Style>
+            <Style Selector="Grid.Outgoing SelectableTextBlock#SelectableMessageText">
+              <Setter Property="Foreground" Value="{DynamicResource MessageBubbleOutgoingTextPrimaryBrush}"/>
             </Style>
 
             <Style Selector="Button.ReactionChip TextBlock">
@@ -76,6 +103,13 @@
               <Setter Property="Foreground" Value="{DynamicResource VKTextSecondaryBrush}"/>
             </Style>
 
+            <Style Selector="Border.DefaultIndicator.OutgoingIndicator > StackPanel#IndicatorStack > TextBlock">
+              <Setter Property="Foreground" Value="{DynamicResource MessageBubbleOutgoingTextSecondaryBrush}"/>
+            </Style>
+
+            <Style Selector="Border.DefaultIndicator.OutgoingIndicator > StackPanel#IndicatorStack > vkui|VKIcon">
+              <Setter Property="Foreground" Value="{DynamicResource MessageBubbleOutgoingTextSecondaryBrush}"/>
+            </Style>
 
             <Style Selector="Border.ImageIndicator">
               <Setter Property="Background" Value="#59000000"/>
@@ -103,23 +137,34 @@
               <Setter Property="Foreground" Value="{DynamicResource GiftMessageIndicatorForegroundBrush}"/>
             </Style>
 
+            <Style Selector="TextBlock#LocalReactionIndicator">
+              <Setter Property="Foreground" Value="#F59E0B"/>
+            </Style>
+
             <!-- Message text -->
             <Style Selector="ctb|CTextBlock.Empty">
               <Setter Property="Foreground" Value="{DynamicResource VKTextSecondaryBrush}"/>
             </Style>
+            <Style Selector="SelectableTextBlock.Empty">
+              <Setter Property="Foreground" Value="{DynamicResource VKTextSecondaryBrush}"/>
+            </Style>
+            <Style Selector="Grid.Outgoing ctb|CTextBlock.Empty">
+              <Setter Property="Foreground" Value="{DynamicResource MessageBubbleOutgoingTextSecondaryBrush}"/>
+            </Style>
+            <Style Selector="Grid.Outgoing SelectableTextBlock.Empty">
+              <Setter Property="Foreground" Value="{DynamicResource MessageBubbleOutgoingTextSecondaryBrush}"/>
+            </Style>
           </Grid.Styles>
-        <Button x:Name="AvatarButton" Classes="Tertiary" Padding="0" VerticalAlignment="Bottom" Margin="0,0,8,2" Width="32" Height="32">
-            <vkui:Avatar x:Name="SenderAvatar" Foreground="White" Width="32" Height="32"
-                       Initials="{Binding Message.SenderName, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource ic}}"
-                       Background="{Binding Message.SenderId, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource agc}}"
-                       controls:ImageLoader.Image="{Binding Message.SenderAvatar, RelativeSource={RelativeSource TemplatedParent}}"/>
+        <Button x:Name="AvatarButton" Classes="Tertiary" Padding="0" VerticalAlignment="Bottom" Margin="0,0,8,2" Width="{DynamicResource LaneyMessageAvatarSize}" Height="{DynamicResource LaneyMessageAvatarSize}">
+            <vkui:Avatar x:Name="SenderAvatar" Foreground="White" Width="{DynamicResource LaneyMessageAvatarSize}" Height="{DynamicResource LaneyMessageAvatarSize}"
+                       Initials="{Binding Message.DisplaySenderName, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource ic}}"
+                       Background="{Binding Message.DisplaySenderId, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource agc}}"
+                       controls:ImageLoader.Image="{Binding Message.DisplaySenderAvatar, RelativeSource={RelativeSource TemplatedParent}}"/>
           </Button>
-          <Grid x:Name="BubbleRoot" RowDefinitions="* Auto Auto" Grid.Column="1" MinHeight="36" MinWidth="48" MaxWidth="576" HorizontalAlignment="Left" ToolTip.Tip="{Binding Message.UIType, RelativeSource={RelativeSource TemplatedParent}}">
-            <Border x:Name="BubbleBackground" Grid.RowSpan="3" CornerRadius="18"/>
+          <Grid x:Name="BubbleRoot" RowDefinitions="* Auto Auto" Grid.Column="1" MinHeight="36" MinWidth="48" MaxWidth="{DynamicResource LaneyMessageBubbleMaxWidth}" HorizontalAlignment="Left" ToolTip.Tip="{Binding Message.UIType, RelativeSource={RelativeSource TemplatedParent}}">
+            <Border x:Name="BubbleBackground" Grid.RowSpan="3" Opacity="{DynamicResource LaneyMessageBubbleBackgroundOpacity}" CornerRadius="{DynamicResource LaneyMessageBubbleCornerRadius}"/>
             <StackPanel x:Name="MessageContent">
-              <Border x:Name="SenderNameWrap" Margin="12,7,12,0" IsVisible="{Binding Message.IsSenderNameVisible, RelativeSource={RelativeSource TemplatedParent}, Mode=OneWay}">
-                <TextBlock x:Name="SenderName" Classes="Caption1" FontWeight="Medium" Foreground="{DynamicResource VKImTextNameBrush}" Text="{Binding Message.SenderName, RelativeSource={RelativeSource TemplatedParent}}"/>
-              </Border>
+              <TextBlock x:Name="SenderName" Classes="Caption1" Margin="12,7,12,0" FontWeight="Medium" Foreground="{DynamicResource VKImTextNameBrush}" Text="{Binding Message.DisplaySenderName, RelativeSource={RelativeSource TemplatedParent}}"/>
               <Button x:Name="ReplyMessageButton" Classes="Tertiary" Margin="12,6,12,4" Padding="0" CornerRadius="0" IsVisible="{Binding Message.ReplyMessage, RelativeSource={RelativeSource TemplatedParent}, Converter={x:Static ObjectConverters.IsNotNull}}">
                 <DockPanel>
                   <Rectangle Fill="{DynamicResource VKImTextNameBrush}" Width="2" RadiusX="1" RadiusY="1" Margin="0,0,6,0" VerticalAlignment="Stretch"/>
@@ -127,7 +172,10 @@
                 </DockPanel>
               </Button>
               <atch:GiftUI x:Name="Gift" Margin="4,4,4,0"/>
-              <ctb:CTextBlock x:Name="MessageText" Margin="12,0,12,8" FontSize="15" LineHeight="20" TextWrapping="Wrap" Foreground="{DynamicResource VKTextPrimaryBrush}" IsVisible="{Binding Content.Count, RelativeSource={RelativeSource Self}, Converter={StaticResource nzc}, ConverterParameter=0}"/>
+              <Grid x:Name="MessageTextHost" Margin="{DynamicResource LaneyMessageTextHostMargin}">
+                <ctb:CTextBlock x:Name="MessageText" FontSize="{DynamicResource LaneyMessageTextFontSize}" LineHeight="{DynamicResource LaneyMessageTextLineHeight}" TextWrapping="Wrap" Foreground="{DynamicResource VKTextPrimaryBrush}" IsVisible="False"/>
+                <SelectableTextBlock x:Name="SelectableMessageText" FontSize="{DynamicResource LaneyMessageTextFontSize}" LineHeight="{DynamicResource LaneyMessageTextLineHeight}" TextWrapping="Wrap" Foreground="{DynamicResource VKTextPrimaryBrush}"/>
+              </Grid>
               <atch:AttachmentsContainer x:Name="MessageAttachments" IsVisible="{Binding Message.Attachments.Count, RelativeSource={RelativeSource TemplatedParent}}"/>
               <Rectangle x:Name="Map" Margin="4,0,4,4" IsVisible="{Binding Message.Location, RelativeSource={RelativeSource TemplatedParent}, Converter={x:Static ObjectConverters.IsNotNull}}" RadiusX="14" RadiusY="14"/>
               <Border x:Name="ForwardedMessagesContainer" Margin="12,0,12,22" IsVisible="False" BorderBrush="{DynamicResource VKImForwardLineTintBrush}">
@@ -138,11 +186,17 @@
               <StackPanel x:Name="IndicatorStack" Orientation="Horizontal" Margin="6,3">
                 <vkui:VKIcon x:Name="ImportantIndicator" Id="Icon12Favorite" Width="12" Height="12" Margin="0,0,4,0" IsVisible="{Binding Message.IsImportant, RelativeSource={RelativeSource TemplatedParent}}"/>
                 <TextBlock x:Name="EditedIndicator" Classes="Caption3" Text="{x:Static i18n:Resources.edited_indicator}" Margin="0,0,4,0" IsVisible="{Binding Message.EditTime, RelativeSource={RelativeSource TemplatedParent}, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+                <TextBlock x:Name="LocalReactionIndicator" Classes="Caption3" FontWeight="SemiBold" Margin="0,0,5,0" IsVisible="False"/>
                 <TextBlock x:Name="TimeIndicator" Classes="Caption3"/>
                 <vkui:VKIcon x:Name="StateIndicator" Id="Icon16CheckDoubleOutline" Width="12" Height="12" Margin="4,0,0,0"/>
               </StackPanel>
             </Border>
-            <controls:BotKeyboardUI x:Name="BotKeyboard" Grid.Row="1" Margin="12,4,12,12" MinWidth="296" Keyboard="{Binding Message.Keyboard, RelativeSource={RelativeSource TemplatedParent}}" IsVisible="{Binding Message.Keyboard, Mode=OneWay, RelativeSource={RelativeSource TemplatedParent}, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+            <controls:BotKeyboardUI x:Name="BotKeyboard" Grid.Row="1" Margin="12,4,12,12" MinWidth="296"
+                                    Keyboard="{Binding Message.Keyboard, RelativeSource={RelativeSource TemplatedParent}}"
+                                    PeerId="{Binding Message.PeerId, RelativeSource={RelativeSource TemplatedParent}}"
+                                    MessageId="{Binding Message.GlobalId, RelativeSource={RelativeSource TemplatedParent}}"
+                                    AuthorId="{Binding Message.SenderId, RelativeSource={RelativeSource TemplatedParent}}"
+                                    IsVisible="{Binding Message.Keyboard, Mode=OneWay, RelativeSource={RelativeSource TemplatedParent}, Converter={x:Static ObjectConverters.IsNotNull}}"/>
             <Border x:Name="ReactionsContainer" Grid.Row="2" Margin="12,0,12,8" HorizontalAlignment="Left" Tag="{Binding Message.SelectedReactionId, RelativeSource={RelativeSource TemplatedParent}}" IsVisible="{Binding Message.Reactions.Count, Mode=OneWay, RelativeSource={RelativeSource TemplatedParent}}">
               <ItemsControl x:Name="ReactionsList" HorizontalAlignment="Left" ItemsSource="{Binding Message.Reactions, RelativeSource={RelativeSource TemplatedParent}}">
                 <ItemsControl.ItemsPanel>
@@ -161,9 +215,7 @@
                       </Classes.Selected>
                       <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <Image Width="26" Height="26" controls:ImageLoader.SvgSource="{Binding ReactionId, Converter={StaticResource rec}}"/>
-                        <Grid MinWidth="16" Height="22">
-                          <TextBlock FontSize="13" LineHeight="16" Margin="4,3,2,3" TextAlignment="Center" Text="{Binding Count}"/>
-                        </Grid>
+                        <TextBlock MinWidth="16" Height="22" FontSize="13" LineHeight="16" Margin="4,3,2,3" TextAlignment="Center" Text="{Binding Count}"/>
                       </StackPanel>
                     </Button>
                   </DataTemplate>

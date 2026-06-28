@@ -46,6 +46,17 @@
         <TextBlock x:Name="OwnerName" FontWeight="Medium"/>
         <TextBlock x:Name="Date" Classes="Subhead" Margin="0,2,0,0" Foreground="{DynamicResource VKTextSecondaryBrush}"/>
       </StackPanel>
+      <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Spacing="6">
+        <Button x:Name="OpenOriginalButton" Classes="Tertiary" Width="36" Height="36" Padding="0" CornerRadius="18" ToolTip.Tip="Открыть оригинал" Click="OpenOriginal_Click">
+          <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon20LinkCircleOutline}"/>
+        </Button>
+        <Button x:Name="CopyLinkButton" Classes="Tertiary" Width="36" Height="36" Padding="0" CornerRadius="18" ToolTip.Tip="Скопировать ссылку" Click="CopyLink_Click">
+          <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon20ShareOutline}"/>
+        </Button>
+        <Button x:Name="SaveFileButton" Classes="Tertiary" Width="36" Height="36" Padding="0" CornerRadius="18" ToolTip.Tip="Сохранить файл" Click="SaveFile_Click">
+          <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon20DocumentOutline}"/>
+        </Button>
+      </StackPanel>
     </Grid>
   
     <Border x:Name="dbg" IsVisible="False" Classes="Debug" Background="#7f000000" MinWidth="180" Grid.RowSpan="4" VerticalAlignment="Top" HorizontalAlignment="Left">

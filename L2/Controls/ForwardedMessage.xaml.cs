@@ -128,11 +128,12 @@ namespace ELOR.Laney.Controls {
                 ReplyMessageButton.IsVisible = false;
             }
 
-            TextParser.SetText(message.Text, MessageText, OnLinkClicked);
+            TextParser.SetText(message.Text, MessageText, OnLinkClicked, message.PeerId);
             MessageText.IsVisible = !String.IsNullOrEmpty(message.Text);
 
-            Attachments.IsVisible = message.Attachments.Count > 0;
-            if (message.Attachments.Count > 0) {
+            bool hasAttachments = message.Attachments?.Count > 0;
+            Attachments.IsVisible = hasAttachments;
+            if (hasAttachments) {
                 Attachments.Width = Width - Attachments.Margin.Left;
                 Attachments.Gift = message.Attachments?.SingleOrDefault(a => a.Gift != null)?.Gift;
                 Attachments.Owner = CacheManager.GetNameOnly(message.FromId);
@@ -144,6 +145,7 @@ namespace ELOR.Laney.Controls {
             if (message.ForwardedMessages?.Count > 0) {
                 int msgsCount = message.ForwardedMessages.Count;
                 var fmsg = message.ForwardedMessages.FirstOrDefault();
+                if (fmsg == null) return;
 
                 var fmsgData = CacheManager.GetNameAndAvatar(fmsg.FromId);
                 string fmsgAuthor = String.Join(" ", new[] { fmsgData.Item1, fmsgData.Item2 });

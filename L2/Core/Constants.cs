@@ -1,7 +1,7 @@
 ﻿namespace ELOR.Laney.Core {
     public static class Constants {
         public const string DefaultLang = "ru-RU";
-        public const int DefaultTheme = 0;
+        public const int DefaultTheme = 2;
         public const int MessagesCount = 40;
         public const int MaxCachedChatsCount = 4;
         public const int DefaultVisibleMessagesCount = 250;
@@ -18,6 +18,8 @@
         public const int PhotoUploadCommand = 0;
         public const int VideoUploadCommand = 1;
         public const int FileUploadCommand = 2;
+        public const int GraffitiUploadCommand = 3;
+        public const int AudioMessageUploadCommand = 4;
 
         // For chat attachments (peer profile)
         public const int AttachmentsCountPerRequest = 60;

@@ -1,6 +1,7 @@
 ﻿using Avalonia;
 using Avalonia.Controls.Documents;
 using Avalonia.Data.Converters;
+using ELOR.Laney.Core;
 using ELOR.Laney.Helpers;
 using ELOR.Laney.ViewModels.Controls;
 using System;
@@ -24,6 +25,13 @@ namespace ELOR.Laney.Converters {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture) {
             InlineCollection ic = new InlineCollection();
             if (value != null && value is MessageViewModel msg) {
+                if (Settings.StreamerMode) {
+                    ic.Add(new Run {
+                        Text = PrivacyMask.HiddenMessage
+                    });
+                    return ic;
+                }
+
                 string sender = VKAPIHelper.GetSenderNameShort(msg);
                 string text = msg.ToString();
 

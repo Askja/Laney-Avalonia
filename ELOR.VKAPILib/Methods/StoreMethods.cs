@@ -14,6 +14,15 @@ namespace ELOR.VKAPILib.Methods {
             return await API.CallMethodAsync<StoreProductsList>("store.getProducts", parameters);
         }
 
+        public async Task<StoreProduct> GetStockItemByNameAsync(string name, bool extended = true) {
+            Dictionary<string, string> parameters = new Dictionary<string, string> {
+                { "type", "stickers" },
+                { "name", name }
+            };
+            if (extended) parameters.Add("extended", "1");
+            return await API.CallMethodAsync<StoreProduct>("store.getStockItemByName", parameters);
+        }
+
         public async Task<StickersKeywordsResponse> GetStickersKeywordsAsync(int chunk, string hash, bool allProducts) {
             Dictionary<string, string> parameters = new Dictionary<string, string> {
                 { "aliases", "1" },

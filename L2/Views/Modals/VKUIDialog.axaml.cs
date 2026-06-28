@@ -11,7 +11,7 @@ namespace ELOR.Laney.Views.Modals {
         string[] buttons;
         int primaryButton = 0;
 
-        public static StyledProperty<object> DialogContentProperty = StyledProperty<object>.Register<VKUIDialog, object>(nameof(DialogContent));
+        public static readonly StyledProperty<object> DialogContentProperty = StyledProperty<object>.Register<VKUIDialog, object>(nameof(DialogContent));
 
         public object DialogContent { get { return GetValue(DialogContentProperty); } set { SetValue(DialogContentProperty, value); CheckContent(); } }
 

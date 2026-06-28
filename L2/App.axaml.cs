@@ -36,6 +36,7 @@ namespace ELOR.Laney {
 
             ActualThemeVariantChanged += App_ActualThemeVariantChanged;
             ChangeTheme(Settings.AppTheme);
+            AppearanceManager.ApplyAppearanceSettings();
             Settings.SettingChanged += Settings_SettingChanged;
         }
 
@@ -77,10 +78,7 @@ namespace ELOR.Laney {
                     } else {
                         try {
                             long uid = Settings.Get<long>(Settings.VK_USER_ID);
-                            string token = Settings.Get<string>(Settings.VK_TOKEN);
-                            string nonce = Settings.Get<string>(Settings.VK_TOKEN + "1");
-                            string tag = Settings.Get<string>(Settings.VK_TOKEN + "2");
-                            string dt = Encryption.Decrypt(AssetsManager.BinaryPayload.Skip(576).Take(32).OrderDescending().ToArray(), token, nonce, tag);
+                            string dt = Settings.GetVkAccessToken();
                             if (uid > 0 && !String.IsNullOrEmpty(dt)) {
                                 Log.Information($"Authorized user: {uid}");
                                 VKSession.StartUserSession(uid, dt);
@@ -111,6 +109,7 @@ namespace ELOR.Laney {
         }
 
         private void Prepare() {
+            ApplyPerfOverrides();
             Debug.WriteLine("Getting and loading language...");
             string lang = Settings.Get(Settings.LANGUAGE, Constants.DefaultLang);
             Localizer.LoadLanguage(lang);
@@ -126,6 +125,20 @@ namespace ELOR.Laney {
 #endif
         }
 
+        private static void ApplyPerfOverrides() {
+            string animationMode = GetCmdLineValue("perf-sticker-animation");
+            if (!String.IsNullOrWhiteSpace(animationMode) && Enum.TryParse(animationMode, true, out StickerAnimationMode parsedMode)) {
+                Settings.StickerAnimation = parsedMode;
+                Log.Information("Perf override: sticker animation mode = {Mode}", parsedMode);
+            }
+
+            string imageCacheMb = GetCmdLineValue("perf-image-cache-mb");
+            if (Int32.TryParse(imageCacheMb, out int parsedCacheMb) && parsedCacheMb > 0) {
+                Settings.ImageCacheRamLimitMb = parsedCacheMb;
+                Log.Information("Perf override: image cache RAM limit = {LimitMb} Mb", Settings.ImageCacheRamLimitMb);
+            }
+        }
+
         private static void UpdateTrayIcon() {
             TrayIcons icons = Application.Current.GetValue(TrayIcon.IconsProperty);
             if (icons != null && icons.Count > 0) {
@@ -139,6 +152,7 @@ namespace ELOR.Laney {
         public List<Action<ThemeVariant>> ThemeChangedActions = new List<Action<ThemeVariant>>();
 
         private void App_ActualThemeVariantChanged(object sender, EventArgs e) {
+            AppearanceManager.ApplyAppearanceSettings();
             foreach (var action in CollectionsMarshal.AsSpan(_current.ThemeChangedActions)) {
                 action?.Invoke(_current.ActualThemeVariant);
             }
@@ -178,6 +192,22 @@ namespace ELOR.Laney {
             switch (key) {
                 case Settings.THEME:
                     ChangeTheme((int)value);
+                    AppearanceManager.ApplyAppearanceSettings();
+                    break;
+                case Settings.ACCENT_COLOR:
+                case Settings.CHAT_BACKGROUND:
+                case Settings.CHAT_LIST_DENSITY:
+                case Settings.CHAT_LIST_AVATAR_SIZE:
+                case Settings.CHAT_LIST_AVATAR_SHAPE:
+                case Settings.CHAT_LIST_FONT_SIZE:
+                case Settings.MESSAGE_AVATAR_SIZE:
+                case Settings.MESSAGE_FONT_SIZE:
+                case Settings.MESSAGE_BUBBLE_WIDTH:
+                case Settings.MESSAGE_BUBBLE_DENSITY:
+                case Settings.MESSAGE_BUBBLE_STYLE:
+                case Settings.MESSAGE_BUBBLE_OPACITY:
+                case Settings.MESSAGE_BUBBLE_AUTO_COLOR:
+                    AppearanceManager.ApplyAppearanceSettings();
                     break;
             }
         }
@@ -225,44 +255,71 @@ namespace ELOR.Laney {
         }
 
         private static string GetBuildInfo() {
-            string ver = BuildInfoFull;
-            string[] sections = ver.Split('-');
-            return $"{sections[0]} {sections[1]}-{sections[2]}";
+            string[] sections = GetBuildInfoSections();
+            string version = GetBuildInfoSection(sections, 0, "0.0.0");
+            string platform = GetBuildInfoSection(sections, 1, Platform.ToString().ToLowerInvariant());
+            string architecture = GetBuildInfoSection(sections, 2, RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant());
+            return $"{version} {platform}-{architecture}";
         }
 
         private static DateTime GetBuildTime() {
-            string ver = BuildInfoFull;
-            string[] sections = ver.Split('-');
-            string datetime = $"{sections[4]}-{sections[5]}";
-            var date = DateTime.ParseExact(datetime, "yyMMdd-HHmm", CultureInfo.InvariantCulture);
-            return date;
+            string[] sections = GetBuildInfoSections();
+            string date = GetBuildInfoSection(sections, 4, null);
+            string time = GetBuildInfoSection(sections, 5, null);
+            string datetime = $"{date}-{time}";
+
+            if (DateTime.TryParseExact(datetime, "yyMMdd-HHmm", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime result)) {
+                return result;
+            }
+
+            string assemblyLocation = Assembly.GetEntryAssembly()?.Location;
+            if (!String.IsNullOrWhiteSpace(assemblyLocation) && File.Exists(assemblyLocation)) {
+                return File.GetLastWriteTime(assemblyLocation);
+            }
+
+            return Directory.GetLastWriteTime(AppContext.BaseDirectory);
         }
 
         private static string GetBuilderInfo() {
-            string ver = BuildInfoFull;
-            string[] sections = ver.Split('-');
-            string encoded = sections[3];
-            encoded = encoded.Replace(".4444", "=");
-
-            var bytes = Convert.FromBase64String(encoded);
-            return Encoding.UTF8.GetString(bytes);
+            string[] sections = GetBuildInfoSections();
+            return DecodeBuildInfoSection(GetBuildInfoSection(sections, 3, null), "unknown");
         }
 
         private static string GetRepoInfo() {
-            string ver = BuildInfoFull;
-            string[] sections = ver.Split('-');
-            string encoded = sections[6];
-            if (encoded.Contains('+')) encoded = encoded.Split('+')[0];
-            encoded = encoded.Replace(".4444", "=");
-
-            var bytes = Convert.FromBase64String(encoded);
-            return Encoding.UTF8.GetString(bytes);
+            string[] sections = GetBuildInfoSections();
+            return DecodeBuildInfoSection(GetBuildInfoSection(sections, 6, null), "unknown");
         }
 
         private static string GetUserAgent() {
-            string ver = BuildInfoFull;
-            string[] sections = ver.Split('-');
-            return $"LaneyMessenger (2; {sections[0]}; {sections[1]}; {sections[2]})";
+            string[] sections = GetBuildInfoSections();
+            string version = GetBuildInfoSection(sections, 0, "0.0.0");
+            string platform = GetBuildInfoSection(sections, 1, Platform.ToString().ToLowerInvariant());
+            string architecture = GetBuildInfoSection(sections, 2, RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant());
+            return $"LaneyMessenger (2; {version}; {platform}; {architecture})";
+        }
+
+        private static string[] GetBuildInfoSections() {
+            return BuildInfoFull.Split('-', StringSplitOptions.None);
+        }
+
+        private static string GetBuildInfoSection(string[] sections, int index, string fallback) {
+            if (sections.Length > index && !String.IsNullOrWhiteSpace(sections[index])) return sections[index];
+            return fallback;
+        }
+
+        private static string DecodeBuildInfoSection(string encoded, string fallback) {
+            if (String.IsNullOrWhiteSpace(encoded)) return fallback;
+
+            try {
+                if (encoded.Contains('+')) encoded = encoded.Split('+')[0];
+                encoded = encoded.Replace(".4444", "=");
+
+                var bytes = Convert.FromBase64String(encoded);
+                return Encoding.UTF8.GetString(bytes);
+            } catch (Exception ex) {
+                Log.Warning(ex, "Cannot decode build info section.");
+                return fallback;
+            }
         }
 
         public static List<string> UsedLibs { get; } = new List<string>(10) {
@@ -282,16 +339,32 @@ namespace ELOR.Laney {
 
         #region Paths
 
-        public static string LocalDataPath { get => GetLocalDataPath(); }
+        private static string _localDataPath;
+        private static bool? _isPortableMode;
+
+        public static string LocalDataPath { get => _localDataPath ??= GetLocalDataPath(); }
+        public static bool IsPortableMode { get => _isPortableMode ??= DetectPortableMode(); }
 
         private static string GetLocalDataPath() {
             string custom = GetCmdLineValue("ldp");
-            if (!string.IsNullOrEmpty(custom) && Path.EndsInDirectorySeparator(custom)) {
-                return custom;
-            } else {
-                string appdataroot = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-                return Path.Combine(appdataroot, "ELOR", "Laney");
-            }
+            if (!String.IsNullOrWhiteSpace(custom)) return NormalizeDataPath(custom);
+            if (IsPortableMode) return Path.Combine(AppContext.BaseDirectory, "data");
+
+            string appdataroot = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            return Path.Combine(appdataroot, "ELOR", "Laney");
+        }
+
+        private static bool DetectPortableMode() {
+            if (HasCmdLineValue("portable")) return true;
+
+            string markerPath = Path.Combine(AppContext.BaseDirectory, "laney.portable");
+            return File.Exists(markerPath);
+        }
+
+        private static string NormalizeDataPath(string path) {
+            string expanded = Environment.ExpandEnvironmentVariables(path.Trim().Trim('"'));
+            if (!Path.IsPathRooted(expanded)) expanded = Path.Combine(AppContext.BaseDirectory, expanded);
+            return Path.GetFullPath(expanded);
         }
 
         #endregion

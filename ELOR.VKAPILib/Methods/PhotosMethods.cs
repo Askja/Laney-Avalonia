@@ -1,5 +1,6 @@
 ﻿using ELOR.VKAPILib.Objects;
 using ELOR.VKAPILib.Objects.Upload;
+using System.Text.Json;
 
 namespace ELOR.VKAPILib.Methods {
 
@@ -80,6 +81,11 @@ namespace ELOR.VKAPILib.Methods {
             return await API.CallMethodAsync<PhotoUploadServer>("photos.getMessagesUploadServer", parameters);
         }
 
+        /// <summary>Returns an upload link for the current user's profile photo.</summary>
+        public async Task<VkUploadServer> GetOwnerPhotoUploadServerAsync() {
+            return await API.CallMethodAsync<VkUploadServer>("photos.getOwnerPhotoUploadServer");
+        }
+
         /// <summary>Returns a list of photos in which a user is tagged.</summary>
         /// <param name="userId">User ID.</param>
         /// <param name="offset">Offset needed to return a specific subset of photos.</param>
@@ -102,6 +108,15 @@ namespace ELOR.VKAPILib.Methods {
             parameters.Add("photo", photo);
             parameters.Add("hash", hash);
             return await API.CallMethodAsync<List<PhotoSaveResult>>("photos.saveMessagesPhoto", parameters);
+        }
+
+        /// <summary>Saves the current user's profile photo after upload.</summary>
+        public async Task<JsonDocument> SaveOwnerPhotoAsync(string server, string photo, string hash) {
+            Dictionary<string, string> parameters = new Dictionary<string, string>();
+            parameters.Add("server", server);
+            parameters.Add("photo", photo);
+            parameters.Add("hash", hash);
+            return await API.CallMethodAsync("photos.saveOwnerPhoto", parameters);
         }
     }
 }

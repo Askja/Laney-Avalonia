@@ -3,6 +3,7 @@ using ELOR.Laney.DataModels;
 using ELOR.Laney.Helpers;
 using ELOR.VKAPILib.Objects;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
@@ -19,6 +20,7 @@ namespace ELOR.Laney.ViewModels {
         private bool _isMessagesLoading;
         private PlaceholderViewModel _chatsPlaceholder;
         private PlaceholderViewModel _messagesPlaceholder;
+        private int _messagesApiOffset;
 
         public int CurrentTab { get { return _currentTab; } set { _currentTab = value; OnPropertyChanged(); } }
         public string Query { get { return _query; } set { _query = value; OnPropertyChanged(); } }
@@ -49,6 +51,7 @@ namespace ELOR.Laney.ViewModels {
                     break;
                 case 1:
                     FoundMessages?.Clear();
+                    _messagesApiOffset = 0;
                     if (!String.IsNullOrEmpty(Query)) await SearchMessagesAsync();
                     break;
             }
@@ -58,17 +61,23 @@ namespace ELOR.Laney.ViewModels {
             if (IsChatsLoading) return;
             ChatsPlaceholder = null;
             IsChatsLoading = true;
-            int offset = FoundChats != null ? FoundChats.Count : 0;
             try {
+                if (FoundChats == null) FoundChats = new ObservableCollection<Entity>();
+                AddLocalChatResults();
+                if (DemoMode.IsEnabled) {
+                    IsChatsLoading = false;
+                    if (FoundChats.Count == 0) ChatsPlaceholder = new PlaceholderViewModel { Text = Assets.i18n.Resources.nothing_found };
+                    return;
+                }
+
                 var response = await session.API.Messages.SearchConversationsAsync(session.GroupId, Query, 200, true, VKAPIHelper.Fields);
                 IsChatsLoading = false;
 
                 if (response.Count == 0) {
-                    ChatsPlaceholder = new PlaceholderViewModel { Text = Assets.i18n.Resources.nothing_found };
+                    if (FoundChats.Count == 0) ChatsPlaceholder = new PlaceholderViewModel { Text = Assets.i18n.Resources.nothing_found };
                     return;
                 }
 
-                if (FoundChats == null) FoundChats = new ObservableCollection<Entity>();
                 foreach (var chat in response.Items) {
                     long id = chat.Peer.Id;
                     string name = $"{chat.Peer.Type} {chat.Peer.LocalId}";
@@ -92,7 +101,7 @@ namespace ELOR.Laney.ViewModels {
                     }
 
                     Entity item = new Entity(id, avatar, name, null, null);
-                    FoundChats.Add(item);
+                    AddFoundChat(item);
 
                 }
             } catch (Exception ex) {
@@ -105,28 +114,75 @@ namespace ELOR.Laney.ViewModels {
             }
         }
 
+        private void AddLocalChatResults() {
+            if (String.IsNullOrWhiteSpace(Query)) return;
+
+            IEnumerable<ChatViewModel> chats = session.ImViewModel?.SortedChats ?? Enumerable.Empty<ChatViewModel>();
+            foreach (ChatViewModel chat in chats) {
+                if (!MatchesLocalChat(chat, Query)) continue;
+
+                Entity item = new Entity(
+                    chat.PeerId,
+                    chat.DisplayAvatar,
+                    chat.DisplayTitle,
+                    BuildLocalChatSearchDescription(chat),
+                    null);
+                AddFoundChat(item);
+            }
+        }
+
+        private static bool MatchesLocalChat(ChatViewModel chat, string query) {
+            if (chat == null || String.IsNullOrWhiteSpace(query)) return false;
+
+            return Contains(chat.Title, query)
+                || Contains(chat.DisplayTitle, query)
+                || Contains(chat.Subtitle, query)
+                || Contains(chat.DisplaySubtitle, query)
+                || Contains(chat.LocalTagsText, query)
+                || Contains(Settings.GetPeerLocalNote(chat.PeerId), query)
+                || chat.PeerId.ToString().Contains(query.Trim(), StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string BuildLocalChatSearchDescription(ChatViewModel chat) {
+            List<string> parts = new List<string>();
+            if (!String.IsNullOrWhiteSpace(chat.DisplaySubtitle)) parts.Add(chat.DisplaySubtitle);
+            if (!String.IsNullOrWhiteSpace(chat.LocalTagsText)) parts.Add($"#{chat.LocalTagsText.Replace(", ", " #")}");
+            string note = Settings.GetPeerLocalNote(chat.PeerId);
+            if (!String.IsNullOrWhiteSpace(note)) parts.Add(note);
+            return parts.Count == 0 ? null : String.Join(" · ", parts.Take(3));
+        }
+
         public async Task SearchMessagesAsync() {
             if (IsMessagesLoading) return;
             MessagesPlaceholder = null;
             IsMessagesLoading = true;
-            int offset = FoundMessages != null ? FoundMessages.Count : 0;
+            bool firstPage = _messagesApiOffset == 0;
             try {
-                var response = await session.API.Messages.SearchAsync(session.GroupId, Query, 0, offset: offset, count: 40, extended: true, fields: VKAPIHelper.Fields);
+                if (FoundMessages == null) FoundMessages = new ObservableCollection<FoundMessageItem>();
+                if (firstPage) await AddLocalMessageResultsAsync();
+                if (DemoMode.IsEnabled) {
+                    IsMessagesLoading = false;
+                    if (FoundMessages.Count == 0) MessagesPlaceholder = new PlaceholderViewModel { Text = Assets.i18n.Resources.nothing_found };
+                    return;
+                }
+
+                var response = await session.API.Messages.SearchAsync(session.GroupId, Query, 0, offset: _messagesApiOffset, count: 40, extended: true, fields: VKAPIHelper.Fields);
+                _messagesApiOffset += response.Items?.Count ?? 0;
                 IsMessagesLoading = false;
 
                 if (response.Count == 0) {
+                    if (FoundMessages.Count > 0) return;
                     MessagesPlaceholder = new PlaceholderViewModel { Text = Assets.i18n.Resources.nothing_found };
                     return;
                 }
 
                 CacheManager.Add(response.Profiles);
                 CacheManager.Add(response.Groups);
-                if (FoundMessages == null) FoundMessages = new ObservableCollection<FoundMessageItem>();
 
                 foreach (var message in response.Items) {
                     Conversation chat = response.Conversations.FirstOrDefault(c => message.PeerId == c.Peer.Id);
                     FoundMessageItem fmi = new FoundMessageItem(message.FromId == session.Id, message, chat);
-                    FoundMessages.Add(fmi);
+                    AddFoundMessage(fmi);
                 }
             } catch (Exception ex) {
                 IsMessagesLoading = false;
@@ -136,6 +192,47 @@ namespace ELOR.Laney.ViewModels {
                     MessagesPlaceholder = PlaceholderViewModel.GetForException(ex, async (o) => await SearchMessagesAsync());
                 }
             }
+        }
+
+        private async Task AddLocalMessageResultsAsync() {
+            await LocalSearchIndex.RefreshFromChatsAsync(session.ImViewModel?.SortedChats);
+            IReadOnlyList<LocalSearchIndexEntry> entries = await LocalSearchIndex.SearchMessagesAsync(Query, 40);
+
+            foreach (LocalSearchIndexEntry entry in entries) {
+                Uri avatar = null;
+                if (!String.IsNullOrWhiteSpace(entry.PeerAvatar)) Uri.TryCreate(entry.PeerAvatar, UriKind.Absolute, out avatar);
+
+                FoundMessageItem item = new FoundMessageItem(
+                    entry.PeerId,
+                    entry.ConversationMessageId,
+                    entry.PeerName,
+                    avatar,
+                    BuildLocalSearchPreview(entry),
+                    entry.SentDate);
+                AddFoundMessage(item);
+            }
+        }
+
+        private static string BuildLocalSearchPreview(LocalSearchIndexEntry entry) {
+            if (String.IsNullOrWhiteSpace(entry.AttachmentText)) return entry.Text;
+            if (String.IsNullOrWhiteSpace(entry.Text)) return $"Вложение: {entry.AttachmentText}";
+            return $"{entry.Text}\nВложение: {entry.AttachmentText}";
+        }
+
+        private void AddFoundMessage(FoundMessageItem item) {
+            if (FoundMessages.Any(m => m.PeerId == item.PeerId && m.Id == item.Id)) return;
+            FoundMessages.Add(item);
+        }
+
+        private void AddFoundChat(Entity item) {
+            if (item == null || FoundChats.Any(c => c.Id == item.Id)) return;
+            FoundChats.Add(item);
+        }
+
+        private static bool Contains(string source, string query) {
+            return !String.IsNullOrWhiteSpace(source)
+                && !String.IsNullOrWhiteSpace(query)
+                && source.IndexOf(query.Trim(), StringComparison.OrdinalIgnoreCase) >= 0;
         }
     }
 }

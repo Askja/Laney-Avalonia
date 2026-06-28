@@ -16,11 +16,19 @@
     <Setter Property="VerticalAlignment" Value="Top"/>
     <Setter Property="Template">
       <ControlTemplate>
-        <Grid x:Name="TitleBar" ColumnDefinitions="* Auto">
-          <TextBlock x:Name="WindowTitle" Grid.ColumnSpan="2" TextAlignment="Center" TextTrimming="CharacterEllipsis"/>
-          <Border x:Name="DragArea" Grid.ColumnSpan="2" Background="Transparent"/>
-          <Button x:Name="CloseButton" Grid.Column="1" IsVisible="False" IsCancel="True"
-				  Width="24" Height="24" MinHeight="24" CornerRadius="12" Margin="12" Padding="4">
+        <Grid x:Name="TitleBar" ColumnDefinitions="* Auto Auto Auto">
+          <TextBlock x:Name="WindowTitle" Grid.ColumnSpan="4" TextAlignment="Center" TextTrimming="CharacterEllipsis"/>
+          <Border x:Name="DragArea" Grid.ColumnSpan="4" Background="Transparent"/>
+          <Button x:Name="MinimizeButton" Grid.Column="1" IsVisible="False"
+                  Width="24" Height="24" MinHeight="24" CornerRadius="12" Margin="4,12,0,12" Padding="0">
+            <TextBlock Text="_" Margin="0,-8,0,0" Foreground="{DynamicResource VKIconOutlineMediumBrush}" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+          </Button>
+          <Button x:Name="MaximizeButton" Grid.Column="2" IsVisible="False"
+                  Width="24" Height="24" MinHeight="24" CornerRadius="12" Margin="4,12,0,12" Padding="0">
+            <TextBlock x:Name="MaximizeIcon" Text="□" Foreground="{DynamicResource VKIconOutlineMediumBrush}" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+          </Button>
+          <Button x:Name="CloseButton" Grid.Column="3" IsVisible="False" IsCancel="True"
+                  Width="24" Height="24" MinHeight="24" CornerRadius="12" Margin="4,12,12,12" Padding="4">
             <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon16Cancel}" Foreground="{DynamicResource VKIconOutlineMediumBrush}"/>
           </Button>
         </Grid>

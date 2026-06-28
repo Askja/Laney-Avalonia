@@ -58,6 +58,39 @@
         </ListBox.ItemTemplate>
       </ListBox>
     </Grid>
+
+    <Grid x:Name="LocalStickersTabContent" IsVisible="False" RowDefinitions="Auto Auto *">
+      <TextBlock Classes="Caption1" Foreground="{DynamicResource VKTextSecondaryBrush}" Margin="12" Text="{Binding SelectedTab.Label, Mode=OneWay}"/>
+      <TextBox Grid.Row="1" Classes="Transparent" Margin="12,0,12,8" PlaceholderText="Поиск по локальным стикерам" Text="{Binding LocalStickerQuery, Mode=TwoWay}" IsVisible="{Binding IsLocalStickerSearchVisible}"/>
+      <ListBox Classes="GridView" Grid.Row="2" SelectionMode="Single" ItemsSource="{Binding SelectedTab.Content, Mode=OneWay}" KeyUp="LocalStickersListBox_KeyUp">
+        <ListBox.ItemsPanel>
+          <ItemsPanelTemplate>
+            <WrapPanel Margin="8,0,8,8" ItemWidth="96" ItemHeight="96" Width="384"/>
+          </ItemsPanelTemplate>
+        </ListBox.ItemsPanel>
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="mdl:LocalSticker">
+            <Border Width="96" Height="96" Background="Transparent" Tapped="LocalStickersListBoxItem_Tapped" PointerEntered="LocalStickerPreview_PointerEntered" PointerExited="LocalStickerPreview_PointerExited">
+              <Grid>
+                <Image Width="88" Height="88" IsVisible="{Binding CanPreview}" controls:ImageLoader.Source="{Binding PreviewUri}"/>
+                <Border Width="64" Height="64" CornerRadius="8" HorizontalAlignment="Center" VerticalAlignment="Center" Background="{DynamicResource VKImBubbleIncomingBrush}" IsVisible="{Binding !CanPreview}">
+                  <TextBlock Classes="Subhead" FontWeight="Medium" HorizontalAlignment="Center" VerticalAlignment="Center" Text="{Binding DisplayKind}"/>
+                </Border>
+                <Button Classes="Tertiary" Width="28" Height="28" MinHeight="28" Padding="0" HorizontalAlignment="Right" VerticalAlignment="Top" Click="LocalStickerFavorite_Click">
+                  <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon20FavoriteOutline}"/>
+                </Button>
+                <Border HorizontalAlignment="Left" VerticalAlignment="Top" MinWidth="26" Height="20" CornerRadius="6" Padding="5,0" Background="{DynamicResource VKAccentBrush}" IsVisible="{Binding HasSourceBadge}">
+                  <TextBlock Classes="Caption2" Foreground="{DynamicResource VKButtonPrimaryForegroundBrush}" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" Text="{Binding SourceBadge}"/>
+                </Border>
+                <Border HorizontalAlignment="Left" VerticalAlignment="Bottom" MinWidth="40" Height="20" CornerRadius="6" Padding="5,0" Background="{DynamicResource VKImBubbleIncomingBrush}" IsVisible="{Binding HasAnimationBadge}">
+                  <TextBlock Classes="Caption2" Foreground="{DynamicResource VKTextSecondaryBrush}" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" Text="{Binding AnimationBadge}"/>
+                </Border>
+              </Grid>
+            </Border>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+    </Grid>
     
     <Border Grid.Row="1" Height="44" BoxShadow="0 0 2 #14000000, 0 -8 16 #14000000">
       <Border.Styles>

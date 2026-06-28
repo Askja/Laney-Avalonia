@@ -48,5 +48,29 @@ namespace ELOR.VKAPILib.Methods {
             if (!fields.IsNullOrEmpty()) parameters.Add("fields", fields.Combine());
             return await API.CallMethodAsync<Poll>("polls.getById", parameters);
         }
+
+        /// <summary>Adds the current user's vote to the selected poll answers.</summary>
+        public async Task<bool> AddVoteAsync(long ownerId, int pollId, List<ulong> answerIds, bool isBoard = false, string accessKey = null) {
+            Dictionary<string, string> parameters = new Dictionary<string, string> {
+                { "owner_id", ownerId.ToString() },
+                { "poll_id", pollId.ToString() },
+                { "answer_ids", String.Join(',', answerIds) }
+            };
+            if (isBoard) parameters.Add("is_board", "1");
+            if (!String.IsNullOrEmpty(accessKey)) parameters.Add("access_key", accessKey);
+            return await API.CallMethodAsync<int>("polls.addVote", parameters) == 1;
+        }
+
+        /// <summary>Deletes the current user's vote from the selected poll.</summary>
+        public async Task<bool> DeleteVoteAsync(long ownerId, int pollId, List<ulong> answerIds, bool isBoard = false, string accessKey = null) {
+            Dictionary<string, string> parameters = new Dictionary<string, string> {
+                { "owner_id", ownerId.ToString() },
+                { "poll_id", pollId.ToString() },
+                { "answer_ids", String.Join(',', answerIds) }
+            };
+            if (isBoard) parameters.Add("is_board", "1");
+            if (!String.IsNullOrEmpty(accessKey)) parameters.Add("access_key", accessKey);
+            return await API.CallMethodAsync<int>("polls.deleteVote", parameters) == 1;
+        }
     }
 }

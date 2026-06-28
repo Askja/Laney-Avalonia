@@ -16,7 +16,16 @@
         Width="422" CanResize="False"
         SizeToContent="Height"
         Title="{x:Static i18n:Resources.wnd_audioplayer}">
-  <Grid x:Name="Root" RowDefinitions="Auto Auto Auto Auto Auto" Tag="{Binding CurrentSong}">
+  <vkw:DialogWindow.KeyBindings>
+    <KeyBinding Gesture="Space" Command="{Binding PlayPauseCommand}"/>
+    <KeyBinding Gesture="Left" Command="{Binding SeekBackwardCommand}"/>
+    <KeyBinding Gesture="Right" Command="{Binding SeekForwardCommand}"/>
+    <KeyBinding Gesture="Ctrl+Left" Command="{Binding GetPreviousCommand}"/>
+    <KeyBinding Gesture="Ctrl+Right" Command="{Binding GetNextCommand}"/>
+    <KeyBinding Gesture="Up" Command="{Binding VolumeUpCommand}"/>
+    <KeyBinding Gesture="Down" Command="{Binding VolumeDownCommand}"/>
+  </vkw:DialogWindow.KeyBindings>
+  <Grid x:Name="Root" RowDefinitions="Auto Auto Auto Auto Auto Auto" Tag="{Binding CurrentSong}">
     <Border x:Name="TBStub" Height="12"/>
     
     <Grid x:Name="TrackInfo" Grid.Row="1" ColumnDefinitions="Auto *" Margin="12,0" Height="48">
@@ -75,8 +84,14 @@
       </Border>
 
       <StackPanel Grid.Column="3" Orientation="Horizontal">
+        <Button Classes="Tertiary" Width="48" IsVisible="{Binding CanChangePlaybackRate}" Command="{Binding CyclePlaybackRateCommand}">
+          <TextBlock Classes="Subhead" Foreground="{DynamicResource VKTextSubheadBrush}" Text="{Binding PlaybackRateLabel}"/>
+        </Button>
         <Button Classes="Tertiary" Classes.Checked="{Binding RepeatOneSong}" Classes.Unchecked="{Binding !RepeatOneSong}" Command="{Binding RepeatCommand}">
           <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon24RepeatOutline}"/>
+        </Button>
+        <Button Classes="Tertiary" Width="48" Command="{Binding SeekBackwardCommand}">
+          <TextBlock Classes="Subhead" Foreground="{DynamicResource VKTextSubheadBrush}" Text="{Binding SeekBackwardLabel}"/>
         </Button>
         <Button Classes="Tertiary" Command="{Binding GetPreviousCommand}">
           <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon24SkipPrevious}"/>
@@ -90,14 +105,28 @@
         <Button Classes="Tertiary" Command="{Binding GetNextCommand}">
           <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon24SkipNext}"/>
         </Button>
+        <Button Classes="Tertiary" Width="48" Command="{Binding SeekForwardCommand}">
+          <TextBlock Classes="Subhead" Foreground="{DynamicResource VKTextSubheadBrush}" Text="{Binding SeekForwardLabel}"/>
+        </Button>
         <!--<Button Classes="Tertiary">
           <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon20ShareOutline}"/>
         </Button>-->
       </StackPanel>
     </Grid>
 
-    <Separator Grid.Row="4" Margin="0" IsVisible="{Binding IsTracklistDisplaying}" VerticalAlignment="Top"/>
-    <ScrollViewer Grid.Row="4" Height="172" IsVisible="{Binding IsTracklistDisplaying}">
+    <Grid Grid.Row="4" ColumnDefinitions="Auto * Auto Auto" Height="32" Margin="12,0,12,8">
+      <Button Classes="Tertiary" Width="32" Height="32" Padding="0" Command="{Binding VolumeDownCommand}">
+        <TextBlock FontSize="18" LineHeight="20" Text="-"/>
+      </Button>
+      <Slider Grid.Column="1" Margin="8,0" Minimum="0" Maximum="100" TickFrequency="5" IsSnapToTickEnabled="True" Value="{Binding VolumePercent, Mode=TwoWay}"/>
+      <TextBlock Grid.Column="2" Width="44" TextAlignment="Right" VerticalAlignment="Center" Classes="Subhead" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="{Binding VolumeLabel}"/>
+      <Button Grid.Column="3" Classes="Tertiary" Width="32" Height="32" Padding="0" Command="{Binding VolumeUpCommand}">
+        <TextBlock FontSize="18" LineHeight="20" Text="+"/>
+      </Button>
+    </Grid>
+
+    <Separator Grid.Row="5" Margin="0" IsVisible="{Binding IsTracklistDisplaying}" VerticalAlignment="Top"/>
+    <ScrollViewer Grid.Row="5" Height="172" IsVisible="{Binding IsTracklistDisplaying}">
       <ScrollViewer.Styles>
         <Style Selector="Button TextBlock">
           <Setter Property="Foreground" Value="{DynamicResource VKTextPrimaryBrush}"/>

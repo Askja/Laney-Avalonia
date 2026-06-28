@@ -19,7 +19,7 @@
     <Grid RowDefinitions="Auto *">
 
       <Grid Grid.Row="0" ColumnDefinitions="* Auto" Margin="0,0,0,12">
-        <TextBox x:Name="Method" Classes="Mono" Watermark="method"/>
+        <TextBox x:Name="Method" Classes="Mono" PlaceholderText="method"/>
         <Button x:Name="CallButton" Grid.Column="2" Classes="Primary Large" Margin="6,0,0,0" VerticalAlignment="Center" Content="Call" Click="CallMethod"/>
       </Grid>
       <Separator Grid.Row="0" VerticalAlignment="Bottom" Margin="0"/>
@@ -67,7 +67,7 @@
           <Setter Property="Background" Value="Transparent"/>
         </Style>
       </Grid.Styles>
-      <TextBox x:Name="Response" Classes="Mono" IsReadOnly="True" TextWrapping="Wrap" Background="Transparent" Watermark="Response from API displaying here..."/>
+      <TextBox x:Name="Response" Classes="Mono" IsReadOnly="True" TextWrapping="Wrap" Background="Transparent" PlaceholderText="Response from API displaying here..."/>
     </Grid>
 
     <Separator Grid.Row="1" VerticalAlignment="Top" Margin="0,0,0,12"/>

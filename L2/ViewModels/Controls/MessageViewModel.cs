@@ -45,6 +45,9 @@ namespace ELOR.Laney.ViewModels.Controls {
         private DateTime _sentTime;
         private DateTime? _editTime;
         private string _text;
+        private string _e2eDisplayText;
+        private bool _isE2EEncrypted;
+        private bool _isE2EDecryptionFailed;
         private List<Attachment> _attachments = new List<Attachment>();
         private List<Message> _forwardedMessages = new List<Message>();
         private Message _replyMessage;
@@ -76,15 +79,17 @@ namespace ELOR.Laney.ViewModels.Controls {
         public long PeerId { get { return _peerId; } private set { _peerId = value; OnPropertyChanged(); } }
         public int RandomId { get { return _randomId; } private set { _randomId = value; OnPropertyChanged(); } }
         public int ConversationMessageId { get { return _conversationMessageId; } private set { _conversationMessageId = value; OnPropertyChanged(); } }
-        public long SenderId { get { return _senderId; } private set { _senderId = value; OnPropertyChanged(); } }
+        public long SenderId { get { return _senderId; } private set { _senderId = value; OnPropertyChanged(); OnPropertyChanged(nameof(DisplaySenderId)); } }
         public MessageVMSenderType SenderType { get { return _senderType; } private set { _senderType = value; OnPropertyChanged(); } }
-        public string SenderName { get { return _senderName; } private set { _senderName = value; OnPropertyChanged(); } }
-        public Uri SenderAvatar { get { return _senderAvatar; } private set { _senderAvatar = value; OnPropertyChanged(); } }
+        public string SenderName { get { return _senderName; } private set { _senderName = value; OnPropertyChanged(); OnPropertyChanged(nameof(DisplaySenderName)); } }
+        public Uri SenderAvatar { get { return _senderAvatar; } private set { _senderAvatar = value; OnPropertyChanged(); OnPropertyChanged(nameof(DisplaySenderAvatar)); } }
         public long AdminAuthorId { get { return _adminAuthorId; } private set { _adminAuthorId = value; OnPropertyChanged(); } }
         public bool IsImportant { get { return _isImportant; } private set { _isImportant = value; OnPropertyChanged(); } }
         public DateTime SentTime { get { return _sentTime; } private set { _sentTime = value; OnPropertyChanged(); } }
         public DateTime? EditTime { get { return _editTime; } private set { _editTime = value; OnPropertyChanged(); } }
-        public string Text { get { return _text; } private set { _text = value; OnPropertyChanged(); } }
+        public string Text { get { return _text; } private set { _text = value; OnPropertyChanged(); OnPropertyChanged(nameof(DisplayText)); OnPropertyChanged(nameof(DisplayPreviewText)); } }
+        public bool IsE2EEncrypted { get { return _isE2EEncrypted; } private set { _isE2EEncrypted = value; OnPropertyChanged(); } }
+        public bool IsE2EDecryptionFailed { get { return _isE2EDecryptionFailed; } private set { _isE2EDecryptionFailed = value; OnPropertyChanged(); } }
         public List<Attachment> Attachments { get { return _attachments; } private set { _attachments = value; OnPropertyChanged(); } }
         public List<Message> ForwardedMessages { get { return _forwardedMessages; } private set { _forwardedMessages = value; OnPropertyChanged(); } }
         public Message ReplyMessage { get { return _replyMessage; } private set { _replyMessage = value; OnPropertyChanged(); } }
@@ -101,6 +106,12 @@ namespace ELOR.Laney.ViewModels.Controls {
         public ObservableCollection<MessageReaction> Reactions { get { return _reactions; } private set { _reactions = value; OnPropertyChanged(); } }
         public MessageVMState State { get { return _state; } set { _state = value; OnPropertyChanged(); } }
         public bool IsOutgoing { get { return session.Id == SenderId; } }
+        public string DisplaySenderName { get { return Settings.StreamerMode ? PrivacyMask.HiddenSenderName : SenderName; } }
+        public Uri DisplaySenderAvatar { get { return Settings.StreamerMode ? null : SenderAvatar; } }
+        public long DisplaySenderId { get { return Settings.StreamerMode ? 0 : SenderId; } }
+        public string DisplayText { get { return Settings.StreamerMode ? PrivacyMask.HiddenMessage : GetDisplayText(); } }
+        public string DisplayPreviewText { get { return Settings.StreamerMode ? PrivacyMask.HiddenMessage : IsE2EEncrypted ? _e2eDisplayText : ToString(); } }
+        public Uri DisplayPreviewImageUri { get { return Settings.StreamerMode ? null : PreviewImageUri; } }
 
         // UI specific
         public bool IsSenderNameVisible { get { return _isSenderNameVisible; } private set { _isSenderNameVisible = value; OnPropertyChanged(); } }
@@ -109,7 +120,7 @@ namespace ELOR.Laney.ViewModels.Controls {
         public Gift Gift { get { return _gift; } private set { _gift = value; OnPropertyChanged(); } }
         public MessageUIType UIType { get { return _uiType; } private set { _uiType = value; OnPropertyChanged(); } }
         public int ImagesCount { get { return _imagesCount; } private set { _imagesCount = value; OnPropertyChanged(); } }
-        public Uri PreviewImageUri { get { return _previewImageUri; } private set { _previewImageUri = value; OnPropertyChanged(); } }
+        public Uri PreviewImageUri { get { return _previewImageUri; } private set { _previewImageUri = value; OnPropertyChanged(); OnPropertyChanged(nameof(DisplayPreviewImageUri)); } }
         public bool CanShowInUI { get { return Action == null && !IsExpired; } }
 
         public Message RootMessage => _rootMessage; // доступно только если IsUnavailable = true;
@@ -149,6 +160,7 @@ namespace ELOR.Laney.ViewModels.Controls {
             AdminAuthorId = msg.AdminAuthorId;
             SenderId = msg.FromId;
             Text = msg.Text;
+            RefreshE2EDisplayText();
             if (msg.Attachments != null) Attachments = msg.Attachments;
             Location = msg.Geo;
             if (msg.ReplyMessage != null) ReplyMessage = msg.ReplyMessage;
@@ -307,6 +319,29 @@ namespace ELOR.Laney.ViewModels.Controls {
 
         public void UpdateDateBetweenVisibility(bool visible) {
             IsDateBetweenVisible = visible;
+        }
+
+        private string GetDisplayText() {
+            return IsE2EEncrypted ? _e2eDisplayText : Text;
+        }
+
+        private void RefreshE2EDisplayText() {
+            bool encrypted = E2EManager.TryBuildDisplayText(PeerId, Text, out string displayText, out bool isEncrypted, out bool failed);
+            _e2eDisplayText = encrypted ? displayText : null;
+            IsE2EEncrypted = isEncrypted;
+            IsE2EDecryptionFailed = failed;
+            OnPropertyChanged(nameof(DisplayText));
+            OnPropertyChanged(nameof(DisplayPreviewText));
+        }
+
+        public void RefreshStreamerMode() {
+            OnPropertyChanged(nameof(DisplaySenderName));
+            OnPropertyChanged(nameof(DisplaySenderAvatar));
+            OnPropertyChanged(nameof(DisplaySenderId));
+            OnPropertyChanged(nameof(DisplayText));
+            OnPropertyChanged(nameof(DisplayPreviewText));
+            OnPropertyChanged(nameof(DisplayPreviewImageUri));
+            MessageEdited?.Invoke(this, null);
         }
 
         #region LongPoll events

@@ -13,7 +13,7 @@ using System.Runtime.InteropServices;
 using VKUI.Controls;
 
 namespace ELOR.Laney.Controls {
-    public class ChatViewItem : TemplatedControl, ICustomVirtalizedListItem {
+    public class ChatViewItem : TemplatedControl {
         #region Properties
 
         public static readonly StyledProperty<MessageViewModel> MessageProperty =
@@ -29,26 +29,35 @@ namespace ELOR.Laney.Controls {
         #region Template elements
 
         StackPanel Root;
+        MessageViewModel subscribedMessage;
 
         protected override void OnApplyTemplate(TemplateAppliedEventArgs e) {
 #if RELEASE
 #elif BETA
 #else
-            Log.Verbose($"ChatViewItem OnApplyTemplate exec. ({Message.PeerId}_{Message.ConversationMessageId})");
+            if (Settings.MessageRenderingLogs && Message == null) {
+                Log.Verbose("ChatViewItem OnApplyTemplate exec.");
+            } else if (Settings.MessageRenderingLogs) {
+                Log.Verbose($"ChatViewItem OnApplyTemplate exec. ({Message.PeerId}_{Message.ConversationMessageId})");
+            }
 #endif
 
             base.OnApplyTemplate(e);
             Root = e.NameScope.Find<StackPanel>(nameof(Root));
 
-            RenderContent(Message);
+            Root.Children.Clear();
+            if (Message != null) {
+                RenderContent(Message);
+                AttachMessageEvents(Message);
+            }
         }
 
         #endregion
 
         public ChatViewItem() {
-            if (Message == null) {
+            if (Settings.MessageRenderingLogs && Message == null) {
                 Log.Verbose($"ChatViewItem init.");
-            } else {
+            } else if (Settings.MessageRenderingLogs) {
                 Log.Verbose($"ChatViewItem init. ({Message.PeerId}_{Message.ConversationMessageId})");
             }
 
@@ -62,9 +71,10 @@ namespace ELOR.Laney.Controls {
             if (change.Property == MessageProperty) {
                 MessageViewModel old = change.OldValue as MessageViewModel;
 
-                if (old != null) {
-                    old.PropertyChanged -= MessagePropertyChanged;
-                }
+                DetachMessageEvents(old);
+
+                MessageViewModel newm = change.NewValue as MessageViewModel;
+                AttachMessageEvents(newm);
 
                 if (Root == null) return;
                 if (change.NewValue == null) {
@@ -72,17 +82,28 @@ namespace ELOR.Laney.Controls {
                     return;
                 }
 
-                MessageViewModel newm = change.NewValue as MessageViewModel;
-                if (newm.ConversationMessageId == old.ConversationMessageId && newm.PeerId == old.PeerId) return;
+                if (old != null && newm.ConversationMessageId == old.ConversationMessageId && newm.PeerId == old.PeerId) return;
 
                 Root.Children.Clear();
                 RenderContent(newm);
-                newm.PropertyChanged += MessagePropertyChanged;
             }
         }
 
+        private void AttachMessageEvents(MessageViewModel message) {
+            if (message == null || ReferenceEquals(subscribedMessage, message)) return;
+            DetachMessageEvents(subscribedMessage);
+            subscribedMessage = message;
+            subscribedMessage.PropertyChanged += MessagePropertyChanged;
+        }
+
+        private void DetachMessageEvents(MessageViewModel message) {
+            if (message == null || !ReferenceEquals(subscribedMessage, message)) return;
+            subscribedMessage.PropertyChanged -= MessagePropertyChanged;
+            subscribedMessage = null;
+        }
+
         private void RenderContent(MessageViewModel message) {
-            Log.Verbose($"ChatViewItem > RenderContent started.");
+            if (Settings.MessageRenderingLogs) Log.Verbose($"ChatViewItem > RenderContent started.");
             // Date
             if (message.IsDateBetweenVisible) {
                 DataTemplate template = App.GetResource<DataTemplate>("DateUnderTitleTemplate");
@@ -96,6 +117,9 @@ namespace ELOR.Laney.Controls {
             if (message.Action != null) {
                 DataTemplate template = App.GetResource<DataTemplate>("TemporaryServiceMessageTemplate");
                 var serviceUI = template.Build(message);
+                if (Settings.StreamerMode && serviceUI is Border serviceBorder && serviceBorder.Child is TextBlock serviceText) {
+                    serviceText.Text = PrivacyMask.HiddenMessage;
+                }
                 Root.Children.Add(serviceUI);
             }
 
@@ -123,6 +147,9 @@ namespace ELOR.Laney.Controls {
                     foreach (CarouselElement item in CollectionsMarshal.AsSpan(message.Template.Elements)) {
                         CarouselElementUI cui = new CarouselElementUI {
                             Element = item,
+                            PeerId = message.PeerId,
+                            MessageId = message.GlobalId,
+                            AuthorId = message.SenderId,
                             VerticalAlignment = Avalonia.Layout.VerticalAlignment.Stretch
                         };
                         items.Children.Add(cui);
@@ -142,16 +169,7 @@ namespace ELOR.Laney.Controls {
                 }
             }
 
-            Log.Verbose($"ChatViewItem > RenderContent finished.");
-            if (!isDisplaying) {
-                Log.Verbose($"ChatViewItem > Measuring...");
-                // 2 раза Parent = ListBoxItem > ListBox.
-                Control lb = Parent.Parent as Control;
-                Root.Measure(new Size(lb.DesiredSize.Width, double.PositiveInfinity));
-                MinHeight = Root.DesiredSize.Height;
-                Log.Verbose($"ChatViewItem > Height: {MinHeight}");
-                Root.Children.Clear();
-            }
+            if (Settings.MessageRenderingLogs) Log.Verbose($"ChatViewItem > RenderContent finished.");
         }
 
         private void MessagePropertyChanged(object sender, PropertyChangedEventArgs e) {
@@ -162,6 +180,7 @@ namespace ELOR.Laney.Controls {
                 case nameof(MessageViewModel.IsExpired):
                 case nameof(MessageViewModel.CanShowInUI):
                 case nameof(MessageViewModel.Template):
+                case nameof(MessageViewModel.DisplayPreviewText):
                     Root.Children.Clear();
                     RenderContent(Message);
                     break;
@@ -180,7 +199,7 @@ namespace ELOR.Laney.Controls {
             if (isRight) {
                 e.Handled = true;
             } else {
-                if (Message.Action != null || Message.IsExpired || Message.TTL > 0) e.Handled = true;
+                if (Message == null || Message.Action != null || Message.IsExpired || Message.TTL > 0) e.Handled = true;
             }
         }
 
@@ -191,29 +210,17 @@ namespace ELOR.Laney.Controls {
             if (isRight) {
                 e.Handled = true;
             } else {
-                if (Message.Action != null || Message.IsExpired || Message.TTL > 0) e.Handled = true;
+                if (Message == null || Message.Action != null || Message.IsExpired || Message.TTL > 0) e.Handled = true;
             }
         }
 
         private void ChatViewItem_Unloaded(object sender, Avalonia.Interactivity.RoutedEventArgs e) {
             PointerPressed -= ChatViewItem_PointerPressed;
+            PointerReleased -= ChatViewItem_PointerReleased;
             Unloaded -= ChatViewItem_Unloaded;
+            DetachMessageEvents(subscribedMessage);
             Root?.Children.Clear();
         }
 
-        bool isDisplaying = !Settings.MessagesListVirtualization;
-        public void OnAppearedOnScreen() {
-            if (isDisplaying) return;
-            isDisplaying = true;
-            RenderContent(Message);
-            MinHeight = 0;
-        }
-
-        public void OnDisappearedFromScreen() {
-            if (!isDisplaying) return;
-            isDisplaying = false;
-            MinHeight = Root.DesiredSize.Height;
-            Root.Children.Clear();
-        }
     }
 }

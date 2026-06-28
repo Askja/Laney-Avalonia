@@ -105,7 +105,7 @@
             </StackPanel>
           </ScrollViewer>
 
-          <vkui:Placeholder Grid.Row="1" VerticalAlignment="Center"
+          <vkui:Placeholder Classes="Compact" Grid.Row="1" VerticalAlignment="Center"
                               IsVisible="{Binding Photos.Placeholder, FallbackValue=False, Converter={x:Static ObjectConverters.IsNotNull}}"
                               Icon="{Binding Photos.Placeholder.Icon}"
                               Header="{Binding Photos.Placeholder.Header}"
@@ -145,7 +145,7 @@
             </StackPanel>
           </ScrollViewer>
 
-          <vkui:Placeholder Grid.Row="1" VerticalAlignment="Center"
+          <vkui:Placeholder Classes="Compact" Grid.Row="1" VerticalAlignment="Center"
                               IsVisible="{Binding Videos.Placeholder, FallbackValue=False, Converter={x:Static ObjectConverters.IsNotNull}}"
                               Icon="{Binding Videos.Placeholder.Icon}"
                               Header="{Binding Videos.Placeholder.Header}"
@@ -184,7 +184,7 @@
             </StackPanel>
           </ScrollViewer>
 
-          <vkui:Placeholder Grid.Row="1" Grid.ColumnSpan="2" VerticalAlignment="Center"
+          <vkui:Placeholder Classes="Compact" Grid.Row="1" Grid.ColumnSpan="2" VerticalAlignment="Center"
                               IsVisible="{Binding Documents.Placeholder, FallbackValue=False, Converter={x:Static ObjectConverters.IsNotNull}}"
                               Icon="{Binding Documents.Placeholder.Icon}"
                               Header="{Binding Documents.Placeholder.Header}"

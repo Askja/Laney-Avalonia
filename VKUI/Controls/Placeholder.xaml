@@ -15,7 +15,7 @@
   <ControlTheme x:Key="{x:Type controls:Placeholder}" TargetType="controls:Placeholder">
     <Setter Property="Template">
       <ControlTemplate>
-        <StackPanel x:Name="Root" Margin="32,48">
+        <StackPanel x:Name="Root" Margin="32,48" MaxWidth="420">
           <StackPanel.Styles>
             <Style Selector="ContentPresenter.PlaceholderIcon controls|VKIcon">
               <Setter Property="Foreground" Value="{DynamicResource VKPlaceholderIconForegroundSecondaryBrush}"/>
@@ -30,5 +30,37 @@
         </StackPanel>
       </ControlTemplate>
     </Setter>
+
+    <Style Selector="^.Compact /template/ StackPanel#Root">
+      <Setter Property="Margin" Value="16,20"/>
+      <Setter Property="MaxWidth" Value="340"/>
+    </Style>
+
+    <Style Selector="^.Compact /template/ ContentPresenter#IconTB">
+      <Setter Property="Margin" Value="0,0,0,8"/>
+    </Style>
+
+    <Style Selector="^.Compact /template/ ContentPresenter#IconTB controls|VKIcon">
+      <Setter Property="Width" Value="32"/>
+      <Setter Property="Height" Value="32"/>
+    </Style>
+
+    <Style Selector="^.Compact /template/ TextBlock#HeaderTB">
+      <Setter Property="FontWeight" Value="Medium"/>
+      <Setter Property="FontSize" Value="14"/>
+      <Setter Property="LineHeight" Value="20"/>
+      <Setter Property="MaxLines" Value="2"/>
+    </Style>
+
+    <Style Selector="^.Compact /template/ TextBlock#TextTB">
+      <Setter Property="Margin" Value="0,4,0,0"/>
+      <Setter Property="FontSize" Value="13"/>
+      <Setter Property="LineHeight" Value="18"/>
+      <Setter Property="MaxLines" Value="3"/>
+    </Style>
+
+    <Style Selector="^.Compact /template/ ContentPresenter#ActionTB">
+      <Setter Property="Margin" Value="0,14,0,0"/>
+    </Style>
   </ControlTheme>
 </ResourceDictionary>

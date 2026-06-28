@@ -16,7 +16,7 @@
         </Button>
       </vkui:PanelHeader.LeftButtons>
       <vkui:PanelHeader.Content>
-        <TextBox Classes="Search" Watermark="{x:Static i18n:Resources.search}" Text="{Binding Query, Mode=TwoWay}" KeyUp="OnSearchBoxKeyUp"/>
+        <TextBox Classes="Search" PlaceholderText="{x:Static i18n:Resources.search}" Text="{Binding Query, Mode=TwoWay}" KeyUp="OnSearchBoxKeyUp"/>
       </vkui:PanelHeader.Content>
     </vkui:PanelHeader>
     <TabControl Grid.Row="1" SelectedIndex="{Binding CurrentTab}">
@@ -33,7 +33,7 @@
           </ScrollViewer>
           <Grid x:Name="EmptyChatsListContainer" IsVisible="{Binding !FoundChats.Count, Mode=OneWay}">
             <vkui:Spinner HorizontalAlignment="Center" Width="32" Height="32" IsVisible="{Binding IsChatsLoading, Mode=OneWay}"/>
-            <vkui:Placeholder VerticalAlignment="Center"
+            <vkui:Placeholder Classes="Compact" VerticalAlignment="Center"
                                   IsVisible="{Binding ChatsPlaceholder, Mode=OneWay, FallbackValue=False, Converter={x:Static ObjectConverters.IsNotNull}}"
                                   Icon="{Binding ChatsPlaceholder.Icon, Mode=OneWay}"
                                   Header="{Binding ChatsPlaceholder.Header, Mode=OneWay}"
@@ -58,7 +58,7 @@
           </ScrollViewer>
           <Grid Grid.Row="1" x:Name="EmptyMessagesListContainer" IsVisible="{Binding !FoundMessages.Count, Mode=OneWay}">
             <vkui:Spinner HorizontalAlignment="Center" Width="32" Height="32" IsVisible="{Binding IsMessagesLoading, Mode=OneWay}"/>
-            <vkui:Placeholder VerticalAlignment="Center"
+            <vkui:Placeholder Classes="Compact" VerticalAlignment="Center"
                                   IsVisible="{Binding MessagesPlaceholder, Mode=OneWay, FallbackValue=False, Converter={x:Static ObjectConverters.IsNotNull}}"
                                   Icon="{Binding MessagesPlaceholder.Icon, Mode=OneWay}"
                                   Header="{Binding MessagesPlaceholder.Header, Mode=OneWay}"

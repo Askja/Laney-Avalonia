@@ -38,6 +38,10 @@ namespace ELOR.Laney.Views.SignIn {
             await NavigationRouter.NavigateToAsync(new QRAuthPage());
         }
 
+        private async void GoToPasswordAuthPage(object sender, Avalonia.Interactivity.RoutedEventArgs e) {
+            await NavigationRouter.NavigateToAsync(new DirectAuthPage());
+        }
+
         private void Page_Loaded(object? sender, Avalonia.Interactivity.RoutedEventArgs e) {
             App.UpdateBranding(Logo.Child as Grid);
         }

@@ -223,7 +223,7 @@ namespace ELOR.Laney.Core {
         // TODO: TaskCompletionSource
         public static async Task<bool> GetFileFromCacheAsync(Uri uri) {
             try {
-                string cachePath = Path.Combine(App.LocalDataPath, "cache");
+                string cachePath = LocalDataProfile.GetCurrentAccountDirectory("cache");
                 Directory.CreateDirectory(cachePath);
 
                 string filePath = Path.Combine(cachePath, uri.Segments.Last());

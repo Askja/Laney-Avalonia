@@ -8,8 +8,9 @@
              xmlns:ctb="using:ColorTextBlock.Avalonia"
              x:Class="ELOR.Laney.App">
   <Application.Resources>
-    <ResourceDictionary>      
-      <ResourceDictionary.MergedDictionaries>
+    <ResourceDictionary>
+        <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="/Styles/LaneyTokens.axaml"/>
         <ResourceInclude Source="/Styles/ChatViewDefaultResources.xaml"/>
         <ResourceInclude Source="/Controls/Attachments/AttachmentsContainer.xaml"/>
         <ResourceInclude Source="/Controls/Attachments/AudioAttachment.xaml"/>
@@ -51,14 +52,12 @@
 
     <conv:AvatarGradientConverter x:Key="agc"/>
     <conv:CounterConverter x:Key="cc"/>
-    <conv:DateTimeDiffConverter x:Key="dtdc"/>
     <conv:DateConverter x:Key="dc"/>
     <conv:TimeConverter x:Key="tc"/>
     <conv:DocumentIconConverter x:Key="dic"/>
     <conv:FileSizeConverter x:Key="fsc"/>
     <conv:InitialsConverter x:Key="ic"/>
     <conv:IsNotZeroConverter x:Key="nzc"/>
-    <conv:MessageSenderNameConverter x:Key="msnc"/>
     <conv:MessageInChatConverter x:Key="micc"/>
     <conv:OnlineIconConverter x:Key="oic"/>
     <conv:OwnerNameConverter x:Key="onc"/>
@@ -70,11 +69,11 @@
     <conv:EqualMultiBindingConverter x:Key="embc"/>
 
     <DataTemplate x:Key="OnlineIcon">
-      <Ellipse Width="12" Height="12" Fill="#8AC176" Stroke="{DynamicResource VKBackgroundContentBrush}" StrokeThickness="2"/>
+      <Ellipse Width="12" Height="12" Fill="{DynamicResource LaneySuccessBrush}" Stroke="{DynamicResource LaneySurfacePanelBrush}" StrokeThickness="2"/>
     </DataTemplate>
     <DataTemplate x:Key="OnlineMobileIcon">
-      <Border Width="11" Height="15" Background="{DynamicResource VKBackgroundContentBrush}" BorderBrush="{DynamicResource VKBackgroundContentBrush}" CornerRadius="3">
-        <PathIcon Width="7" Height="11" Foreground="#8AC176" Data="M0 1.5C0 .7.7 0 1.5 0h4C6.3 0 7 .7 7 1.5v8c0 .8-.7 1.5-1.5 1.5h-4A1.5 1.5 0 010 9.5v-8zM1 2h5v6H1V2z"/>
+      <Border Width="11" Height="15" Background="{DynamicResource LaneySurfacePanelBrush}" BorderBrush="{DynamicResource LaneySurfacePanelBrush}" CornerRadius="3">
+        <PathIcon Width="7" Height="11" Foreground="{DynamicResource LaneySuccessBrush}" Data="M0 1.5C0 .7.7 0 1.5 0h4C6.3 0 7 .7 7 1.5v8c0 .8-.7 1.5-1.5 1.5h-4A1.5 1.5 0 010 9.5v-8zM1 2h5v6H1V2z"/>
       </Border>
     </DataTemplate>
 
@@ -194,6 +193,20 @@
     </Style>
     <Style Selector="Border.Muted > TextBlock">
       <Setter Property="Foreground" Value="{DynamicResource VKCounterSecondaryTextBrush}"/>
+    </Style>
+
+    <!-- Laney-only compatibility badge -->
+    <Style Selector="Border.LaneyOnlyBadge">
+      <Setter Property="Background" Value="{DynamicResource LaneyAccentBrush}"/>
+      <Setter Property="CornerRadius" Value="4"/>
+      <Setter Property="Padding" Value="6,2"/>
+      <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+    <Style Selector="Border.LaneyOnlyBadge > TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource LaneyAccentTextBrush}"/>
+      <Setter Property="FontSize" Value="11"/>
+      <Setter Property="LineHeight" Value="14"/>
+      <Setter Property="FontWeight" Value="Medium"/>
     </Style>
 
     <!-- Cell in Button (in ItemsControl, for example) -->

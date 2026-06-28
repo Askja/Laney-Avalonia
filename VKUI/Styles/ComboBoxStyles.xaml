@@ -29,8 +29,8 @@
     <Setter Property="BorderBrush" Value="{DynamicResource VKFieldBorderBrush}"/>
     <Setter Property="BorderThickness" Value="1"/>
     <Setter Property="CornerRadius" Value="8"/>
-    <Setter Property="Padding" Value="11,11,0,11"/>
-    <Setter Property="MinHeight" Value="42"/>
+    <Setter Property="Padding" Value="12,8,0,8"/>
+    <Setter Property="MinHeight" Value="36"/>
     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
     <Setter Property="VerticalContentAlignment" Value="Center" />
     <Setter Property="PlaceholderForeground" Value="{DynamicResource VKFieldTextPlaceholderBrush}" />
@@ -73,14 +73,16 @@
                    MinWidth="{Binding Bounds.Width, RelativeSource={RelativeSource TemplatedParent}}"
                    MaxHeight="{TemplateBinding MaxDropDownHeight}"
                    IsLightDismissEnabled="True"
+                   OverlayDismissEventPassThrough="False"
                    IsOpen="{TemplateBinding IsDropDownOpen,
                                             Mode=TwoWay}"
                    PlacementTarget="{TemplateBinding}">
               <Border Background="{DynamicResource VKModalCardBackgroundBrush}"
-                      CornerRadius="12"
+                      CornerRadius="8"
                       BorderThickness="1"
-                      Padding="0,4"
-                      BorderBrush="{TemplateBinding BorderBrush}">
+                      Padding="4"
+                      BorderBrush="{DynamicResource VKModalCardBorderBrush}"
+                      BoxShadow="0 0 2 #1F000000, 0 14 36 #26000000">
                 <ScrollViewer HorizontalScrollBarVisibility="{TemplateBinding ScrollViewer.HorizontalScrollBarVisibility}"
                               VerticalScrollBarVisibility="{TemplateBinding ScrollViewer.VerticalScrollBarVisibility}">
                   <ItemsPresenter Name="PART_ItemsPresenter"
@@ -108,24 +110,29 @@
     <Setter Property="BorderThickness" Value="0"/>
     <Setter Property="CornerRadius" Value="8"/>
     <Setter Property="Padding" Value="0"/>
-    <Setter Property="MinHeight" Value="24"/>
+    <Setter Property="MinHeight" Value="28"/>
   </Style>
 
   <Style Selector="ComboBox.Alternate /template/ ToggleButton#toggle">
-    <Setter Property="Padding" Value="8,0,0,0"/>
+    <Setter Property="Padding" Value="6,0,0,0"/>
   </Style>
   
   <Style Selector="ComboBoxItem">
     <Setter Property="Background" Value="Transparent" />
-    <Setter Property="Padding" Value="10,6" />
+    <Setter Property="Padding" Value="12,8" />
     <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="MinHeight" Value="36" />
     <Setter Property="HorizontalAlignment" Value="Stretch" />
     <Setter Property="HorizontalContentAlignment" Value="Left" />
+    <Setter Property="Foreground" Value="{DynamicResource VKTextPrimaryBrush}" />
+    <Setter Property="FontSize" Value="15" />
     <Setter Property="Template">
       <ControlTemplate>
-        <Grid>
-          <Border Name="PART_Selection" CornerRadius="8" Margin="4,0" Background="{TemplateBinding Background}"/>
+        <Grid ColumnDefinitions="Auto *">
+          <Border Name="PART_Selection" Grid.ColumnSpan="2" CornerRadius="{TemplateBinding CornerRadius}" Margin="2,1" Background="{TemplateBinding Background}"/>
+          <Border Name="PART_SelectedRail" Width="3" CornerRadius="2" Margin="6,8,0,8" Background="{DynamicResource VKAccentBrush}" IsVisible="False"/>
           <ContentPresenter Name="PART_ContentPresenter"
+                          Grid.ColumnSpan="2"
                           Padding="{TemplateBinding Padding}"
                           HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
                           VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
@@ -138,15 +145,24 @@
   </Style>
   <Style Selector="ComboBoxItem:pointerover /template/ Border#PART_Selection">
     <Setter Property="Background" Value="{DynamicResource VKBackgroundHoverBrush}" />
+    <Setter Property="Opacity" Value="1" />
   </Style>
   <Style Selector="ComboBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="Background" Value="Transparent" />
   </Style>
   <Style Selector="ComboBoxItem:selected /template/ Border#PART_Selection">
-    <Setter Property="Background" Value="{DynamicResource VKButtonPrimaryBackgroundBrush}" />
+    <Setter Property="Background" Value="{DynamicResource VKBackgroundHoverBrush}" />
+    <Setter Property="Opacity" Value="1" />
+  </Style>
+  <Style Selector="ComboBoxItem:selected /template/ Border#PART_SelectedRail">
+    <Setter Property="IsVisible" Value="True" />
   </Style>
   <Style Selector="ComboBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="Background" Value="Transparent" />
-    <Setter Property="Foreground" Value="{DynamicResource VKButtonPrimaryForegroundBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource VKTextPrimaryBrush}" />
+  </Style>
+  <Style Selector="ComboBoxItem:selected:pointerover /template/ Border#PART_Selection">
+    <Setter Property="Background" Value="{DynamicResource VKBackgroundHoverBrush}" />
+    <Setter Property="Opacity" Value="1" />
   </Style>
 </Styles>

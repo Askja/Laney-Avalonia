@@ -16,7 +16,7 @@ namespace ELOR.Laney.Extensions {
         public static void SetUriSource(this Image image, Uri source, double decodeWidth = 0, double decodeHeight = 0) {
             new Action(async () => {
                 try {
-                    Bitmap bitmap = await BitmapManager.GetBitmapAsync(source, decodeWidth, decodeHeight);
+                    Bitmap bitmap = await BitmapManager.GetBitmapAsync(source, decodeWidth, decodeHeight, BitmapCacheKind.Attachment);
                     image.Source = bitmap;
                 } catch (Exception ex) {
                     Log.Error(ex, "SetUriSourceAsync error!");
@@ -27,7 +27,7 @@ namespace ELOR.Laney.Extensions {
         public static void SetUriSource(this ImageBrush imageBrush, Uri source, double decodeWidth = 0, double decodeHeight = 0) {
             new Action(async () => {
                 try {
-                    Bitmap bitmap = await BitmapManager.GetBitmapAsync(source, decodeWidth, decodeHeight);
+                    Bitmap bitmap = await BitmapManager.GetBitmapAsync(source, decodeWidth, decodeHeight, BitmapCacheKind.Attachment);
                     imageBrush.Source = bitmap;
                 } catch (Exception ex) {
                     Log.Error(ex, "SetUriSourceAsync error!");
@@ -39,7 +39,7 @@ namespace ELOR.Laney.Extensions {
             new Action(async () => {
                 try {
                     avatar.Image = null;
-                    Bitmap bitmap = await BitmapManager.GetBitmapAsync(source, decodeWidth, decodeHeight);
+                    Bitmap bitmap = await BitmapManager.GetBitmapAsync(source, decodeWidth, decodeHeight, BitmapCacheKind.Avatar);
                     avatar.Image = bitmap;
                 } catch (Exception ex) {
                     Log.Error(ex, "SetImageAsync error!");
@@ -50,7 +50,7 @@ namespace ELOR.Laney.Extensions {
         public static void SetImageFill(this Shape shape, Uri source, double decodeWidth = 0, double decodeHeight = 0) {
             new Action(async () => {
                 try {
-                    Bitmap bitmap = await BitmapManager.GetBitmapAsync(source, decodeWidth, decodeHeight);
+                    Bitmap bitmap = await BitmapManager.GetBitmapAsync(source, decodeWidth, decodeHeight, BitmapCacheKind.Attachment);
                     shape.Fill = new ImageBrush(bitmap) {
                         AlignmentX = AlignmentX.Center,
                         AlignmentY = AlignmentY.Center,
@@ -65,7 +65,7 @@ namespace ELOR.Laney.Extensions {
         public static async Task<bool> SetImageBackgroundAsync(this Control control, Uri source, double decodeWidth = 0, double decodeHeight = 0) {
             if (control == null || source == null) return false;
             try {
-                Bitmap bitmap = await BitmapManager.GetBitmapAsync(source, decodeWidth, decodeHeight);
+                Bitmap bitmap = await BitmapManager.GetBitmapAsync(source, decodeWidth, decodeHeight, BitmapCacheKind.Attachment);
                 var brush = new ImageBrush(bitmap) {
                     AlignmentX = AlignmentX.Center,
                     AlignmentY = AlignmentY.Center,

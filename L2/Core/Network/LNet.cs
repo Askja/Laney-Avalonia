@@ -7,18 +7,41 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using ELOR.Laney.Core.Logging;
 
 namespace ELOR.Laney.Core.Network {
+    public readonly struct LNetQueueSnapshot {
+        public int ActiveRequests { get; }
+        public int SequentialGetRequests { get; }
+        public int SequentialPostRequests { get; }
+
+        public LNetQueueSnapshot(int activeRequests, int sequentialGetRequests, int sequentialPostRequests) {
+            ActiveRequests = activeRequests;
+            SequentialGetRequests = sequentialGetRequests;
+            SequentialPostRequests = sequentialPostRequests;
+        }
+    }
+
     public class LNet {
         static HttpClient _defaultClient;
         static HttpClient _zstdClient;
         static Queue<Task<HttpResponseMessage>> _getRequests = new Queue<Task<HttpResponseMessage>>();
         static Queue<Task<HttpResponseMessage>> _postRequests = new Queue<Task<HttpResponseMessage>>();
+        static int _activeRequests;
+        static int _sequentialGetRequests;
+        static int _sequentialPostRequests;
 
         public static event EventHandler<string> DebugLog;
         private static void Log(string text) {
             Debug.WriteLine($"LNet: {text}");
             DebugLog?.Invoke(null, text);
+        }
+
+        public static LNetQueueSnapshot GetQueueSnapshot() {
+            return new LNetQueueSnapshot(
+                Volatile.Read(ref _activeRequests),
+                Volatile.Read(ref _sequentialGetRequests),
+                Volatile.Read(ref _sequentialPostRequests));
         }
 
         private static HttpClient GetConfiguredHttpClient() {
@@ -57,9 +80,14 @@ namespace ELOR.Laney.Core.Network {
 
             var task = InternalSendRequestAsync(uri, parameters, cts, headers, HttpMethod.Get);
             _getRequests.Enqueue(task);
-            var response = await task;
-            var _ = _getRequests.Dequeue();
-            return response;
+            Interlocked.Increment(ref _sequentialGetRequests);
+
+            try {
+                return await task;
+            } finally {
+                if (_getRequests.Count > 0) _ = _getRequests.Dequeue();
+                Interlocked.Decrement(ref _sequentialGetRequests);
+            }
         }
 
         public static async Task<HttpResponseMessage> PostSequentialAsync(Uri uri,
@@ -74,9 +102,14 @@ namespace ELOR.Laney.Core.Network {
 
             var task = InternalSendRequestAsync(uri, parameters, cts, headers, HttpMethod.Post);
             _postRequests.Enqueue(task);
-            var response = await task;
-            var _ = _postRequests.Dequeue();
-            return response;
+            Interlocked.Increment(ref _sequentialPostRequests);
+
+            try {
+                return await task;
+            } finally {
+                if (_postRequests.Count > 0) _ = _postRequests.Dequeue();
+                Interlocked.Decrement(ref _sequentialPostRequests);
+            }
         }
 
         private static async Task<HttpResponseMessage> InternalSendRequestAsync(Uri uri, Dictionary<string, string> parameters, CancellationTokenSource cts, Dictionary<string, string> headers = null, HttpMethod httpMethod = null, bool returnAfterHeaderReads = false) {
@@ -114,24 +147,35 @@ namespace ELOR.Laney.Core.Network {
             if (parameters != null) {
                 paramstr.Append(" | ");
                 foreach (var p in parameters) {
+                    if (SensitiveLogSanitizer.IsSensitiveKey(p.Key) || p.Key == "code") continue;
                     string value = p.Value.Replace("\n", "").Replace("\r\n", "");
-                    if (p.Key == "access_token" || p.Key == "code") continue;
-                    paramstr.Append($"{p.Key}={value}; ");
+                    paramstr.Append($"{p.Key}={SensitiveLogSanitizer.Sanitize(value)}; ");
                 }
             }
 #endif
 #if !RELEASE
-            if (Settings.LNetLogs) Log($"=> {uri.AbsoluteUri} | {httpMethod.Method}{paramstr}");
+            if (Settings.LNetLogs) Log($"=> {SensitiveLogSanitizer.Sanitize(uri.AbsoluteUri)} | {httpMethod.Method}{paramstr}");
 #endif
             var completionOption = returnAfterHeaderReads ? HttpCompletionOption.ResponseHeadersRead : HttpCompletionOption.ResponseContentRead;
             var stopwatch = Stopwatch.StartNew();
-            var result = cts == null ? await client.SendAsync(hrm, completionOption)
-                : await client.SendAsync(hrm, completionOption, cts.Token);
+            HttpResponseMessage result = null;
+            try {
+                Interlocked.Increment(ref _activeRequests);
+                result = cts == null ? await client.SendAsync(hrm, completionOption)
+                    : await client.SendAsync(hrm, completionOption, cts.Token);
+            } catch (Exception ex) {
+                stopwatch.Stop();
+                ApiDebugMonitor.Record(uri, parameters, httpMethod.Method, null, null, stopwatch.ElapsedMilliseconds, ex);
+                throw;
+            } finally {
+                Interlocked.Decrement(ref _activeRequests);
+            }
             stopwatch.Stop();
 
 #if !RELEASE
-            if (Settings.LNetLogs) Log($"<= {uri.AbsoluteUri} | Code: {result.StatusCode} | {stopwatch.ElapsedMilliseconds} ms.");
+            if (Settings.LNetLogs) Log($"<= {SensitiveLogSanitizer.Sanitize(uri.AbsoluteUri)} | Code: {result.StatusCode} | {stopwatch.ElapsedMilliseconds} ms.");
 #endif
+            ApiDebugMonitor.Record(uri, parameters, httpMethod.Method, result.StatusCode, result.ReasonPhrase, stopwatch.ElapsedMilliseconds);
             return result;
         }
     }

@@ -204,6 +204,9 @@ namespace ELOR.VKAPILib.Objects {
         [JsonPropertyName("friend_status")]
         public FriendStatus FriendStatus { get; set; }
 
+        [JsonPropertyName("is_favorite")]
+        public int IsFavorite { get; set; }
+
         [JsonPropertyName("bdate")]
         public string BirthDate { get; set; }
 

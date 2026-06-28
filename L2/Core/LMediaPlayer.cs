@@ -36,6 +36,9 @@ namespace ELOR.Laney.Core {
         public string InstanceName { get; private set; }
         public float Position { get; private set; }
         public bool IsPlaying { get; private set; }
+        public float PlaybackRate { get; private set; } = 1f;
+        public int VolumePercent { get; private set; } = 90;
+        public string AudioDspMode { get; private set; } = AudioDspModeIds.Off;
 
         #region Events
 
@@ -89,9 +92,10 @@ namespace ELOR.Laney.Core {
                 _player.Media = _media;
             }
 
-            if (old != null) _media.Dispose();
+            old?.Dispose();
 
             _player.Play();
+            ApplyPlaybackState();
         }
 
         public void PlayURL(string url) {
@@ -114,13 +118,17 @@ namespace ELOR.Laney.Core {
                 _player.Media = _media;
             }
 
-            if (old != null) _media.Dispose();
+            old?.Dispose();
 
             _player.Play();
+            ApplyPlaybackState();
         }
 
         public void Play() {
-            if (_player != null && !_player.IsPlaying) _player.Play();
+            if (_player != null && !_player.IsPlaying) {
+                _player.Play();
+                ApplyPlaybackState();
+            }
         }
 
         public void Pause() {
@@ -129,6 +137,124 @@ namespace ELOR.Laney.Core {
 
         public void SetPosition(TimeSpan position) {
             _player.SeekTo(position);
+        }
+
+        public void SetPlaybackRate(float rate) {
+            PlaybackRate = Math.Clamp(rate, 0.5f, 3f);
+            ApplyPlaybackRate();
+        }
+
+        public void SetVolume(int volumePercent) {
+            VolumePercent = Math.Clamp(volumePercent, 0, 100);
+            ApplyVolume();
+        }
+
+        public void SetAudioDspMode(string mode) {
+            AudioDspMode = AudioDspModeIds.NormalizeMode(mode);
+            ApplyEqualizer();
+        }
+
+        private void ApplyPlaybackState() {
+            ApplyPlaybackRate();
+            ApplyVolume();
+            ApplyEqualizer();
+        }
+
+        private void ApplyPlaybackRate() {
+            try {
+                _player?.SetRate(PlaybackRate);
+            } catch (Exception ex) {
+                Log.Warning(ex, "Unable to set playback rate {Rate} for {InstanceName}", PlaybackRate, InstanceName);
+            }
+        }
+
+        private void ApplyVolume() {
+            try {
+                if (_player != null) _player.Volume = VolumePercent;
+            } catch (Exception ex) {
+                Log.Warning(ex, "Unable to set volume {Volume} for {InstanceName}", VolumePercent, InstanceName);
+            }
+        }
+
+        private void ApplyEqualizer() {
+            if (_player == null) return;
+
+            try {
+                string mode = AudioDspModeIds.NormalizeMode(AudioDspMode);
+                if (mode == AudioDspModeIds.Off) {
+                    _player.UnsetEqualizer();
+                    return;
+                }
+
+                Equalizer equalizer = BuildEqualizer(mode);
+                try {
+                    _player.SetEqualizer(equalizer);
+                } finally {
+                    (equalizer as IDisposable)?.Dispose();
+                }
+            } catch (Exception ex) {
+                Log.Warning(ex, "Unable to apply audio DSP mode {Mode} for {InstanceName}", AudioDspMode, InstanceName);
+            }
+        }
+
+        private static Equalizer BuildEqualizer(string mode) {
+            Equalizer equalizer = new Equalizer();
+            equalizer.SetPreamp(GetEqualizerPreamp(mode));
+
+            uint bandCount = equalizer.BandCount;
+            for (uint i = 0; i < bandCount; i++) {
+                float frequency = equalizer.BandFrequency(i);
+                equalizer.SetAmp(GetEqualizerAmp(mode, frequency), i);
+            }
+
+            return equalizer;
+        }
+
+        private static float GetEqualizerPreamp(string mode) {
+            return mode switch {
+                AudioDspModeIds.BassBoost => -3.5f,
+                AudioDspModeIds.Night => -5.0f,
+                AudioDspModeIds.Normalize => 1.5f,
+                _ => 0f
+            };
+        }
+
+        private static float GetEqualizerAmp(string mode, float frequency) {
+            return mode switch {
+                AudioDspModeIds.BassBoost => GetBassBoostAmp(frequency),
+                AudioDspModeIds.VoiceClarity => GetVoiceClarityAmp(frequency),
+                AudioDspModeIds.Night => GetNightAmp(frequency),
+                AudioDspModeIds.Normalize => GetNormalizeAmp(frequency),
+                _ => 0f
+            };
+        }
+
+        private static float GetBassBoostAmp(float frequency) {
+            if (frequency <= 125) return 6.0f;
+            if (frequency <= 250) return 3.5f;
+            if (frequency >= 8000) return 1.0f;
+            return 0f;
+        }
+
+        private static float GetVoiceClarityAmp(float frequency) {
+            if (frequency <= 125) return -4.0f;
+            if (frequency >= 500 && frequency <= 4000) return 4.0f;
+            if (frequency >= 8000) return -1.5f;
+            return 0f;
+        }
+
+        private static float GetNightAmp(float frequency) {
+            if (frequency <= 125) return -4.0f;
+            if (frequency >= 500 && frequency <= 3000) return 2.0f;
+            if (frequency >= 6000) return -3.0f;
+            return 0f;
+        }
+
+        private static float GetNormalizeAmp(float frequency) {
+            if (frequency <= 80) return -2.0f;
+            if (frequency >= 250 && frequency <= 4000) return 1.5f;
+            if (frequency >= 10000) return -1.0f;
+            return 0f;
         }
 
         public void Dispose() {
@@ -168,6 +294,8 @@ namespace ELOR.Laney.Core {
         private void Player_EndReached(object sender, EventArgs e) {
             new Action(async () => {
                 await Dispatcher.UIThread.InvokeAsync(() => {
+                    IsPlaying = false;
+                    StateChanged?.Invoke(this, false);
                     MediaEnded?.Invoke(this, e);
                 });
             })();

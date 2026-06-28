@@ -8,16 +8,17 @@
   <ControlTheme x:Key="{x:Type controls:Avatar}" TargetType="controls:Avatar">
     <Setter Property="Background" Value="{DynamicResource VKPlaceholderIconBackgroundBrush}"/>
     <Setter Property="Foreground" Value="{DynamicResource VKTextPrimaryBrush}"/>
+    <Setter Property="CornerRadius" Value="999"/>
     <Setter Property="Template">
       <ControlTemplate>
         <Grid>
           <Viewbox>
             <Grid Width="48" Height="48" HorizontalAlignment="Center" VerticalAlignment="Center">
-              <Ellipse x:Name="GradientEllipse" Width="48" Height="48" Fill="{TemplateBinding Background}"/>
+              <Border x:Name="GradientBorder" Width="48" Height="48" CornerRadius="{TemplateBinding CornerRadius}" Background="{TemplateBinding Background}"/>
               <TextBlock x:Name="Initials" VerticalAlignment="Center" HorizontalAlignment="Center" Classes="Display" FontWeight="Medium" FontSize="16" LineHeight="20" Foreground="{TemplateBinding Foreground}" Text="{TemplateBinding Initials}"/>
             </Grid>
           </Viewbox>
-          <Ellipse x:Name="ImageEllipse" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+          <Border x:Name="ImageBorder" HorizontalAlignment="Center" VerticalAlignment="Center" CornerRadius="{TemplateBinding CornerRadius}" ClipToBounds="True"/>
         </Grid>
       </ControlTemplate>
     </Setter>

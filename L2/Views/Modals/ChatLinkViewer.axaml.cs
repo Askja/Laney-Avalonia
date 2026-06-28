@@ -1,4 +1,6 @@
 using Avalonia.Controls;
+using Avalonia.Input.Platform;
+using Avalonia.Interactivity;
 using ELOR.Laney.Core;
 using ELOR.Laney.Extensions;
 using ELOR.Laney.Helpers;
@@ -29,7 +31,7 @@ public partial class ChatLinkViewer : DialogWindow {
     private void SetIsLoading(bool isLoading) {
         ShowMessagesCheck.IsEnabled = !isLoading;
         LinkBox.IsEnabled = !isLoading;
-        // CopyButton.IsEnabled = !isLoading;
+        CopyButton.IsEnabled = !isLoading && !String.IsNullOrWhiteSpace(LinkBox.Text);
         RefreshButton.IsEnabled = !isLoading;
         LoadingSpinner.IsVisible = isLoading;
     }
@@ -56,5 +58,15 @@ public partial class ChatLinkViewer : DialogWindow {
 
     private void RefreshLink(object? sender, Avalonia.Interactivity.RoutedEventArgs e) {
         new Action(async () => await GetInviteLinkAsync(true))();
+    }
+
+    private async void CopyLink(object? sender, RoutedEventArgs e) {
+        string link = LinkBox.Text;
+        if (String.IsNullOrWhiteSpace(link)) return;
+
+        var topLevel = TopLevel.GetTopLevel(this);
+        if (topLevel?.Clipboard == null) return;
+
+        await topLevel.Clipboard.SetTextAsync(link);
     }
 }

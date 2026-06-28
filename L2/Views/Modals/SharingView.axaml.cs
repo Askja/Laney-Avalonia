@@ -38,10 +38,10 @@ namespace ELOR.Laney.Views.Modals {
 
             if (group != null) {
                 SessionSwitcherContainer.IsVisible = true;
-                this.FixDialogWindows(TitleBar, Content);
+                this.FixDialogWindows(TitleBar, ContentPanel);
                 DataContext = group;
             } else {
-                Grid.SetRow(Content, 1);
+                Grid.SetRow(ContentPanel, 1);
                 TitleBar.CanShowTitle = true;
 #if LINUX
             TitleBar.IsVisible = false;

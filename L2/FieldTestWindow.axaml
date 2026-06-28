@@ -16,8 +16,8 @@
       <TextBlock x:Name="test" Margin="8" Foreground="{DynamicResource VKTextPrimaryBrush}"/>
       <TextBlock x:Name="test2" Margin="8" Foreground="{DynamicResource VKTextPrimaryBrush}" Classes="Display Title1" FontWeight="Bold" Text="{x:Static i18n:Resources.human}"/>
 
-      <TextBox Width="320" Margin="8" HorizontalAlignment="Left" Watermark="TextBox" TextWrapping="Wrap"/>
-      <TextBox Width="320" Margin="8" HorizontalAlignment="Left" Classes="Search" Watermark="Search"/>
+      <TextBox Width="320" Margin="8" HorizontalAlignment="Left" PlaceholderText="TextBox" TextWrapping="Wrap"/>
+      <TextBox Width="320" Margin="8" HorizontalAlignment="Left" Classes="Search" PlaceholderText="Search"/>
 
       <Grid ColumnDefinitions="128 128 128">
         <StackPanel Grid.Column="0">
@@ -219,7 +219,7 @@
       <StackPanel Margin="0,8,0,0">
         <TextBlock Margin="8" Classes="Title2" FontWeight="Bold" Text="Router test"/>
         <StackPanel Orientation="Horizontal">
-          <TextBox x:Name="linkBox" Width="240" Margin="8" Watermark="https://vk.com/elorucov"/>
+          <TextBox x:Name="linkBox" Width="240" Margin="8" PlaceholderText="https://vk.com/elorucov"/>
           <Button x:Name="checkLinkBtn" Margin="8" Classes="Large Primary" HorizontalContentAlignment="Center" Content="Check"/>
         </StackPanel>
         <TextBlock x:Name="routerResult" Margin="8" Text="Link info here..."/>

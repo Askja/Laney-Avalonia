@@ -2,7 +2,6 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
-using ELOR.Laney.Extensions;
 using System;
 
 namespace ELOR.Laney.Controls.Attachments {
@@ -66,7 +65,7 @@ namespace ELOR.Laney.Controls.Attachments {
             ActionButton.Click += ActionButton_Click;
             Unloaded += BasicAttachment_Unloaded;
 
-            if (Preview != null) new Action(async () => await PreviewImage.SetImageBackgroundAsync(Preview, PreviewImage?.Width ?? 80, PreviewImage?.Height ?? 80))();
+            SetPreviewSource();
         }
 
         #endregion
@@ -89,8 +88,13 @@ namespace ELOR.Laney.Controls.Attachments {
             base.OnPropertyChanged(change);
 
             if (change.Property == PreviewProperty) {
-                if (Preview != null) new Action(async () => await PreviewImage.SetImageBackgroundAsync(Preview, PreviewImage?.Width ?? 80, PreviewImage?.Height ?? 80))();
+                SetPreviewSource();
             }
+        }
+
+        private void SetPreviewSource() {
+            if (PreviewImage == null || Preview == null) return;
+            ImageLoader.SetBackgroundSource(PreviewImage, Preview);
         }
     }
 }

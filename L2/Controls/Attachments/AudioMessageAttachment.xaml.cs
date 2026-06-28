@@ -5,11 +5,13 @@ using Avalonia.Controls.Shapes;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using ELOR.Laney.Core;
 using ELOR.Laney.Extensions;
 using ELOR.Laney.ViewModels;
 using ELOR.VKAPILib.Objects;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using VKUI.Controls;
 
@@ -47,6 +49,11 @@ public class AudioMessageAttachment : TemplatedControl {
     Canvas ForegroundSoundWave;
     Border Seeker;
     TextBlock Duration;
+    Button SpeedButton;
+    TextBlock SpeedLabel;
+    TextBlock TranscriptText;
+    AudioPlayerViewModel subscribedInstance;
+    private static readonly Dictionary<string, List<int>> WaveformCache = new Dictionary<string, List<int>>();
 
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e) {
         base.OnApplyTemplate(e);
@@ -57,15 +64,16 @@ public class AudioMessageAttachment : TemplatedControl {
         ForegroundSoundWave = e.NameScope.Find<Canvas>(nameof(ForegroundSoundWave));
         Seeker = e.NameScope.Find<Border>(nameof(Seeker));
         Duration = e.NameScope.Find<TextBlock>(nameof(Duration));
+        SpeedButton = e.NameScope.Find<Button>(nameof(SpeedButton));
+        SpeedLabel = e.NameScope.Find<TextBlock>(nameof(SpeedLabel));
+        TranscriptText = e.NameScope.Find<TextBlock>(nameof(TranscriptText));
 
         Seeker.PointerPressed += Seeker_PointerPressed;
         Setup();
 
         PlayButton.Click += PlayButton_Click;
-        if (AudioPlayerViewModel.VoiceMessageInstance != null) {
-            Instance.StateChanged += Instance_StateChanged;
-            Instance.PositionChanged += Instance_PositionChanged;
-        }
+        SpeedButton.Click += SpeedButton_Click;
+        AttachInstance(Instance);
         AudioPlayerViewModel.InstancesChanged += AudioPlayerViewModel_InstancesChanged;
         Unloaded += AudioMessageAttachment_Unloaded;
     }
@@ -74,24 +82,35 @@ public class AudioMessageAttachment : TemplatedControl {
 
     private void Setup() {
         if (AudioMessage != null) {
-            wmax = AudioMessage.WaveForm.Max();
+            if (AudioMessage.WaveForm == null || AudioMessage.WaveForm.Length == 0) {
+                AudioMessage.WaveForm = Enumerable.Repeat(1, 48).ToArray();
+            }
+
+            wmax = Math.Max(1, AudioMessage.WaveForm.Max());
             DrawSoundWaveLines(BackgroundSoundWave);
             DrawSoundWaveLines(ForegroundSoundWave);
             Duration.Text = TimeSpan.FromSeconds(AudioMessage.Duration).ToTimeWithHourIfNeeded();
+            string transcript = LocalVoiceTranscriptionService.GetTranscript(AudioMessage);
+            if (TranscriptText != null) {
+                TranscriptText.Text = transcript;
+                TranscriptText.IsVisible = !String.IsNullOrWhiteSpace(transcript);
+            }
             PlayButton.IsEnabled = true;
         } else {
             BackgroundSoundWave.Children.Clear();
             ForegroundSoundWave.Children.Clear();
             Duration.Text = "-:--";
+            if (TranscriptText != null) {
+                TranscriptText.Text = null;
+                TranscriptText.IsVisible = false;
+            }
             PlayButton.IsEnabled = false;
         }
     }
 
     private void CheckCurrentPlayingAudio() {
         ButtonIcon.Id = IsThisAudioPlaying ? VKIconNames.Icon24Pause : VKIconNames.Icon24Play;
-        var t = Instance;
-        var u = t?.CurrentSong;
-
+        UpdateSpeedButton();
     }
 
     private void PlayButton_Click(object sender, RoutedEventArgs e) {
@@ -116,22 +135,58 @@ public class AudioMessageAttachment : TemplatedControl {
     }
 
     private void AudioPlayerViewModel_InstancesChanged(object sender, EventArgs e) {
-        if (Instance != null) {
-            Instance.StateChanged += Instance_StateChanged;
-            Instance.PositionChanged += Instance_PositionChanged;
-        }
+        AttachInstance(Instance);
         CheckCurrentPlayingAudio();
     }
 
     private void AudioMessageAttachment_Unloaded(object sender, RoutedEventArgs e) {
         PlayButton.Click -= PlayButton_Click;
+        SpeedButton.Click -= SpeedButton_Click;
         Seeker.PointerPressed -= Seeker_PointerPressed;
-        if (Instance != null) {
-            Instance.StateChanged -= Instance_StateChanged;
-            Instance.PositionChanged -= Instance_PositionChanged;
-        }
+        DetachInstance();
         AudioPlayerViewModel.InstancesChanged -= AudioPlayerViewModel_InstancesChanged;
         Unloaded -= AudioMessageAttachment_Unloaded;
+    }
+
+    private void SpeedButton_Click(object sender, RoutedEventArgs e) {
+        if (!IsThisAudioSelected) {
+            PlayAudioRequested?.Invoke(this, null);
+        }
+        Instance?.CyclePlaybackRate();
+        UpdateSpeedButton();
+    }
+
+    private void AttachInstance(AudioPlayerViewModel instance) {
+        if (ReferenceEquals(subscribedInstance, instance)) return;
+        DetachInstance();
+        subscribedInstance = instance;
+        if (subscribedInstance == null) return;
+
+        subscribedInstance.StateChanged += Instance_StateChanged;
+        subscribedInstance.PositionChanged += Instance_PositionChanged;
+        subscribedInstance.PropertyChanged += Instance_PropertyChanged;
+    }
+
+    private void DetachInstance() {
+        if (subscribedInstance == null) return;
+
+        subscribedInstance.StateChanged -= Instance_StateChanged;
+        subscribedInstance.PositionChanged -= Instance_PositionChanged;
+        subscribedInstance.PropertyChanged -= Instance_PropertyChanged;
+        subscribedInstance = null;
+    }
+
+    private void Instance_PropertyChanged(object sender, PropertyChangedEventArgs e) {
+        if (e.PropertyName == nameof(AudioPlayerViewModel.PlaybackRate) || e.PropertyName == nameof(AudioPlayerViewModel.PlaybackRateLabel) || e.PropertyName == nameof(AudioPlayerViewModel.CurrentSong)) {
+            UpdateSpeedButton();
+        }
+    }
+
+    private void UpdateSpeedButton() {
+        if (SpeedButton == null || SpeedLabel == null) return;
+
+        SpeedButton.IsVisible = IsThisAudioSelected;
+        SpeedLabel.Text = Instance?.PlaybackRateLabel ?? "1x";
     }
 
     #region Render methods
@@ -211,8 +266,11 @@ public class AudioMessageAttachment : TemplatedControl {
         List<int> WaveList = waveform.ToList();
         bool isAllEmpty = WaveList.All(l => l == 0);
         if (waveform != null && waveform.Length > 0 && !isAllEmpty) {
-            int targetLength = (int)(WaveContainer.Bounds.Width / 3.0);
+            int targetLength = Math.Max(1, (int)(WaveContainer.Bounds.Width / 3.0));
             double ch = WaveContainer.Bounds.Height;
+            string cacheKey = $"{AudioMessage?.OwnerId}_{AudioMessage?.Id}_{targetLength}_{(int)Math.Round(ch)}";
+            if (WaveformCache.TryGetValue(cacheKey, out List<int> cached)) return cached;
+
             List<int> list = Resample(WaveList, targetLength);
             int num = list.Max();
             foreach (int t in list) {
@@ -225,8 +283,23 @@ public class AudioMessageAttachment : TemplatedControl {
                 }
                 list2.Add(num2);
             }
+
+            if (WaveformCache.Count >= MediaMemoryGovernor.GetWaveformCacheItemLimit()) WaveformCache.Clear();
+            WaveformCache[cacheKey] = list2;
+            ReportWaveformCache();
         }
         return list2;
+    }
+
+    private static void ReportWaveformCache() {
+        long bytes = 0;
+
+        foreach (List<int> item in WaveformCache.Values) {
+            bytes += 24;
+            if (item != null) bytes += item.Count * sizeof(int);
+        }
+
+        MediaMemoryGovernor.ReportWaveformCache(WaveformCache.Count, bytes);
     }
 
     private Rectangle GetWaveformItem(int waveformItem, int left, double top) {

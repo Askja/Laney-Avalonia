@@ -1,0 +1,110 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vkui="using:VKUI.Controls"
+             xmlns:vm="using:ELOR.Laney.ViewModels.SettingsCategories"
+             xmlns:mdl="using:ELOR.Laney.DataModels"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="ELOR.Laney.Views.SettingsCategories.Audio" x:DataType="vm:AudioViewModel">
+  <ScrollViewer>
+    <StackPanel>
+      <Border Classes="Group" VerticalAlignment="Top">
+        <StackPanel>
+          <Grid Classes="GroupHeader">
+            <TextBlock Text="Плеер"/>
+          </Grid>
+          <vkui:Cell Header="Повтор трека" Subtitle="Глобальная настройка аудиоплеера.">
+            <vkui:Cell.After>
+              <ToggleSwitch IsChecked="{Binding AudioPlayerLoop, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="DSP / EQ" Subtitle="LibVLC equalizer: off, voice clarity, night mode, bass boost.">
+            <vkui:Cell.After>
+              <ComboBox Classes="Alternate" ItemsSource="{Binding AudioDspModes}" SelectedItem="{Binding CurrentAudioDspMode, Mode=TwoWay}">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="mdl:TwoStringTuple">
+                    <TextBlock Text="{Binding Item2}"/>
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Громкость" Subtitle="Единая громкость для музыки, подкастов и голосовых.">
+            <vkui:Cell.After>
+              <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                <Slider Width="180" Minimum="0" Maximum="100" TickFrequency="5" IsSnapToTickEnabled="True" Value="{Binding AudioPlayerVolume, Mode=TwoWay}"/>
+                <TextBlock Width="44" TextAlignment="Right" VerticalAlignment="Center" Text="{Binding AudioPlayerVolumeLabel}"/>
+              </StackPanel>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Шаг перемотки" Subtitle="Кнопки и горячие клавиши в плеере.">
+            <vkui:Cell.After>
+              <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                <Slider Width="180" Minimum="5" Maximum="60" TickFrequency="5" IsSnapToTickEnabled="True" Value="{Binding AudioPlayerSeekSeconds, Mode=TwoWay}"/>
+                <TextBlock Width="44" TextAlignment="Right" VerticalAlignment="Center" Text="{Binding AudioPlayerSeekSecondsLabel}"/>
+              </StackPanel>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Скорость музыки" Subtitle="Для аудиовложений VK.">
+            <vkui:Cell.After>
+              <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                <Slider Width="180" Minimum="0.5" Maximum="3" TickFrequency="0.25" IsSnapToTickEnabled="True" Value="{Binding AudioPlayerTrackRate, Mode=TwoWay}"/>
+                <TextBlock Width="44" TextAlignment="Right" VerticalAlignment="Center" Text="{Binding AudioPlayerTrackRateLabel}"/>
+              </StackPanel>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Скорость подкастов" Subtitle="Отдельно от музыки, чтобы не ловить сюрпризы.">
+            <vkui:Cell.After>
+              <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                <Slider Width="180" Minimum="0.5" Maximum="3" TickFrequency="0.25" IsSnapToTickEnabled="True" Value="{Binding AudioPlayerPodcastRate, Mode=TwoWay}"/>
+                <TextBlock Width="44" TextAlignment="Right" VerticalAlignment="Center" Text="{Binding AudioPlayerPodcastRateLabel}"/>
+              </StackPanel>
+            </vkui:Cell.After>
+          </vkui:Cell>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="Group" VerticalAlignment="Top">
+        <StackPanel>
+          <Grid Classes="GroupHeader">
+            <TextBlock Text="Голосовые"/>
+          </Grid>
+          <vkui:Cell Header="Локальная расшифровка" Subtitle="Whisper.net, без отправки аудио наружу.">
+            <vkui:Cell.After>
+              <ToggleSwitch IsChecked="{Binding LocalVoiceTranscriptionEnabled, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Скорость голосовых" Subtitle="Сохраняется отдельно от музыки и подкастов.">
+            <vkui:Cell.After>
+              <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                <Slider Width="180" Minimum="0.5" Maximum="3" TickFrequency="0.25" IsSnapToTickEnabled="True" Value="{Binding AudioPlayerVoiceRate, Mode=TwoWay}"/>
+                <TextBlock Width="44" TextAlignment="Right" VerticalAlignment="Center" Text="{Binding AudioPlayerVoiceRateLabel}"/>
+              </StackPanel>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Продолжать с места" Subtitle="Позиция голосовых сохраняется локально.">
+            <vkui:Cell.After>
+              <ToggleSwitch IsChecked="{Binding VoiceMessageResumeEnabled, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Пропускать тишину в начале" Subtitle="Лёгкий waveform-trim без тяжёлого DSP.">
+            <vkui:Cell.After>
+              <ToggleSwitch IsChecked="{Binding VoiceMessageSkipSilence, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Модель Whisper" Subtitle="Путь к ggml-*.bin или пусто для LocalData/whisper.">
+            <vkui:Cell.After>
+              <TextBox Width="260" Text="{Binding LocalVoiceTranscriptionModelPath, Mode=TwoWay}" PlaceholderText="C:\models\ggml-base.bin"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Язык" Subtitle="auto, ru, en.">
+            <vkui:Cell.After>
+              <TextBox Width="96" Text="{Binding LocalVoiceTranscriptionLanguage, Mode=TwoWay}" PlaceholderText="auto"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

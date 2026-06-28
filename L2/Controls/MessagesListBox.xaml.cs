@@ -3,6 +3,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using ELOR.Laney.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -42,6 +43,7 @@ namespace ELOR.Laney.Controls {
 
         private bool _isPreviousMessagesLoadTriggered = false;
         private bool _isNextMessagesLoadTriggered = false;
+        private long _lastScrollSaveTicks = 0;
 
         private ScrollViewer ScrollViewer => Scroll as ScrollViewer;
 
@@ -50,6 +52,24 @@ namespace ELOR.Laney.Controls {
             DataContextChanged += MessagesListBox_DataContextChanged;
             ScrollViewer.ScrollChanged += ScrollViewer_ScrollChanged;
             CheckDataContext();
+        }
+
+        protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e) {
+            base.OnDetachedFromVisualTree(e);
+            DataContextChanged -= MessagesListBox_DataContextChanged;
+
+            if (ScrollViewer != null) {
+                ScrollViewer.ScrollChanged -= ScrollViewer_ScrollChanged;
+            }
+
+            if (_currentHolder != null) {
+                _currentHolder.ScrollToMessageRequested -= ScrollToMessage;
+                _currentHolder = null;
+            }
+
+            _cts?.Cancel();
+            _cts?.Dispose();
+            _cts = null;
         }
 
         private void MessagesListBox_DataContextChanged(object sender, EventArgs e) {
@@ -61,6 +81,7 @@ namespace ELOR.Laney.Controls {
                 _currentHolder.ScrollToMessageRequested -= ScrollToMessage;
             }
             _cts?.Cancel();
+            _cts?.Dispose();
 
             _controlHolderId1 = 0;
             _controlHolderId2 = 0;
@@ -79,7 +100,7 @@ namespace ELOR.Laney.Controls {
             _cts = new CancellationTokenSource();
         }
 
-        private void RestoreScroll(ScrollInfo scrollInfo, double ph = -1) {
+        private void RestoreScroll(ScrollInfo scrollInfo, double ph = -1, byte attempts = 6) {
             double h = Scroll.Extent.Height;
             if (h == 0) return;
             bool heightChanged = false;
@@ -89,13 +110,13 @@ namespace ELOR.Laney.Controls {
                 heightChanged = true;
             }
             if (h != scrollInfo.Height) {
-                if (!heightChanged) {
-                    Debug.WriteLine($"Cannot restore scroll because height is different. Height: {h}; saved height: {scrollInfo.Height}. Trying in next frame...");
-                    TopLevel.GetTopLevel(this).RequestAnimationFrame((t) => RestoreScroll(scrollInfo, h));
+                if (!heightChanged && attempts > 0) {
+                    if (Settings.ShowDebugCounters) Debug.WriteLine($"Cannot restore scroll because height is different. Height: {h}; saved height: {scrollInfo.Height}. Trying in next frame...");
+                    TopLevel.GetTopLevel(this).RequestAnimationFrame((t) => RestoreScroll(scrollInfo, h, (byte)(attempts - 1)));
                     return;
                 } else {
                     // высота равна приблизительно сохранённому значению, ок, восстановим скролл тогда, мало ли какое-то сообщение поменялось...
-                    Debug.WriteLine($"Cannot restore scroll. Height is changed, but STILL WRONG!. Height: {h}; saved height: {scrollInfo.Height}.");
+                    if (Settings.ShowDebugCounters) Debug.WriteLine($"Cannot restore scroll. Height is changed, but STILL WRONG!. Height: {h}; saved height: {scrollInfo.Height}.");
                     //if (h > scrollInfo.Height - 100 && h < scrollInfo.Height + 100) {
 
                     //} else {
@@ -109,9 +130,9 @@ namespace ELOR.Laney.Controls {
 
             double o = Scroll.Offset.Y;
             double oDiff = o - scrollInfo.Offset;
-            if (oDiff > 4 || oDiff < -4) {
-                Debug.WriteLine($"Cannot restore scroll because offset is different. Offset: {o}; saved offset: {scrollInfo.Offset}. Trying in next frame...");
-                TopLevel.GetTopLevel(this).RequestAnimationFrame((t) => RestoreScroll(scrollInfo));
+            if ((oDiff > 4 || oDiff < -4) && attempts > 0) {
+                if (Settings.ShowDebugCounters) Debug.WriteLine($"Cannot restore scroll because offset is different. Offset: {o}; saved offset: {scrollInfo.Offset}. Trying in next frame...");
+                TopLevel.GetTopLevel(this).RequestAnimationFrame((t) => RestoreScroll(scrollInfo, -1, (byte)(attempts - 1)));
                 return;
             }
 
@@ -123,12 +144,7 @@ namespace ELOR.Laney.Controls {
 
             if (isOk) {
                 // Saving scroll
-                Debug.WriteLine($"Saving scroll for {_controlHolderId1}: {Scroll.Offset.Y}/{Scroll.Extent.Height}");
-                if (_lastPositions.ContainsKey(_controlHolderId1)) {
-                    _lastPositions[_controlHolderId1] = new ScrollInfo(Scroll.Extent.Height, Scroll.Offset.Y);
-                } else {
-                    _lastPositions.Add(_controlHolderId1, new ScrollInfo(Scroll.Extent.Height, Scroll.Offset.Y));
-                }
+                SaveScrollPosition();
 
                 // Incremental loading
                 double v = Scroll.Viewport.Height;
@@ -138,14 +154,32 @@ namespace ELOR.Laney.Controls {
                 {
                     if (o < v && !_isPreviousMessagesLoadTriggered) // Load previous
                     {
-                        Debug.WriteLine("Load previous");
+                        if (Settings.ShowDebugCounters) Debug.WriteLine("Load previous");
                         TriggerLoadPreviousMessages();
                     } else if (o > h - v - v && !_isNextMessagesLoadTriggered) // Load next
                       {
-                        Debug.WriteLine("Load next");
+                        if (Settings.ShowDebugCounters) Debug.WriteLine("Load next");
                         TriggerLoadNextMessages();
                     }
                 }
+            }
+        }
+
+        private void SaveScrollPosition() {
+            long now = Stopwatch.GetTimestamp();
+            if (_lastScrollSaveTicks != 0) {
+                double elapsedMs = (now - _lastScrollSaveTicks) * 1000.0 / Stopwatch.Frequency;
+                if (elapsedMs < 80) return;
+            }
+
+            _lastScrollSaveTicks = now;
+            if (Settings.ShowDebugCounters) Debug.WriteLine($"Saving scroll for {_controlHolderId1}: {Scroll.Offset.Y}/{Scroll.Extent.Height}");
+
+            ScrollInfo scrollInfo = new ScrollInfo(Scroll.Extent.Height, Scroll.Offset.Y);
+            if (_lastPositions.ContainsKey(_controlHolderId1)) {
+                _lastPositions[_controlHolderId1] = scrollInfo;
+            } else {
+                _lastPositions.Add(_controlHolderId1, scrollInfo);
             }
         }
 
@@ -155,7 +189,7 @@ namespace ELOR.Laney.Controls {
 
                 await _currentHolder.LoadPreviousMessagesAsync(_cts.Token);
                 if (_cts.IsCancellationRequested) {
-                    _isPreviousMessagesLoadTriggered = true;
+                    _isPreviousMessagesLoadTriggered = false;
                     return;
                 }
 
@@ -180,16 +214,16 @@ namespace ELOR.Laney.Controls {
             _canChangeScroll = false;
             double newHeight = Scroll.Extent.Height;
             double diff = newHeight - oldHeight;
-            Debug.WriteLine($"Trying to restore scroll position after previous messages loaded. Old height: {oldHeight}, new height: {newHeight}, diff: {diff}");
+            if (Settings.ShowDebugCounters) Debug.WriteLine($"Trying to restore scroll position after previous messages loaded. Old height: {oldHeight}, new height: {newHeight}, diff: {diff}");
 
             if (diff > 0) // height increased
             {
                 Scroll.Offset = new Vector(Scroll.Offset.X, oldOffset + diff);
-                Debug.WriteLine($"Scroll successfully restored.");
+                if (Settings.ShowDebugCounters) Debug.WriteLine($"Scroll successfully restored.");
                 _isPreviousMessagesLoadTriggered = false;
                 _canChangeScroll = true;
             } else {
-                Debug.WriteLine($"Height not changed after load messages command executed. Trying in next frame, attemps: {_restoreScrollAttempts}.");
+                if (Settings.ShowDebugCounters) Debug.WriteLine($"Height not changed after load messages command executed. Trying in next frame, attemps: {_restoreScrollAttempts}.");
                 TopLevel.GetTopLevel(this).RequestAnimationFrame((t) => TryRestoreScroll(oldHeight, oldOffset));
             }
         }
@@ -203,22 +237,36 @@ namespace ELOR.Laney.Controls {
         }
 
         private void ScrollToMessage(object sender, IMessageListItem e) {
-            Debug.WriteLine($"ScrollToMessage requested. Message ID: {e.Id}");
+            if (Settings.ShowDebugCounters) Debug.WriteLine($"ScrollToMessage requested. Message ID: {e.Id}");
             ScrollToMessage(e);
         }
 
         private void ScrollToMessage(IMessageListItem e) {
             _canChangeScroll = false;
+            ScrollIntoView(e);
+            TryFinishScrollToMessage(e, 10);
+        }
+
+        private void TryFinishScrollToMessage(IMessageListItem e, byte attempts) {
             Control item = ContainerFromItem(e);
 
             if (item == null) {
-                Debug.WriteLine($"ScrollToMessage: UI for message {e.Id} not created!");
+                if (Settings.ShowDebugCounters) Debug.WriteLine($"ScrollToMessage: UI for message {e.Id} not created yet.");
+                if (attempts > 0) {
+                    TopLevel.GetTopLevel(this)?.RequestAnimationFrame((t) => TryFinishScrollToMessage(e, (byte)(attempts - 1)));
+                } else {
+                    _canChangeScroll = true;
+                }
                 return;
             }
 
             if (!item.IsLoaded) {
-                Debug.WriteLine($"ScrollToMessage: UI for message {e.Id} not loaded yet! Trying in another frame...");
-                TopLevel.GetTopLevel(this).RequestAnimationFrame((t) => ScrollToMessage(e));
+                if (Settings.ShowDebugCounters) Debug.WriteLine($"ScrollToMessage: UI for message {e.Id} not loaded yet! Trying in another frame...");
+                if (attempts > 0) {
+                    TopLevel.GetTopLevel(this)?.RequestAnimationFrame((t) => TryFinishScrollToMessage(e, (byte)(attempts - 1)));
+                } else {
+                    _canChangeScroll = true;
+                }
                 return;
             }
 

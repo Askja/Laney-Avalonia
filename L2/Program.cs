@@ -1,6 +1,8 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Labs.Notifications;
 using ELOR.Laney.Core;
+using ELOR.Laney.Core.Logging;
 using ELOR.Laney.Core.Network;
 using Serilog;
 using System;
@@ -46,17 +48,18 @@ namespace ELOR.Laney {
 #endif
 
 #if DEBUG
-            loggerConfig.WriteTo.Debug();
+            loggerConfig.WriteTo.Sink(new SafeDebugSink());
 #endif
 
             if (Settings.EnableLogs)
-                loggerConfig = loggerConfig.WriteTo.File(Path.Combine(localDataPath, "logs", $"L2_{DateTimeOffset.Now.ToUnixTimeSeconds()}.log"),
+                loggerConfig = loggerConfig.WriteTo.File(new SafeLogFormatter(), Path.Combine(localDataPath, "logs", $"L2_{DateTimeOffset.Now.ToUnixTimeSeconds()}.log"),
                     buffered: true, retainedFileCountLimit: 10, flushToDiskInterval: TimeSpan.FromSeconds(20));
 
             Log.Logger = loggerConfig.CreateLogger();
             Log.Information("Laney is starting up. Build: {0}, Repo: {1}", App.BuildInfo, App.RepoInfo);
             Log.Information("Launch mode: {0}", Mode);
             Log.Information("Local data folder: {0}", localDataPath);
+            Log.Information("Portable mode: {0}", App.IsPortableMode);
             Log.Information("Is ChaCha20Poly1305 supported: {0}", Encryption.IsChaCha20Poly1305Supported);
 
             // Delay (нужен при перезапуске приложения)
@@ -121,6 +124,7 @@ namespace ELOR.Laney {
         // Avalonia configuration, don't remove; also used by visual designer.
         public static AppBuilder BuildAvaloniaApp() =>
             AppBuilder.Configure<App>().UseAvaloniaNative().UsePlatformDetect()
+            .WithAppNotifications(GetNotificationOptions())
             .With(new SkiaOptions {
                 UseOpacitySaveLayer = true,
                 MaxGpuResourceSizeBytes = 1073741824
@@ -130,5 +134,14 @@ namespace ELOR.Laney {
             }).With(new X11PlatformOptions {
                 RenderingMode = new List<X11RenderingMode> { X11RenderingMode.Vulkan, X11RenderingMode.Glx, X11RenderingMode.Software }
             });
+
+        private static AppNotificationOptions GetNotificationOptions() {
+            return new AppNotificationOptions {
+                AppName = "Laney",
+                AppIcon = Path.Combine(AppContext.BaseDirectory, "Assets", "Logo", "icon.ico"),
+                AppUserModelId = "ELOR.Laney",
+                ClearOnAppClose = true
+            };
+        }
     }
 }

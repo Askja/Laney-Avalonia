@@ -65,7 +65,7 @@ namespace ELOR.Laney.Controls {
             if (Post is Message message) {
                 RenderElement(message);
             } else if (Post is WallPost post) {
-                // RenderElement(post);
+                RenderElement(post);
             } else {
                 throw new ArgumentException($"Post property must be {nameof(WallPost)} or {nameof(Message)}");
             }
@@ -85,7 +85,7 @@ namespace ELOR.Laney.Controls {
                 if (Post is Message message) {
                     RenderElement(message);
                 } else if (Post is WallPost post) {
-                    // RenderElement(post);
+                    RenderElement(post);
                 } else {
                     throw new ArgumentException($"Post property must be {nameof(WallPost)} or {nameof(Message)}");
                 }
@@ -127,7 +127,7 @@ namespace ELOR.Laney.Controls {
                 ReplyMessageButton.IsVisible = false;
             }
 
-            TextParser.SetText(message.Text, PostText, OnLinkClicked);
+            TextParser.SetText(message.Text, PostText, OnLinkClicked, message.PeerId);
             PostText.IsVisible = !String.IsNullOrEmpty(message.Text);
 
             Attachments.IsVisible = message.Attachments.Count > 0;
@@ -171,6 +171,45 @@ namespace ELOR.Laney.Controls {
                     ForwardedMessagesStack.Children.Add(fwdsButton);
                 }
             }
+        }
+
+        private void RenderElement(WallPost post) {
+            session = VKSession.GetByDataContext(this);
+
+            long authorId = post.FromId != 0 ? post.FromId : post.OwnerOrToId;
+            Avatar.Background = authorId.GetGradient();
+
+            var data = CacheManager.GetNameAndAvatar(authorId);
+            string author = String.Join(" ", new[] { data.Item1, data.Item2 }).Trim();
+            if (String.IsNullOrWhiteSpace(author)) author = authorId.ToString();
+
+            Avatar.Initials = author.GetInitials(authorId.IsChat() || authorId.IsGroup());
+            Avatar.SetImage(data.Item3, Avatar.Width, Avatar.Height);
+            Author.Text = author;
+
+            PostInfo.Text = post.Date.ToHumanizedString(true);
+            if (post.Views?.Count > 0) PostInfo.Text += $" · {post.Views.Count}";
+
+            Reply.Message = null;
+            ReplyMessageButton.IsVisible = false;
+
+            TextParser.SetText(post.Text, PostText, OnLinkClicked, post.OwnerOrToId);
+            PostText.IsVisible = !String.IsNullOrEmpty(post.Text);
+
+            Attachments.IsVisible = post.Attachments?.Count > 0;
+            if (post.Attachments?.Count > 0) {
+                Attachments.Width = Width - Attachments.Margin.Left;
+                Attachments.Gift = post.Attachments?.SingleOrDefault(a => a.Gift != null)?.Gift;
+                Attachments.Owner = CacheManager.GetNameOnly(authorId);
+                Attachments.Attachments = post.Attachments;
+            } else {
+                Attachments.Attachments = null;
+                Attachments.Gift = null;
+            }
+
+            Map.IsVisible = false;
+            ForwardedMessagesStack.Children.Clear();
+            ForwardedMessagesContainer.IsVisible = false;
         }
 
         private void TrySetupMap(Message message) {

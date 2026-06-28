@@ -35,6 +35,15 @@ namespace VKUI.Controls {
             set => SetValue(SubtitleProperty, value);
         }
 
+        public bool IsSectionHeader { get; set; }
+
+        public static ActionSheetItem Section(string header) {
+            return new ActionSheetItem {
+                Header = header,
+                IsSectionHeader = true
+            };
+        }
+
         public event EventHandler<RoutedEventArgs> Click;
 
         #endregion

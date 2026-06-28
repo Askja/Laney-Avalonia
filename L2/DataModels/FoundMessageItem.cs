@@ -13,6 +13,15 @@ namespace ELOR.Laney.DataModels {
         public DateTime SentDate { get; private set; }
         // public string NormalizedLastMessageTime { get { return SentDate.ToHumanizedTimeOrDateString(); } }
 
+        public FoundMessageItem(long peerId, int conversationMessageId, string peerName, Uri peerAvatar, string text, DateTime sentDate) {
+            PeerId = peerId;
+            Id = conversationMessageId;
+            PeerName = peerName;
+            PeerAvatar = peerAvatar;
+            Text = text;
+            SentDate = sentDate;
+        }
+
         public FoundMessageItem(bool isOutgoing, Message message, Conversation conversation = null) {
             if (conversation.Peer.Type == PeerType.Chat) {
                 PeerName = conversation.ChatSettings.Title;

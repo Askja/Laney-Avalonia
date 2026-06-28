@@ -14,14 +14,14 @@
         Title="Sharing UI">
   <Grid x:Name="Root" RowDefinitions="Auto *">
     <vkui:WindowTitleBar x:Name="TitleBar" CanShowTitle="False" CanMove="True" />
-    <Grid x:Name="Content" RowDefinitions="Auto Auto *">
+    <Grid x:Name="ContentPanel" RowDefinitions="Auto Auto *">
       <Grid x:Name="SessionSwitcherContainer" Height="48" Margin="64,0" HorizontalAlignment="Center" IsVisible="False">
         <ComboBox x:Name="SessionSwitcher" Classes="Alternate" VerticalAlignment="Center" SelectedIndex="0" SelectionChanged="SessionSwitcher_SelectionChanged">
           <ComboBoxItem Content="{x:Static i18n:Resources.sharing_group}"/>
           <ComboBoxItem Content="{x:Static i18n:Resources.sharing_user}"/>
         </ComboBox>
       </Grid>
-      <TextBox Classes="Search" Grid.Row="1" Margin="12,0,12,6" Watermark="{x:Static i18n:Resources.search}" Text="{Binding Query, Mode=TwoWay}" KeyUp="OnSearchBoxKeyUp"/>
+      <TextBox Classes="Search" Grid.Row="1" Margin="12,0,12,6" PlaceholderText="{x:Static i18n:Resources.search}" Text="{Binding Query, Mode=TwoWay}" KeyUp="OnSearchBoxKeyUp"/>
       <ListBox x:Name="ChatsList" Classes="FixMargin" Grid.Row="2" Background="Transparent" ItemsSource="{Binding Chats}">
         <ListBox.ItemTemplate>
           <DataTemplate x:DataType="mdl:Entity">
@@ -31,7 +31,7 @@
       </ListBox>
       <Grid x:Name="EmptyChatsListContainer" Grid.Row="2" VerticalAlignment="Center">
         <vkui:Spinner HorizontalAlignment="Center" Width="32" Height="32" IsVisible="{Binding IsLoading, Mode=OneWay}"/>
-        <vkui:Placeholder VerticalAlignment="Center"
+        <vkui:Placeholder Classes="Compact" VerticalAlignment="Center"
                               IsVisible="{Binding Placeholder, Mode=OneWay, FallbackValue=False, Converter={x:Static ObjectConverters.IsNotNull}}"
                               Icon="{Binding Placeholder.Icon, Mode=OneWay}"
                               Header="{Binding Placeholder.Header, Mode=OneWay}"

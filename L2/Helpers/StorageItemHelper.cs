@@ -1,4 +1,5 @@
-﻿using Avalonia.Platform.Storage;
+using Avalonia.Platform.Storage;
+using ELOR.Laney.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -37,6 +38,15 @@ namespace ELOR.Laney.Helpers {
             if (photosCount > 0 && videosCount == 0 && othersCount == 0) return DroppedFilesType.OnlyPhotos;
             if (photosCount == 0 && videosCount > 0 && othersCount == 0) return DroppedFilesType.OnlyVideos;
             return DroppedFilesType.Mixed;
+        }
+
+        public static int GetUploadCommandType(this IEnumerable<IStorageItem> items) {
+            DroppedFilesType type = items.GetFilesType();
+            switch (type) {
+                case DroppedFilesType.OnlyPhotos: return Constants.PhotoUploadCommand;
+                case DroppedFilesType.OnlyVideos: return Constants.VideoUploadCommand;
+                default: return Constants.FileUploadCommand;
+            }
         }
     }
 }

@@ -1,0 +1,41 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vkui="using:VKUI.Controls"
+             xmlns:vm="using:ELOR.Laney.ViewModels.SettingsCategories"
+             xmlns:mdl="using:ELOR.Laney.DataModels"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="ELOR.Laney.Views.SettingsCategories.E2E" x:DataType="vm:E2ESettingsViewModel">
+  <ScrollViewer>
+    <StackPanel>
+      <Border Classes="Group" VerticalAlignment="Top">
+        <StackPanel>
+          <Grid Classes="GroupHeader">
+            <TextBlock Text="Текущий чат"/>
+          </Grid>
+          <vkui:Cell Header="Статус" Subtitle="{Binding WorkflowText}">
+            <vkui:Cell.After>
+              <TextBlock Classes="Subhead" Text="{Binding CurrentChatStatus}" Foreground="{DynamicResource VKTextSecondaryBrush}" TextWrapping="Wrap" MaxWidth="220"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="Group" VerticalAlignment="Top">
+        <StackPanel>
+          <Grid Classes="GroupHeader">
+            <TextBlock Text="Профили"/>
+          </Grid>
+          <ItemsControl ItemsSource="{Binding Profiles}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="mdl:TwoStringTuple">
+                <vkui:Cell Header="{Binding Item1}" Subtitle="{Binding Item2}"/>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

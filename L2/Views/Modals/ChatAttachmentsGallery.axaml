@@ -1,0 +1,69 @@
+<vkw:DialogWindow xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:controls="using:ELOR.Laney.Controls"
+        xmlns:helpers="using:ELOR.Laney.Helpers"
+        xmlns:vm="using:ELOR.Laney.ViewModels.Modals"
+        xmlns:vkw="using:VKUI.Windows"
+        xmlns:vkui="using:VKUI.Controls"
+        mc:Ignorable="d" d:DesignWidth="640" d:DesignHeight="720"
+        x:Class="ELOR.Laney.Views.Modals.ChatAttachmentsGallery"
+        x:DataType="vm:ChatAttachmentsGalleryViewModel"
+        Width="640" Height="720"
+        Title="Вложения чата">
+
+  <Grid RowDefinitions="Auto *">
+    <Border Grid.Row="0" Padding="16,14" Background="{DynamicResource VKBackgroundContentBrush}" BorderBrush="{DynamicResource VKSeparatorAlphaBrush}" BorderThickness="0,0,0,1">
+      <Grid RowDefinitions="Auto Auto" ColumnDefinitions="* Auto" RowSpacing="10" ColumnSpacing="12">
+        <StackPanel>
+          <TextBlock Classes="Headline" Text="{Binding Header}" TextTrimming="CharacterEllipsis"/>
+          <TextBlock Classes="Caption1" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="{Binding Summary}"/>
+        </StackPanel>
+
+        <ComboBox x:Name="FilterBox" Grid.Column="1" MinWidth="160" ItemsSource="{Binding FilterTitles}" SelectedIndex="0" SelectionChanged="FilterBox_SelectionChanged"/>
+        <TextBox x:Name="SearchBox" Grid.Row="1" Grid.ColumnSpan="2" PlaceholderText="Поиск по имени, типу, расширению, ссылке или sender id" TextChanged="SearchBox_TextChanged"/>
+      </Grid>
+    </Border>
+
+    <Grid Grid.Row="1">
+      <ScrollViewer>
+        <ItemsRepeater x:Name="ItemsList" ItemsSource="{Binding Items}">
+          <ItemsRepeater.Layout>
+            <StackLayout/>
+          </ItemsRepeater.Layout>
+          <ItemsRepeater.ItemTemplate>
+            <DataTemplate x:DataType="helpers:DownloadableChatAttachment">
+              <Button Classes="Tertiary" Padding="0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Click="OnItemClick" ContextRequested="OnItemContextRequested">
+                <Grid Margin="14,8" ColumnDefinitions="Auto * Auto">
+                  <Grid Width="72" Height="72" Margin="0,0,12,0">
+                    <Border CornerRadius="10" Background="{DynamicResource VKImBubbleIncomingBrush}" IsVisible="{Binding PreviewUri, Converter={x:Static ObjectConverters.IsNull}}">
+                      <vkui:VKIcon Width="28" Height="28" Id="{Binding IconId}" Foreground="{DynamicResource VKContentPlaceholderIconBrush}"/>
+                    </Border>
+                    <Rectangle RadiusX="10" RadiusY="10" controls:ImageLoader.FillSource="{Binding PreviewUri}" IsVisible="{Binding PreviewUri, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+                  </Grid>
+
+                  <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Classes="Subhead" FontWeight="Medium" Foreground="{DynamicResource VKTextPrimaryBrush}" Text="{Binding DisplayTitle}" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Classes="Caption1" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="{Binding DisplaySubtitle}" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Classes="Caption1" Foreground="{DynamicResource VKTextLinkBrush}" Text="{Binding Uri}" TextTrimming="CharacterEllipsis"/>
+                  </StackPanel>
+
+                  <vkui:VKIcon Grid.Column="2" Width="20" Height="20" Margin="12,0,0,0" Id="{x:Static vkui:VKIconNames.Icon12ArrowUpRight}" Foreground="{DynamicResource VKIconSecondaryBrush}" VerticalAlignment="Center"/>
+                </Grid>
+              </Button>
+            </DataTemplate>
+          </ItemsRepeater.ItemTemplate>
+        </ItemsRepeater>
+      </ScrollViewer>
+
+      <vkui:Placeholder Classes="Compact" IsVisible="{Binding IsEmpty}" VerticalAlignment="Center"
+                        Header="Вложений нет"
+                        Text="В загруженной части чата под этот фильтр ничего не попало.">
+        <vkui:Placeholder.Icon>
+          <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon56GalleryOutline}"/>
+        </vkui:Placeholder.Icon>
+      </vkui:Placeholder>
+    </Grid>
+  </Grid>
+</vkw:DialogWindow>

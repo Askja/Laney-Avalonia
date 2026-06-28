@@ -1,5 +1,6 @@
 ﻿using ELOR.Laney.Helpers;
 using ELOR.Laney.Views.Modals;
+using ELOR.VKAPILib.Objects;
 using Serilog;
 using System;
 using System.Threading.Tasks;
@@ -54,18 +55,18 @@ namespace ELOR.Laney.Core {
                     break;
                 case VKLinkType.Poll:
                     await OpenPollViewerAsync(session, Int64.Parse(ids[0].Value), Int32.Parse(ids[1].Value));
-                    await Launcher.LaunchUrl(url); // Remove after implementation
                     break;
                 case VKLinkType.ConversationInvite:
                     id = url;
-                    if (session.GroupId != 0) break; // TODO: открыть окно превью чата в сессии юзера
+                    if (session.GroupId != 0) {
+                        await Launcher.LaunchUrl(EnsureAbsoluteUrl(url));
+                        break;
+                    }
                     await OpenChatPreviewAsync(session, url);
-                    await Launcher.LaunchUrl(url); // Remove after implementation
                     break;
                 case VKLinkType.WriteVkMe:
                     id = snm[0].Value;
                     await TryResolveScreenNameAndOpenConvAsync(session, id, url);
-                    await Launcher.LaunchUrl(url); // Remove after implementation
                     break;
                 case VKLinkType.Write:
                     var wr = CompiledRegularExpressions.Write().Match(url);
@@ -75,12 +76,10 @@ namespace ELOR.Laney.Core {
                 case VKLinkType.StickerPack:
                     string packName = spm[0].Groups[4].Value;
                     await OpenStickerPackPreviewAsync(session, packName);
-                    await Launcher.LaunchUrl(url); // Remove after implementation
                     break;
                 case VKLinkType.ScreenName:
                     id = snm[0].Value;
                     await TryResolveScreenNameAndOpenProfileAsync(session, id, url);
-                    await Launcher.LaunchUrl(url); // Remove after implementation
                     break;
                 case VKLinkType.Unknown:
                     id = url;
@@ -99,28 +98,82 @@ namespace ELOR.Laney.Core {
         }
 
         public static async Task OpenPollViewerAsync(VKSession session, long ownerId, int id) {
-            VKUIDialog alert = new VKUIDialog(Assets.i18n.Resources.not_implemented, Assets.i18n.Resources.not_implemented_desc + $"\n\nOwner: {ownerId}, poll id: {id}");
-            await alert.ShowDialog(session.ModalWindow);
+            await PollDialogHelper.ShowPollByIdAsync(session, ownerId, id);
         }
 
         public static async Task OpenChatPreviewAsync(VKSession session, string url) {
-            VKUIDialog alert = new VKUIDialog(Assets.i18n.Resources.not_implemented, Assets.i18n.Resources.not_implemented_desc + $"\n\nChat url: {url}");
-            await alert.ShowDialog(session.ModalWindow);
+            string link = EnsureAbsoluteUrl(url);
+            VKUIDialog confirm = new VKUIDialog(
+                Assets.i18n.Resources.chatlink_title,
+                link,
+                [Assets.i18n.Resources.close, Assets.i18n.Resources.add],
+                2
+            );
+
+            if (await confirm.ShowDialog<int>(session.ModalWindow) != 2) return;
+
+            try {
+                var response = await session.API.Messages.JoinChatByInviteLinkAsync(link);
+                long peerId = response.ChatId >= 2000000000 ? response.ChatId : 2000000000 + response.ChatId;
+                session.GoToChat(peerId);
+            } catch (Exception ex) {
+                await ExceptionHelper.ShowErrorDialogAsync(session.ModalWindow, ex, true);
+            }
         }
 
         public static async Task OpenStickerPackPreviewAsync(VKSession session, string packName) {
-            VKUIDialog alert = new VKUIDialog(Assets.i18n.Resources.not_implemented, Assets.i18n.Resources.not_implemented_desc + $"\n\nStickerpack name: {packName}");
-            await alert.ShowDialog(session.ModalWindow);
+            await StickerPackDialogHelper.ShowAsync(session, packName);
         }
 
         public static async Task TryResolveScreenNameAndOpenProfileAsync(VKSession session, string name, string fallbackUrl) {
-            VKUIDialog alert = new VKUIDialog(Assets.i18n.Resources.not_implemented, Assets.i18n.Resources.not_implemented_desc + $"\n\nName: {name}\nFallback: {fallbackUrl}");
-            await alert.ShowDialog(session.ModalWindow);
+            ResolveScreenNameResult resolved = await ResolveScreenNameAsync(session, name, fallbackUrl);
+            if (resolved == null) return;
+
+            switch (resolved.Type) {
+                case ScreenNameType.User:
+                    await OpenPeerProfileAsync(session, resolved.ObjectId);
+                    break;
+                case ScreenNameType.Group:
+                    await OpenPeerProfileAsync(session, -resolved.ObjectId);
+                    break;
+                default:
+                    await Launcher.LaunchUrl(EnsureAbsoluteUrl(fallbackUrl));
+                    break;
+            }
         }
 
         public static async Task TryResolveScreenNameAndOpenConvAsync(VKSession session, string name, string fallbackUrl) {
-            VKUIDialog alert = new VKUIDialog(Assets.i18n.Resources.not_implemented, Assets.i18n.Resources.not_implemented_desc + $"\n\nName: {name}\nFallback: {fallbackUrl}");
-            await alert.ShowDialog(session.ModalWindow);
+            ResolveScreenNameResult resolved = await ResolveScreenNameAsync(session, name, fallbackUrl);
+            if (resolved == null) return;
+
+            switch (resolved.Type) {
+                case ScreenNameType.User:
+                    session.GoToChat(resolved.ObjectId);
+                    break;
+                case ScreenNameType.Group:
+                    session.GoToChat(-resolved.ObjectId);
+                    break;
+                default:
+                    await Launcher.LaunchUrl(EnsureAbsoluteUrl(fallbackUrl));
+                    break;
+            }
+        }
+
+        private static async Task<ResolveScreenNameResult> ResolveScreenNameAsync(VKSession session, string name, string fallbackUrl) {
+            try {
+                ResolveScreenNameResult resolved = await session.API.Utils.ResolveScreenNameAsync(name);
+                if (resolved != null && resolved.ObjectId != 0) return resolved;
+
+                await Launcher.LaunchUrl(EnsureAbsoluteUrl(fallbackUrl));
+            } catch (Exception ex) {
+                await ExceptionHelper.ShowErrorDialogAsync(session.ModalWindow, ex, true);
+            }
+
+            return null;
+        }
+
+        private static string EnsureAbsoluteUrl(string url) {
+            return Uri.TryCreate(url, UriKind.Absolute, out _) ? url : $"https://{url}";
         }
     }
 }

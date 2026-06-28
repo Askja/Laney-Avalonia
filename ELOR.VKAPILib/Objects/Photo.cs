@@ -17,8 +17,8 @@ namespace ELOR.VKAPILib.Objects {
         [JsonIgnore]
         public Uri Uri {
             get {
-                if (!String.IsNullOrEmpty(Url)) return new Uri(Url);
-                if (!String.IsNullOrEmpty(Src)) return new Uri(Src);
+                if (!String.IsNullOrEmpty(Url) && Uri.TryCreate(Url, UriKind.Absolute, out Uri url)) return url;
+                if (!String.IsNullOrEmpty(Src) && Uri.TryCreate(Src, UriKind.Absolute, out Uri src)) return src;
                 return null;
             }
         }

@@ -16,6 +16,8 @@ using Serilog;
 using System;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using VKUI.Controls;
@@ -27,6 +29,14 @@ namespace ELOR.Laney.Views {
 
         ScrollViewer MessagesListScrollViewer;
         DispatcherTimer markReadTimer;
+        readonly System.Action<Avalonia.Styling.ThemeVariant> themeChangedAction;
+        bool autoScrollToLastMessageQueued = false;
+        bool frameMonitorRunning = false;
+        long lastFrameTicks = 0;
+        double lastFrameMs = 0;
+        double averageFrameMs = 0;
+        double maxFrameMs = 0;
+        int jankFrames = 0;
 
         MessageViewModel FirstVisible { get => MessagesListScrollViewer?.GetDataContextAt<MessageViewModel>(new Point(64, 0)); }
         MessageViewModel LastVisible { get => MessagesListScrollViewer?.GetDataContextAt<MessageViewModel>(new Point(64, MessagesListScrollViewer.DesiredSize.Height - 5)); }
@@ -34,6 +44,9 @@ namespace ELOR.Laney.Views {
         public ChatView() {
             InitializeComponent();
             MultiMsgContextButton.CommandParameter = MultiMsgContextButton;
+            themeChangedAction = (_) => ApplyChatAppearance();
+            App.Current.ThemeChangedActions.Add(themeChangedAction);
+            DetachedFromVisualTree += ChatView_DetachedFromVisualTree;
 
             MessagesList.Loaded += (a, b) => {
                 MessagesListScrollViewer = MessagesList.Scroll as ScrollViewer;
@@ -51,6 +64,7 @@ namespace ELOR.Laney.Views {
                 new ItemsPresenterWidthFixer(MessagesList);
 
                 OwnerWindow.Activated += OwnerWindow_Activated;
+                if (Settings.ShowDebugCounters) StartFrameMonitor();
             };
 
             BackButton.Click += (a, b) => BackButtonClick?.Invoke(this, null);
@@ -59,6 +73,7 @@ namespace ELOR.Laney.Views {
 
             DebugOverlay.IsVisible = Settings.ShowDebugCounters;
             Settings.SettingChanged += Settings_SettingChanged;
+            UpdateHeaderActionButtonsVisibility();
 
             Root.AddHandler(DragDrop.DragEnterEvent, OnDragEnter);
             DropArea.AddHandler(DragDrop.DragLeaveEvent, OnDragLeave);
@@ -75,9 +90,50 @@ namespace ELOR.Laney.Views {
         private void Settings_SettingChanged(string key, object value) {
             switch (key) {
                 case Settings.DEBUG_COUNTERS_CHAT:
-                    DebugOverlay.IsVisible = (bool)value;
+                    SetDebugOverlayVisible((bool)value);
+                    break;
+                case Settings.CHAT_HEADER_ACTION_SEARCH:
+                case Settings.CHAT_HEADER_ACTION_PROFILE:
+                case Settings.CHAT_HEADER_ACTION_MORE:
+                    UpdateHeaderActionButtonsVisibility();
+                    break;
+                case Settings.STREAMER_MODE:
+                    Chat?.RefreshStreamerMode();
+                    break;
+                case Settings.THEME:
+                case Settings.CHAT_BACKGROUND:
+                case Settings.MESSAGE_FONT_SIZE:
+                case Settings.MESSAGE_BUBBLE_WIDTH:
+                case Settings.MESSAGE_BUBBLE_DENSITY:
+                case Settings.MESSAGE_BUBBLE_STYLE:
+                case Settings.MESSAGE_BUBBLE_OPACITY:
+                case Settings.MESSAGE_BUBBLE_AUTO_COLOR:
+                    ApplyChatAppearance();
                     break;
             }
+
+            if (Chat != null && IsCurrentChatAppearanceKey(key)) ApplyChatAppearance();
+        }
+
+        private void ChatView_DetachedFromVisualTree(object sender, VisualTreeAttachmentEventArgs e) {
+            StopFrameMonitor();
+            App.Current.ThemeChangedActions.Remove(themeChangedAction);
+            Settings.SettingChanged -= Settings_SettingChanged;
+        }
+
+        private void SetDebugOverlayVisible(bool isVisible) {
+            DebugOverlay.IsVisible = isVisible;
+            if (isVisible) {
+                StartFrameMonitor();
+            } else {
+                StopFrameMonitor();
+            }
+        }
+
+        private void UpdateHeaderActionButtonsVisibility() {
+            SearchInChatButton.IsVisible = Settings.ChatHeaderActionSearch;
+            HeaderProfileButton.IsVisible = Settings.ChatHeaderActionProfile;
+            ContextMenuInChatButton.IsVisible = Settings.ChatHeaderActionMore;
         }
 
         private void OwnerWindow_Activated(object sender, EventArgs e) {
@@ -91,6 +147,47 @@ namespace ELOR.Laney.Views {
             BackButton.IsVisible = isVisible;
         }
 
+        public void FocusComposer() {
+            if (Chat == null || RestrictionReason.IsVisible || SelectedMessagesCommandsAreVisible()) return;
+            ComposerControl.FocusMessageText();
+        }
+
+        public void OpenAttachmentPicker() {
+            if (Chat == null || RestrictionReason.IsVisible || SelectedMessagesCommandsAreVisible()) return;
+            ComposerControl.ShowAttachmentPicker();
+        }
+
+        public void OpenStickerPicker() {
+            if (Chat == null || RestrictionReason.IsVisible || SelectedMessagesCommandsAreVisible()) return;
+            ComposerControl.ShowStickerPicker();
+        }
+
+        public void OpenQuickActions() {
+            if (Chat == null || RestrictionReason.IsVisible || SelectedMessagesCommandsAreVisible()) return;
+            ComposerControl.ShowQuickActions();
+        }
+
+        public void SetComposerText(string text) {
+            if (Chat?.Composer == null || RestrictionReason.IsVisible || SelectedMessagesCommandsAreVisible()) return;
+
+            Chat.Composer.Text = text ?? String.Empty;
+            Chat.Composer.TextSelectionStart = Chat.Composer.Text.Length;
+            Chat.Composer.TextSelectionEnd = Chat.Composer.Text.Length;
+            FocusComposer();
+        }
+
+        public void OpenSearchInChat() {
+            if (Chat == null || DemoMode.IsEnabled) return;
+
+            Window mainWindow = TopLevel.GetTopLevel(this) as Window;
+            SearchInChatWindow window = new SearchInChatWindow(VKSession.GetByDataContext(this), Chat.PeerId, mainWindow);
+            window.Show();
+        }
+
+        private bool SelectedMessagesCommandsAreVisible() {
+            return MessagesCommandsRoot?.IsVisible == true;
+        }
+
         private void ChatView_DataContextChanged(object sender, EventArgs e) {
             if (MessagesListScrollViewer != null) MessagesListScrollViewer.ScrollChanged -= ScrollViewer_ScrollChanged;
             if (Chat != null) {
@@ -101,6 +198,7 @@ namespace ELOR.Laney.Views {
             if (Chat != null) {
                 Chat.ReceivedMessages.CollectionChanged += ReceivedMessages_CollectionChanged;
             }
+            ApplyChatAppearance();
 
             new System.Action(async () => {
                 await Dispatcher.UIThread.InvokeAsync(() => {
@@ -109,27 +207,71 @@ namespace ELOR.Laney.Views {
             })();
         }
 
-        private void ReceivedMessages_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e) {
-            new System.Action(async () => {
-                if (!VKSession.GetByDataContext(this).Window.IsActive) return;
-                if (e.Action == NotifyCollectionChangedAction.Add && autoScrollToLastMessage && Chat.DisplayedMessages != null && Chat.DisplayedMessages.Count > 0) {
-                    ObservableCollection<MessageViewModel> received = sender as ObservableCollection<MessageViewModel>;
-                    await Task.Delay(10); // ибо id-ы разные почему-то...
-                    int lastReceivedId = received.LastOrDefault()?.ConversationMessageId ?? 0;
-                    var lastDisplayed = Chat.DisplayedMessages.Last;
-                    int lastDisplayedId = lastDisplayed?.ConversationMessageId ?? 0;
-                    if (lastReceivedId == lastDisplayedId && lastDisplayedId > 0) {
-                        MessagesList.ScrollIntoView(Chat.DisplayedMessages.Count - 1);
-                        //double h = MessagesListScrollViewer.Extent.Height - MessagesListScrollViewer.DesiredSize.Height;
-                        //ForceScroll(h);
+        private bool IsCurrentChatAppearanceKey(string key) {
+            return key == $"{Settings.PEER_LOCAL_THEME_PREFIX}{Chat.PeerId}"
+                || key == $"{Settings.PEER_LOCAL_BACKGROUND_IMAGE_PREFIX}{Chat.PeerId}"
+                || key == $"{Settings.PEER_LOCAL_BACKGROUND_DIM_PREFIX}{Chat.PeerId}"
+                || key == $"{Settings.PEER_LOCAL_BACKGROUND_BLUR_PREFIX}{Chat.PeerId}"
+                || key == $"{Settings.PEER_LOCAL_BACKGROUND_BRIGHTNESS_PREFIX}{Chat.PeerId}"
+                || key == $"{Settings.PEER_LOCAL_ACCENT_PREFIX}{Chat.PeerId}"
+                || key == $"{Settings.PEER_LOCAL_DENSITY_PREFIX}{Chat.PeerId}"
+                || key == $"{Settings.PEER_LOCAL_FONT_PREFIX}{Chat.PeerId}"
+                || key == $"{Settings.PEER_LOCAL_BUBBLE_COLOR_PREFIX}{Chat.PeerId}"
+                || key == $"{Settings.PEER_LOCAL_BUBBLE_STYLE_PREFIX}{Chat.PeerId}";
+        }
 
-                        // После изменения сообщения
-                        // после loading-cостояния надо ещё раз скроллить до конца.
-                        Log.Information($"Need to scroll to last message again. Message id: {lastDisplayedId}");
-                        if (lastDisplayed.State == MessageVMState.Loading) lastDisplayed.PropertyChanged += LastDisplayedMsgPropertyChanged;
-                    }
+        private void ApplyChatAppearance() {
+            long peerId = Chat?.PeerId ?? 0;
+            Root.Background = AppearanceManager.GetChatBackgroundBrush(Chat);
+            ImageLoader.SetBackgroundBlurRadius(ChatBackgroundImage, AppearanceManager.GetChatBackgroundBlurRadius(peerId));
+            ImageLoader.SetBackgroundSource(ChatBackgroundImage, AppearanceManager.GetChatBackgroundImageUri(peerId));
+            ChatBackgroundImage.Opacity = AppearanceManager.GetChatBackgroundImageOpacity(peerId);
+            ChatBackgroundDim.Opacity = AppearanceManager.GetChatBackgroundDimOpacity(peerId);
+            ChatBackgroundBrightness.Opacity = AppearanceManager.GetChatBackgroundBrightnessOpacity(peerId);
+            AppearanceManager.ApplyChatAccentResources(Root.Resources, peerId);
+            Root.Resources[AppearanceManager.MessageOuterMarginResourceKey] = AppearanceManager.GetMessageOuterMargin(peerId);
+            Root.Resources[AppearanceManager.MessageTextHostMarginResourceKey] = AppearanceManager.GetMessageTextHostMargin(peerId);
+            Root.Resources[AppearanceManager.MessageTextFontSizeResourceKey] = AppearanceManager.GetMessageTextFontSize(peerId);
+            Root.Resources[AppearanceManager.MessageTextLineHeightResourceKey] = AppearanceManager.GetMessageTextLineHeight(peerId);
+            Root.Resources[AppearanceManager.MessageBubbleMaxWidthResourceKey] = AppearanceManager.GetMessageBubbleMaxWidth();
+            Root.Resources[AppearanceManager.MessageBubbleCornerRadiusResourceKey] = AppearanceManager.GetMessageBubbleCornerRadius(peerId);
+            Root.Resources[AppearanceManager.MessageBubbleBorderThicknessResourceKey] = AppearanceManager.GetMessageBubbleBorderThickness(peerId);
+            Root.Resources[AppearanceManager.MessageBubbleBorderBrushResourceKey] = AppearanceManager.GetMessageBubbleBorderBrush(peerId);
+            Root.Resources[AppearanceManager.MessageBubbleBackgroundOpacityResourceKey] = AppearanceManager.GetMessageBubbleBackgroundOpacity();
+            Root.Resources[AppearanceManager.MessageBubbleOutgoingBrushResourceKey] = AppearanceManager.GetOutgoingBubbleBrush(Chat);
+        }
+
+        private void ReceivedMessages_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e) {
+            if (e.Action != NotifyCollectionChangedAction.Add || !autoScrollToLastMessage || Chat?.DisplayedMessages == null || Chat.DisplayedMessages.Count == 0) return;
+            QueueScrollToLastMessage(sender as ObservableCollection<MessageViewModel>);
+        }
+
+        private void QueueScrollToLastMessage(ObservableCollection<MessageViewModel> received) {
+            if (autoScrollToLastMessageQueued) return;
+            autoScrollToLastMessageQueued = true;
+            Dispatcher.UIThread.Post(async () => await ScrollToLastMessageIfNeededAsync(received));
+        }
+
+        private async Task ScrollToLastMessageIfNeededAsync(ObservableCollection<MessageViewModel> received) {
+            try {
+                await Task.Delay(16);
+                VKSession session = VKSession.GetByDataContext(this);
+                if (session?.Window?.IsActive != true) return;
+                if (!autoScrollToLastMessage || received == null || Chat?.DisplayedMessages == null || Chat.DisplayedMessages.Count == 0) return;
+
+                int lastReceivedId = received.LastOrDefault()?.ConversationMessageId ?? 0;
+                MessageViewModel lastDisplayed = Chat.DisplayedMessages.Last;
+                int lastDisplayedId = lastDisplayed?.ConversationMessageId ?? 0;
+                if (lastReceivedId == lastDisplayedId && lastDisplayedId > 0) {
+                    MessagesList.ScrollIntoView(lastDisplayed);
+
+                    // После loading-состояния нужно ещё раз дожать вниз, когда высота bubble станет финальной.
+                    if (Settings.ShowDebugCounters) Log.Information($"Need to scroll to last message again. Message id: {lastDisplayedId}");
+                    if (lastDisplayed.State == MessageVMState.Loading) lastDisplayed.PropertyChanged += LastDisplayedMsgPropertyChanged;
                 }
-            })();
+            } finally {
+                autoScrollToLastMessageQueued = false;
+            }
         }
 
         private void LastDisplayedMsgPropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e) {
@@ -180,6 +322,7 @@ namespace ELOR.Laney.Views {
             if (Settings.ShowDebugCounters) {
                 tmsgId.Text = fv?.ConversationMessageId.ToString() ?? "N/A";
                 bmsgId.Text = lv?.ConversationMessageId.ToString() ?? "N/A";
+                UpdateDebugOverlay();
             }
 
             UpdateDateUnderHeader(fv);
@@ -206,6 +349,118 @@ namespace ELOR.Laney.Views {
             TopDateContainer.IsVisible = true;
         }
 
+        private void UpdateDebugOverlay() {
+            if (MessagesListScrollViewer == null) return;
+
+            dbgScrV.Text = Math.Round(MessagesListScrollViewer.Viewport.Height).ToString();
+            dbgScrO.Text = $"{Math.Round(MessagesListScrollViewer.Offset.Y)}/{Math.Round(MessagesListScrollViewer.Extent.Height)}";
+            dbgScrAuto.Text = autoScrollToLastMessage ? "on" : "off";
+
+            long ram = Process.GetCurrentProcess().PrivateMemorySize64;
+            dbgRam.Text = $"{Math.Round((double)ram / 1048576, 1)} Mb";
+            dbgGc.Text = $"{GC.CollectionCount(0)}/{GC.CollectionCount(1)}/{GC.CollectionCount(2)}";
+
+            List<Control> visibleControls = new List<Control>();
+            MessagesList.FindVisualChildrenByType(visibleControls);
+            dbgUi.Text = visibleControls.Count.ToString();
+            dbgFrame.Text = $"{Math.Round(averageFrameMs, 1)}/{Math.Round(lastFrameMs, 1)}/{Math.Round(maxFrameMs, 1)} ms";
+            dbgJank.Text = jankFrames.ToString();
+        }
+
+        private void StartFrameMonitor() {
+            if (frameMonitorRunning) return;
+
+            frameMonitorRunning = true;
+            ResetFrameStats();
+            ScheduleFrameSample();
+        }
+
+        private void StopFrameMonitor() {
+            frameMonitorRunning = false;
+            lastFrameTicks = 0;
+        }
+
+        private void ResetFrameStats() {
+            lastFrameTicks = 0;
+            lastFrameMs = 0;
+            averageFrameMs = 0;
+            maxFrameMs = 0;
+            jankFrames = 0;
+        }
+
+        public async Task<ChatPerfScrollQaResult> RunPerfScrollQaAsync(TimeSpan duration) {
+            if (MessagesListScrollViewer == null) return new ChatPerfScrollQaResult();
+
+            bool wasRunning = frameMonitorRunning;
+            ResetFrameStats();
+            StartFrameMonitor();
+            await Task.Delay(500);
+            ResetFrameStats();
+
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            double originalOffset = MessagesListScrollViewer.Offset.Y;
+            double direction = -1;
+            int samples = 0;
+
+            while (stopwatch.Elapsed < duration) {
+                double maxOffset = Math.Max(0, MessagesListScrollViewer.Extent.Height - MessagesListScrollViewer.Viewport.Height);
+                double step = Math.Max(10, MessagesListScrollViewer.Viewport.Height / 60d);
+                double nextOffset = MessagesListScrollViewer.Offset.Y + step * direction;
+                if (nextOffset <= 0 || nextOffset >= maxOffset) {
+                    direction *= -1;
+                    nextOffset = Math.Clamp(MessagesListScrollViewer.Offset.Y + step * direction, 0, maxOffset);
+                }
+
+                MessagesListScrollViewer.Offset = new Vector(MessagesListScrollViewer.Offset.X, nextOffset);
+                samples++;
+                await Task.Delay(16);
+            }
+
+            await Task.Delay(120);
+
+            List<Control> visibleControls = new List<Control>();
+            MessagesList.FindVisualChildrenByType(visibleControls);
+            double averageFps = averageFrameMs > 0 ? 1000d / averageFrameMs : 0;
+            ChatPerfScrollQaResult result = new ChatPerfScrollQaResult {
+                Samples = samples,
+                AverageFrameMs = averageFrameMs,
+                LastFrameMs = lastFrameMs,
+                MaxFrameMs = maxFrameMs,
+                AverageFps = averageFps,
+                JankFrames = jankFrames,
+                VisibleControls = visibleControls.Count,
+                PrivateMemoryMb = Math.Round(Process.GetCurrentProcess().PrivateMemorySize64 / 1048576d, 2)
+            };
+
+            double boundedOriginalOffset = Math.Min(originalOffset, Math.Max(0, MessagesListScrollViewer.Extent.Height - MessagesListScrollViewer.Viewport.Height));
+            MessagesListScrollViewer.Offset = new Vector(MessagesListScrollViewer.Offset.X, boundedOriginalOffset);
+            if (!wasRunning && !DebugOverlay.IsVisible) StopFrameMonitor();
+            return result;
+        }
+
+        private void ScheduleFrameSample() {
+            if (!frameMonitorRunning) return;
+
+            TopLevel topLevel = TopLevel.GetTopLevel(this);
+            if (topLevel == null) return;
+            topLevel.RequestAnimationFrame((t) => SampleFrame());
+        }
+
+        private void SampleFrame() {
+            if (!frameMonitorRunning) return;
+
+            long now = Stopwatch.GetTimestamp();
+            if (lastFrameTicks != 0) {
+                lastFrameMs = (now - lastFrameTicks) * 1000.0 / Stopwatch.Frequency;
+                averageFrameMs = averageFrameMs <= 0 ? lastFrameMs : averageFrameMs * 0.9 + lastFrameMs * 0.1;
+                maxFrameMs = Math.Max(lastFrameMs, maxFrameMs * 0.995);
+                if (lastFrameMs > 34) jankFrames++;
+            }
+
+            lastFrameTicks = now;
+            ScheduleFrameSample();
+        }
+
         private void LoadingSpinner_PropertyChanged(object sender, AvaloniaPropertyChangedEventArgs e) {
             if (e.Property == VKUI.Controls.Spinner.IsVisibleProperty) {
                 TopDateContainer.IsVisible = !LoadingSpinner.IsVisible;
@@ -229,10 +484,15 @@ namespace ELOR.Laney.Views {
         }
 
         private void SearchButton_Click(object sender, RoutedEventArgs e) {
-            if (DemoMode.IsEnabled) return;
-            Window mainWindow = TopLevel.GetTopLevel(this) as Window;
-            SearchInChatWindow window = new SearchInChatWindow(VKSession.GetByDataContext(this), Chat.PeerId, mainWindow);
-            window.Show();
+            OpenSearchInChat();
+        }
+
+        private void HeaderProfileButton_Click(object sender, RoutedEventArgs e) {
+            if (Chat?.OpenProfileCommand?.CanExecute(null) == true) Chat.OpenProfileCommand.Execute(null);
+        }
+
+        private void ContextMenuInChatButton_Click(object sender, RoutedEventArgs e) {
+            if (Chat != null) ContextMenuHelper.ShowForChat(Chat, sender as Control);
         }
 
         private void OnSuggestedStickerClicked(object? sender, RoutedEventArgs e) {
@@ -396,5 +656,16 @@ namespace ELOR.Laney.Views {
         }
 
         #endregion
+    }
+
+    public sealed class ChatPerfScrollQaResult {
+        public int Samples { get; set; }
+        public double AverageFrameMs { get; set; }
+        public double LastFrameMs { get; set; }
+        public double MaxFrameMs { get; set; }
+        public double AverageFps { get; set; }
+        public int JankFrames { get; set; }
+        public int VisibleControls { get; set; }
+        public double PrivateMemoryMb { get; set; }
     }
 }

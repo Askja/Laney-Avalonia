@@ -56,10 +56,7 @@ public partial class APIConsoleWindow : Window {
         try {
             Settings.Initialize();
 
-            string token = Settings.Get<string>(Settings.VK_TOKEN);
-            string nonce = Settings.Get<string>(Settings.VK_TOKEN + "1");
-            string tag = Settings.Get<string>(Settings.VK_TOKEN + "2");
-            string dt = Encryption.Decrypt(AssetsManager.BinaryPayload.Skip(576).Take(32).OrderDescending().ToArray(), token, nonce, tag);
+            string dt = Settings.GetVkAccessToken();
 
             if (dt == null) throw new Exception("Failed to get access_token from settings!");
             AccessToken.Text = dt;

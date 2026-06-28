@@ -1,0 +1,84 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <ResourceDictionary.ThemeDictionaries>
+    <ResourceDictionary x:Key="Default">
+      <SolidColorBrush x:Key="LaneySurfaceRootBrush" Color="#F4F6F8"/>
+      <SolidColorBrush x:Key="LaneySurfaceSidebarBrush" Color="#FFFFFF"/>
+      <SolidColorBrush x:Key="LaneySurfacePanelBrush" Color="#FFFFFF"/>
+      <SolidColorBrush x:Key="LaneySurfaceRaisedBrush" Color="#FFFFFF"/>
+      <SolidColorBrush x:Key="LaneySurfaceOverlayBrush" Color="#FAFBFC"/>
+      <SolidColorBrush x:Key="LaneyMutedSurfaceBrush" Color="#EEF2F6"/>
+
+      <SolidColorBrush x:Key="LaneyBorderSubtleBrush" Color="#D9E0E7"/>
+      <SolidColorBrush x:Key="LaneyBorderStrongBrush" Color="#B8C2CC"/>
+
+      <SolidColorBrush x:Key="LaneyTextMutedBrush" Color="#657386"/>
+      <SolidColorBrush x:Key="LaneyTextSubtleBrush" Color="#8A96A6"/>
+      <SolidColorBrush x:Key="LaneyTextInvertedBrush" Color="#FFFFFF"/>
+
+      <SolidColorBrush x:Key="LaneyAccentBrush" Color="#3390EC"/>
+      <SolidColorBrush x:Key="LaneyAccentSoftBrush" Color="#D9ECFF"/>
+      <SolidColorBrush x:Key="LaneyAccentTextBrush" Color="#FFFFFF"/>
+      <SolidColorBrush x:Key="LaneyFocusRingBrush" Color="#3390EC" Opacity="0.42"/>
+
+      <SolidColorBrush x:Key="LaneyDangerBrush" Color="#E5484D"/>
+      <SolidColorBrush x:Key="LaneyDangerSoftBrush" Color="#FFE5E7"/>
+      <SolidColorBrush x:Key="LaneySuccessBrush" Color="#1FAD66"/>
+      <SolidColorBrush x:Key="LaneySuccessSoftBrush" Color="#DDF8E8"/>
+      <SolidColorBrush x:Key="LaneyWarningBrush" Color="#C88719"/>
+      <SolidColorBrush x:Key="LaneyWarningSoftBrush" Color="#FFF2D6"/>
+
+      <SolidColorBrush x:Key="LaneyScrimBrush" Color="#0D1117" Opacity="0.42"/>
+    </ResourceDictionary>
+
+    <ResourceDictionary x:Key="Dark">
+      <SolidColorBrush x:Key="LaneySurfaceRootBrush" Color="#0F1115"/>
+      <SolidColorBrush x:Key="LaneySurfaceSidebarBrush" Color="#15171C"/>
+      <SolidColorBrush x:Key="LaneySurfacePanelBrush" Color="#1A1D23"/>
+      <SolidColorBrush x:Key="LaneySurfaceRaisedBrush" Color="#20242B"/>
+      <SolidColorBrush x:Key="LaneySurfaceOverlayBrush" Color="#252A32"/>
+      <SolidColorBrush x:Key="LaneyMutedSurfaceBrush" Color="#202734"/>
+
+      <SolidColorBrush x:Key="LaneyBorderSubtleBrush" Color="#2A3038"/>
+      <SolidColorBrush x:Key="LaneyBorderStrongBrush" Color="#3A4350"/>
+
+      <SolidColorBrush x:Key="LaneyTextMutedBrush" Color="#8B97A8"/>
+      <SolidColorBrush x:Key="LaneyTextSubtleBrush" Color="#667386"/>
+      <SolidColorBrush x:Key="LaneyTextInvertedBrush" Color="#FFFFFF"/>
+
+      <SolidColorBrush x:Key="LaneyAccentBrush" Color="#4A9EFF"/>
+      <SolidColorBrush x:Key="LaneyAccentSoftBrush" Color="#17304A"/>
+      <SolidColorBrush x:Key="LaneyAccentTextBrush" Color="#FFFFFF"/>
+      <SolidColorBrush x:Key="LaneyFocusRingBrush" Color="#4A9EFF" Opacity="0.48"/>
+
+      <SolidColorBrush x:Key="LaneyDangerBrush" Color="#FF5C66"/>
+      <SolidColorBrush x:Key="LaneyDangerSoftBrush" Color="#3A1D24"/>
+      <SolidColorBrush x:Key="LaneySuccessBrush" Color="#35C979"/>
+      <SolidColorBrush x:Key="LaneySuccessSoftBrush" Color="#153523"/>
+      <SolidColorBrush x:Key="LaneyWarningBrush" Color="#E6A23C"/>
+      <SolidColorBrush x:Key="LaneyWarningSoftBrush" Color="#3A2B13"/>
+
+      <SolidColorBrush x:Key="LaneyScrimBrush" Color="#000000" Opacity="0.58"/>
+    </ResourceDictionary>
+  </ResourceDictionary.ThemeDictionaries>
+
+  <StaticResource x:Key="LaneySurface" ResourceKey="LaneySurfacePanelBrush"/>
+  <StaticResource x:Key="LaneySurfaceMuted" ResourceKey="LaneyMutedSurfaceBrush"/>
+  <StaticResource x:Key="LaneySurfaceRaised" ResourceKey="LaneySurfaceRaisedBrush"/>
+  <StaticResource x:Key="LaneyBorderSubtle" ResourceKey="LaneyBorderSubtleBrush"/>
+  <StaticResource x:Key="LaneyTextMuted" ResourceKey="LaneyTextMutedBrush"/>
+  <StaticResource x:Key="LaneyAccent" ResourceKey="LaneyAccentBrush"/>
+  <StaticResource x:Key="LaneyDanger" ResourceKey="LaneyDangerBrush"/>
+  <StaticResource x:Key="LaneySuccess" ResourceKey="LaneySuccessBrush"/>
+
+  <CornerRadius x:Key="LaneyRadius4">4</CornerRadius>
+  <CornerRadius x:Key="LaneyRadius8">8</CornerRadius>
+  <CornerRadius x:Key="LaneyRadius12">12</CornerRadius>
+  <CornerRadius x:Key="LaneyRadius16">16</CornerRadius>
+
+  <x:Double x:Key="LaneySpace4">4</x:Double>
+  <x:Double x:Key="LaneySpace8">8</x:Double>
+  <x:Double x:Key="LaneySpace12">12</x:Double>
+  <x:Double x:Key="LaneySpace16">16</x:Double>
+  <x:Double x:Key="LaneySpace24">24</x:Double>
+</ResourceDictionary>

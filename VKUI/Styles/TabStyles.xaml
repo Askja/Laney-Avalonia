@@ -52,7 +52,10 @@
                 HorizontalAlignment="{TemplateBinding HorizontalAlignment}"
                 VerticalAlignment="{TemplateBinding VerticalAlignment}">
           <DockPanel>
-            <ScrollViewer DockPanel.Dock="{TemplateBinding TabStripPlacement}">
+            <ScrollViewer DockPanel.Dock="{TemplateBinding TabStripPlacement}"
+                          ClipToBounds="True"
+                          HorizontalScrollBarVisibility="Auto"
+                          VerticalScrollBarVisibility="Disabled">
               <ItemsPresenter Name="PART_ItemsPresenter" ItemsPanel="{TemplateBinding ItemsPanel}" />
             </ScrollViewer>
             <ContentPresenter Name="PART_SelectedContentHost"
@@ -75,8 +78,9 @@
   </Style>
 
   <Style Selector="TabItem">
-    <Setter Property="Padding" Value="12" />
+    <Setter Property="Padding" Value="12,8" />
     <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="6" />
     <Setter Property="Foreground" Value="{DynamicResource VKTextSecondaryBrush}" />
     <Setter Property="Template">
       <ControlTemplate>
@@ -130,7 +134,7 @@
     <Setter Property="ItemsPanel">
       <Setter.Value>
         <ItemsPanelTemplate>
-          <StackPanel Orientation="Horizontal" Margin="12,0" Spacing="4"/>
+          <StackPanel Orientation="Horizontal" Margin="12,6,12,8" Spacing="4"/>
         </ItemsPanelTemplate>
       </Setter.Value>
     </Setter>
@@ -138,17 +142,16 @@
   
   <Style Selector="TabControl.Accent > TabItem">
     <Setter Property="Margin" Value="0" />
-    <Setter Property="Padding" Value="10,4" />
-    <Setter Property="MinHeight" Value="28" />
+    <Setter Property="Padding" Value="9,6" />
+    <Setter Property="MinHeight" Value="32" />
     <Setter Property="CornerRadius" Value="8" />
     <Setter Property="BorderThickness" Value="0" />
     <Setter Property="Foreground" Value="{DynamicResource VKTextSecondaryBrush}" />
     <Setter Property="Template">
       <ControlTemplate>
         <Grid Name="PART_Root" Margin="0" MinHeight="{TemplateBinding MinHeight}">
-          <Border Name="PART_SelectionBorder" IsVisible="False" Margin="0,10" CornerRadius="{TemplateBinding CornerRadius}" Background="{DynamicResource VKBackgroundContrastBrush}" BorderBrush="{DynamicResource VKSeparatorCommonBrush}" BorderThickness="1" BoxShadow="{StaticResource VKElevation2}"/>
+          <Border Name="PART_SelectionBorder" IsVisible="False" CornerRadius="{TemplateBinding CornerRadius}" Background="{DynamicResource VKAccentBrush}" Opacity="0.12" BorderThickness="0"/>
           <ContentPresenter Name="PART_ContentPresenter"
-                          Margin="0,10"
                           Padding="{TemplateBinding Padding}"
                           HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
                           VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
@@ -160,7 +163,6 @@
                           TextElement.FontWeight="Medium"
                           TextElement.FontSize="14"
                           TextBlock.LineHeight="18"
-                          TextBlock.BaselineOffset="18"
                           Content="{TemplateBinding Header}"
                           ContentTemplate="{TemplateBinding HeaderTemplate}"
                           CornerRadius="{TemplateBinding CornerRadius}">
@@ -180,7 +182,7 @@
     <Setter Property="Background" Value="Transparent" />
   </Style>
   <Style Selector="TabControl.Accent > TabItem:selected /template/ ContentPresenter#PART_ContentPresenter">
-    <Setter Property="TextElement.Foreground" Value="{DynamicResource VKHeaderAlternateTabActiveIndicatorBrush}" />
+    <Setter Property="TextElement.Foreground" Value="{DynamicResource VKAccentBrush}" />
   </Style>
   <Style Selector="TabControl.Accent > TabItem:selected /template/ Border#PART_SelectionBorder">
     <Setter Property="IsVisible" Value="True" />

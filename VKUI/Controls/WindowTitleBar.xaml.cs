@@ -31,7 +31,10 @@ namespace VKUI.Controls {
         Grid TitleBar;
         TextBlock WindowTitle;
         Border DragArea;
+        Button MinimizeButton;
+        Button MaximizeButton;
         Button CloseButton;
+        TextBlock MaximizeIcon;
         Window OwnerWindow;
 
         bool isTemplateLoaded = false;
@@ -41,8 +44,13 @@ namespace VKUI.Controls {
             TitleBar = e.NameScope.Find<Grid>(nameof(TitleBar));
             WindowTitle = e.NameScope.Find<TextBlock>(nameof(WindowTitle));
             DragArea = e.NameScope.Find<Border>(nameof(DragArea));
+            MinimizeButton = e.NameScope.Find<Button>(nameof(MinimizeButton));
+            MaximizeButton = e.NameScope.Find<Button>(nameof(MaximizeButton));
             CloseButton = e.NameScope.Find<Button>(nameof(CloseButton));
+            MaximizeIcon = e.NameScope.Find<TextBlock>(nameof(MaximizeIcon));
 
+            MinimizeButton.Click += MinimizeButton_Click;
+            MaximizeButton.Click += MaximizeButton_Click;
             CloseButton.Click += CloseButton_Click;
             Unloaded += WindowTitleBar_Unloaded;
 
@@ -65,10 +73,23 @@ namespace VKUI.Controls {
             OwnerWindow.Close();
         }
 
+        private void MinimizeButton_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e) {
+            OwnerWindow.WindowState = WindowState.Minimized;
+        }
+
+        private void MaximizeButton_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e) {
+            OwnerWindow.WindowState = OwnerWindow.WindowState == WindowState.Maximized
+                ? WindowState.Normal
+                : WindowState.Maximized;
+        }
+
         private void WindowTitleBar_Unloaded(object sender, Avalonia.Interactivity.RoutedEventArgs e) {
-            //OwnerWindow.PropertyChanged -= OwnerWindow_PropertyChanged;
-            //CloseButton.Click -= CloseButton_Click;
-            //Unloaded -= WindowTitleBar_Unloaded;
+            if (OwnerWindow != null) OwnerWindow.PropertyChanged -= OwnerWindow_PropertyChanged;
+            MinimizeButton.Click -= MinimizeButton_Click;
+            MaximizeButton.Click -= MaximizeButton_Click;
+            CloseButton.Click -= CloseButton_Click;
+            DragArea.PointerPressed -= DragArea_PointerPressed;
+            Unloaded -= WindowTitleBar_Unloaded;
         }
 
         private void Setup() {
@@ -91,6 +112,8 @@ namespace VKUI.Controls {
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
                 TitleBar.Height = 48;
                 WindowTitle.Classes.Add("Default");
+                MinimizeButton.IsVisible = true;
+                MaximizeButton.IsVisible = OwnerWindow.CanResize;
                 CloseButton.IsVisible = true;
             } else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
                 TitleBar.Height = 27; // 22 for old macos...
@@ -102,12 +125,20 @@ namespace VKUI.Controls {
             WindowTitle.Text = OwnerWindow.Title;
             OwnerWindow.PropertyChanged += OwnerWindow_PropertyChanged;
             DragArea.PointerPressed += DragArea_PointerPressed;
+            UpdateMaximizeIcon();
         }
 
         private void OwnerWindow_PropertyChanged(object sender, AvaloniaPropertyChangedEventArgs e) {
             if (e.Property.Name == nameof(Window.Title)) {
                 WindowTitle.Text = OwnerWindow.Title;
+            } else if (e.Property.Name == nameof(Window.WindowState)) {
+                UpdateMaximizeIcon();
             }
+        }
+
+        private void UpdateMaximizeIcon() {
+            if (MaximizeIcon == null || OwnerWindow == null) return;
+            MaximizeIcon.Text = OwnerWindow.WindowState == WindowState.Maximized ? "❐" : "□";
         }
 
         private void DragArea_PointerPressed(object sender, Avalonia.Input.PointerPressedEventArgs e) {

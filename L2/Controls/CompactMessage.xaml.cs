@@ -6,6 +6,7 @@ using ELOR.Laney.Extensions;
 using ELOR.Laney.ViewModels.Controls;
 using ELOR.VKAPILib.Objects;
 using System;
+using System.ComponentModel;
 
 namespace ELOR.Laney.Controls {
     public class CompactMessage : TemplatedControl {
@@ -43,6 +44,7 @@ namespace ELOR.Laney.Controls {
         TextBlock SenderName;
         TextBlock SentTime;
         TextBlock MessagePreview;
+        MessageViewModel subscribedMessageVM;
 
         #endregion
 
@@ -56,16 +58,50 @@ namespace ELOR.Laney.Controls {
             MessagePreview = e.NameScope.Find<TextBlock>(nameof(MessagePreview));
 
             isUILoaded = true;
+            AttachMessageVM(MessageVM);
             SetData();
         }
 
         protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change) {
             base.OnPropertyChanged(change);
 
+            if (change.Property == MessageVMProperty) {
+                DetachMessageVM(change.OldValue as MessageViewModel);
+                AttachMessageVM(change.NewValue as MessageViewModel);
+            }
+
             if (change.Property == MessageProperty || change.Property == MessageVMProperty) {
                 if (Message == null && MessageVM == null) return;
                 SetData();
             }
+        }
+
+        private void AttachMessageVM(MessageViewModel message) {
+            if (message == null || ReferenceEquals(subscribedMessageVM, message)) return;
+            DetachMessageVM(subscribedMessageVM);
+            subscribedMessageVM = message;
+            subscribedMessageVM.PropertyChanged += MessageVM_PropertyChanged;
+        }
+
+        private void DetachMessageVM(MessageViewModel message) {
+            if (message == null || !ReferenceEquals(subscribedMessageVM, message)) return;
+            subscribedMessageVM.PropertyChanged -= MessageVM_PropertyChanged;
+            subscribedMessageVM = null;
+        }
+
+        private void MessageVM_PropertyChanged(object sender, PropertyChangedEventArgs e) {
+            switch (e.PropertyName) {
+                case nameof(MessageViewModel.DisplaySenderName):
+                case nameof(MessageViewModel.DisplayPreviewText):
+                case nameof(MessageViewModel.DisplayPreviewImageUri):
+                    SetData();
+                    break;
+            }
+        }
+
+        protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e) {
+            DetachMessageVM(subscribedMessageVM);
+            base.OnDetachedFromVisualTree(e);
         }
 
         private void SetData() {
@@ -80,27 +116,24 @@ namespace ELOR.Laney.Controls {
             }
 
             if (Message != null) {
-                var data = CacheManager.GetNameAndAvatar(Message.FromId);
-                if (data != null) {
-                    SenderName.Text = String.Join(" ", new[] { data.Item1, data.Item2 });
-                }
-
+                var data = Settings.StreamerMode ? null : CacheManager.GetNameAndAvatar(Message.FromId);
+                SenderName.Text = Settings.StreamerMode ? PrivacyMask.HiddenSenderName : data == null ? null : String.Join(" ", new[] { data.Item1, data.Item2 });
                 SentTime.Text = Message.DateTime.ToHumanizedString();
-                MessagePreview.Text = Message.ToNormalString();
+                MessagePreview.Text = Settings.StreamerMode ? PrivacyMask.HiddenMessage : Message.ToNormalString();
 
-                Uri previewUri = Message.Attachments.GetPreviewImageUri();
+                Uri previewUri = Settings.StreamerMode ? null : Message.Attachments.GetPreviewImageUri();
                 ImagePreview.IsVisible = previewUri != null;
                 if (previewUri != null)
                     new System.Action(async () => await ImagePreview.SetImageBackgroundAsync(previewUri, ImagePreview.Width, ImagePreview.Height))();
 
             } else if (MessageVM != null) {
-                SenderName.Text = MessageVM.SenderName;
+                SenderName.Text = MessageVM.DisplaySenderName;
                 SentTime.Text = MessageVM.SentTime.ToHumanizedString();
-                MessagePreview.Text = MessageVM.ToString();
-                ImagePreview.IsVisible = MessageVM.PreviewImageUri != null;
+                MessagePreview.Text = MessageVM.DisplayPreviewText;
+                ImagePreview.IsVisible = MessageVM.DisplayPreviewImageUri != null;
 
-                if (MessageVM.PreviewImageUri != null) {
-                    new System.Action(async () => await ImagePreview.SetImageBackgroundAsync(MessageVM.PreviewImageUri, ImagePreview.Width, ImagePreview.Height))();
+                if (MessageVM.DisplayPreviewImageUri != null) {
+                    new System.Action(async () => await ImagePreview.SetImageBackgroundAsync(MessageVM.DisplayPreviewImageUri, ImagePreview.Width, ImagePreview.Height))();
                 }
             }
         }

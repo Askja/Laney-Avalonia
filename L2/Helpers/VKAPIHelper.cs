@@ -1,5 +1,6 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
 using ELOR.Laney.Core;
@@ -12,6 +13,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading.Tasks;
 using VKUI.Controls;
 
 namespace ELOR.Laney.Helpers {
@@ -143,7 +145,7 @@ namespace ELOR.Laney.Helpers {
 
         // TODO: убрать методы кнопок ботов в отдельный класс.
 
-        internal static void GenerateButtons(StackPanel root, List<List<BotButton>> buttons) {
+        internal static void GenerateButtons(StackPanel root, List<List<BotButton>> buttons, Func<BotButton, Task> clickHandler = null) {
             bool isFirstRow = true;
             foreach (var row in CollectionsMarshal.AsSpan(buttons)) {
                 Grid buttonsRow = new Grid {
@@ -152,11 +154,10 @@ namespace ELOR.Laney.Helpers {
                 };
                 for (byte i = 0; i < row.Count; i++) {
                     buttonsRow.ColumnDefinitions.Add(new ColumnDefinition() { Width = GridLength.Star });
-                    Button button = BuildButton(row[i]);
+                    BotButton botButton = row[i];
+                    Button button = BuildButton(botButton);
                     button.HorizontalAlignment = HorizontalAlignment.Stretch;
-                    button.Click += (a, b) => {
-                        ExceptionHelper.ShowNotImplementedDialog(VKSession.GetByDataContext(root).ModalWindow);
-                    };
+                    button.Click += async (a, b) => await HandleButtonClickAsync(root, botButton, clickHandler, b);
 
                     Grid.SetColumn(button, i);
                     buttonsRow.Children.Add(button);
@@ -166,19 +167,28 @@ namespace ELOR.Laney.Helpers {
             }
         }
 
-        internal static void GenerateButtons(StackPanel root, List<BotButton> buttons) {
+        internal static void GenerateButtons(StackPanel root, List<BotButton> buttons, Func<BotButton, Task> clickHandler = null) {
             bool isFirstRow = true;
-            foreach (var row in CollectionsMarshal.AsSpan(buttons)) {
-                Button button = BuildButton(row);
+            foreach (BotButton botButton in CollectionsMarshal.AsSpan(buttons)) {
+                Button button = BuildButton(botButton);
                 button.Margin = new Thickness(button.Margin.Left, isFirstRow ? 0 : 8, button.Margin.Right, button.Margin.Bottom);
                 button.HorizontalAlignment = HorizontalAlignment.Stretch;
-                button.Click += (a, b) => {
-                    ExceptionHelper.ShowNotImplementedDialog(VKSession.GetByDataContext(root).ModalWindow);
-                };
+                button.Click += async (a, b) => await HandleButtonClickAsync(root, botButton, clickHandler, b);
 
                 isFirstRow = false;
                 root.Children.Add(button);
             }
+        }
+
+        private static async Task HandleButtonClickAsync(StackPanel root, BotButton button, Func<BotButton, Task> clickHandler, RoutedEventArgs e) {
+            e.Handled = true;
+
+            if (clickHandler != null) {
+                await clickHandler(button);
+                return;
+            }
+
+            ExceptionHelper.ShowNotImplementedDialog(VKSession.GetByDataContext(root).ModalWindow);
         }
 
         private static Button BuildButton(BotButton button) {

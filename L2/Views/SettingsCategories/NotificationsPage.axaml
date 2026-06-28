@@ -5,6 +5,7 @@
              xmlns:i18n="using:ELOR.Laney.Assets.i18n"
              xmlns:vkui="using:VKUI.Controls"
              xmlns:vm="using:ELOR.Laney.ViewModels.SettingsCategories"
+             xmlns:mdl="using:ELOR.Laney.DataModels"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="ELOR.Laney.Views.SettingsCategories.NotificationsPage" x:DataType="vm:NotificationsViewModel">
   <ScrollViewer>

@@ -7,7 +7,8 @@
     <ResourceDictionary x:Key="Default">
       <SolidColorBrush x:Key="MessageBubbleDefaultIncomingBrush" Color="{StaticResource VKWhiteColor}"/>
       <SolidColorBrush x:Key="MessageBubbleDefaultOutgoingBrush" Color="{StaticResource VKWhiteBlue20Color}"/>
-      <SolidColorBrush x:Key="MessageBubbleOutgoingTextSecondaryBrush" Color="#2688eb"/>
+      <SolidColorBrush x:Key="MessageBubbleOutgoingTextPrimaryBrush" Color="#17233A"/>
+      <SolidColorBrush x:Key="MessageBubbleOutgoingTextSecondaryBrush" Color="#3E5F7E"/>
       <SolidColorBrush x:Key="NestedMessageBackgroundBrush" Color="{StaticResource VKAzure300Color}" Opacity="0.08"/>
       <SolidColorBrush x:Key="GiftMessageIndicatorForegroundBrush" Color="#857250"/>
     </ResourceDictionary>
@@ -15,7 +16,8 @@
     <ResourceDictionary x:Key="Dark">
       <SolidColorBrush x:Key="MessageBubbleDefaultIncomingBrush" Color="{StaticResource VKGray800Color}"/>
       <SolidColorBrush x:Key="MessageBubbleDefaultOutgoingBrush" Color="#1e2f42"/>
-      <SolidColorBrush x:Key="MessageBubbleOutgoingTextSecondaryBrush" Color="#529ef4"/>
+      <SolidColorBrush x:Key="MessageBubbleOutgoingTextPrimaryBrush" Color="#F4F8FF"/>
+      <SolidColorBrush x:Key="MessageBubbleOutgoingTextSecondaryBrush" Color="#B8C7D9"/>
       <SolidColorBrush x:Key="NestedMessageBackgroundBrush" Color="{StaticResource VKSky300Color}" Opacity="0.08"/>
       <SolidColorBrush x:Key="GiftMessageIndicatorForegroundBrush" Color="#FFF"/>
     </ResourceDictionary>

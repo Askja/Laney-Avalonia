@@ -790,11 +790,56 @@ namespace ELOR.Laney.Assets.i18n {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to No chats in this filter.
+        /// </summary>
+        public static string chat_filter_empty {
+            get {
+                return ResourceManager.GetString("chat_filter_empty", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Important.
+        /// </summary>
+        public static string chat_filter_important {
+            get {
+                return ResourceManager.GetString("chat_filter_important", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Unanswered.
+        /// </summary>
+        public static string chat_filter_unanswered {
+            get {
+                return ResourceManager.GetString("chat_filter_unanswered", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Unread.
+        /// </summary>
+        public static string chat_filter_unread {
+            get {
+                return ResourceManager.GetString("chat_filter_unread", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Select a chat or create a new one.
         /// </summary>
         public static string chatview_placeholder {
             get {
                 return ResourceManager.GetString("chatview_placeholder", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Laney only.
+        /// </summary>
+        public static string laney_only_badge {
+            get {
+                return ResourceManager.GetString("laney_only_badge", resourceCulture);
             }
         }
         
@@ -3212,6 +3257,24 @@ namespace ELOR.Laney.Assets.i18n {
         public static string settings_privacy {
             get {
                 return ResourceManager.GetString("settings_privacy", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to VK returned no privacy settings for this account.
+        /// </summary>
+        public static string privacy_no_settings {
+            get {
+                return ResourceManager.GetString("privacy_no_settings", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Privacy settings are unavailable in this mode.
+        /// </summary>
+        public static string privacy_not_available {
+            get {
+                return ResourceManager.GetString("privacy_not_available", resourceCulture);
             }
         }
         

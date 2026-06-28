@@ -2,7 +2,19 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <TargetFramework>net10.0</TargetFramework>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <Nullable>disable</Nullable>
+    <IsPackable>true</IsPackable>
+    <PackageId>Laney.VKUI.Avalonia</PackageId>
+    <Title>Laney VKUI for Avalonia</Title>
+    <Authors>Askja</Authors>
+    <Description>VK-style Avalonia controls, theme resources, popups and dialog primitives extracted from Laney.</Description>
+    <PackageTags>Avalonia;VKUI;desktop;controls;theme</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageProjectUrl>https://github.com/Askja/Laney-Avalonia</PackageProjectUrl>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/Askja/Laney-Avalonia</RepositoryUrl>
+    <Version>0.1.0-preview.1</Version>
     <!--Avalonia doesen't support TrimMode=link currently,but we are working on that https://github.com/AvaloniaUI/Avalonia/issues/6892 -->
     <TrimMode>copyused</TrimMode>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
@@ -66,6 +78,7 @@
     <None Remove="VKUITheme.xaml" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
     <!--This helps with theme dll-s trimming.
 	If you will publish your application in self-contained mode with p:PublishTrimmed=true and it will use Fluent theme Default theme will be trimmed from the output and vice versa.
 	https://github.com/AvaloniaUI/Avalonia/issues/5593 -->
@@ -73,10 +86,13 @@
     <TrimmableAssembly Include="Avalonia.Themes.Default" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Avalonia.Controls.ItemsRepeater" Version="12.0.0" />
-    <PackageReference Include="Avalonia.Themes.Simple" Version="12.0.0" />
-    <PackageReference Include="Avalonia" Version="12.0.0" />
-    <PackageReference Include="Avalonia.Desktop" Version="12.0.0" />
+    <PackageReference Include="Avalonia.Controls.ItemsRepeater" />
+    <PackageReference Include="Avalonia.Themes.Simple" />
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Tmds.DBus.Protocol">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
     <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
   </ItemGroup>
   <ItemGroup>

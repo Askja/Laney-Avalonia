@@ -5,6 +5,7 @@
              xmlns:i18n="using:ELOR.Laney.Assets.i18n"
              xmlns:vkui="using:VKUI.Controls"
              xmlns:vm="using:ELOR.Laney.ViewModels.SettingsCategories"
+             xmlns:core="using:ELOR.Laney.Core"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="ELOR.Laney.Views.SettingsCategories.Appearance" x:DataType="vm:AppearanceViewModel">
   <ScrollViewer>
@@ -28,17 +29,64 @@
       <Border Classes="Group" VerticalAlignment="Top">
         <StackPanel>
           <Grid Classes="GroupHeader">
-            <TextBlock Text="{x:Static i18n:Resources.st_chat_item_rows}"/>
+            <TextBlock Text="Цвета"/>
           </Grid>
-          <vkui:Cell Header="{x:Static i18n:Resources.st_chat_item_rows_2}">
-            <vkui:Cell.Before>
-              <RadioButton GroupName="ChatListRow" IsChecked="{Binding !ChatItemMoreRows, Mode=TwoWay}"/>
-            </vkui:Cell.Before>
+          <vkui:Cell Header="Акцент" Subtitle="Перекрашивает кнопки, ссылки, счетчики и выделение.">
+            <vkui:Cell.After>
+              <StackPanel Orientation="Horizontal">
+                <Border Classes="LaneyOnlyBadge" Margin="0,0,8,0">
+                  <TextBlock Text="{x:Static i18n:Resources.laney_only_badge}"/>
+                </Border>
+                <ComboBox Classes="Alternate" ItemsSource="{Binding AccentOptions}" SelectedItem="{Binding CurrentAccent, Mode=TwoWay}">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="core:AppearanceOption">
+                      <StackPanel Orientation="Horizontal">
+                        <Border Width="16" Height="16" CornerRadius="8" Background="{Binding PreviewBrush}" BorderBrush="{DynamicResource VKImageBorderBrush}" BorderThickness="1" Margin="0,0,8,0"/>
+                        <TextBlock Text="{Binding Title}"/>
+                      </StackPanel>
+                    </DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+              </StackPanel>
+            </vkui:Cell.After>
           </vkui:Cell>
-          <vkui:Cell Header="{x:Static i18n:Resources.st_chat_item_rows_3}">
-            <vkui:Cell.Before>
-              <RadioButton GroupName="ChatListRow" IsChecked="{Binding ChatItemMoreRows, Mode=TwoWay}"/>
-            </vkui:Cell.Before>
+          <vkui:Cell Header="Акцент аккаунта" Subtitle="Переопределяет глобальный цвет только для текущего окна аккаунта." IsVisible="{Binding HasAccountAccent}">
+            <vkui:Cell.After>
+              <StackPanel Orientation="Horizontal">
+                <Border Classes="LaneyOnlyBadge" Margin="0,0,8,0">
+                  <TextBlock Text="{x:Static i18n:Resources.laney_only_badge}"/>
+                </Border>
+                <ComboBox Classes="Alternate" ItemsSource="{Binding AccountAccentOptions}" SelectedItem="{Binding CurrentAccountAccent, Mode=TwoWay}">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="core:AppearanceOption">
+                      <StackPanel Orientation="Horizontal">
+                        <Border Width="16" Height="16" CornerRadius="8" Background="{Binding PreviewBrush}" BorderBrush="{DynamicResource VKImageBorderBrush}" BorderThickness="1" Margin="0,0,8,0"/>
+                        <TextBlock Text="{Binding Title}"/>
+                      </StackPanel>
+                    </DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+              </StackPanel>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Фон сообщений" Subtitle="Глобальный фон области чата; отдельные чаты можно переопределить из контекстного меню.">
+            <vkui:Cell.After>
+              <StackPanel Orientation="Horizontal">
+                <Border Classes="LaneyOnlyBadge" Margin="0,0,8,0">
+                  <TextBlock Text="{x:Static i18n:Resources.laney_only_badge}"/>
+                </Border>
+                <ComboBox Classes="Alternate" ItemsSource="{Binding ChatBackgroundOptions}" SelectedItem="{Binding CurrentChatBackground, Mode=TwoWay}">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="core:AppearanceOption">
+                      <StackPanel Orientation="Horizontal">
+                        <Border Width="16" Height="16" CornerRadius="4" Background="{Binding PreviewBrush}" BorderBrush="{DynamicResource VKImageBorderBrush}" BorderThickness="1" Margin="0,0,8,0"/>
+                        <TextBlock Text="{Binding Title}"/>
+                      </StackPanel>
+                    </DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+              </StackPanel>
+            </vkui:Cell.After>
           </vkui:Cell>
         </StackPanel>
       </Border>

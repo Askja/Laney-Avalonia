@@ -4,24 +4,54 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:i18n="using:ELOR.Laney.Assets.i18n"
         xmlns:controls="using:ELOR.Laney.Controls"
+        xmlns:mdl="using:ELOR.Laney.DataModels"
         xmlns:vkw="using:VKUI.Windows"
         xmlns:vkui="using:VKUI.Controls"
         xmlns:vm="using:ELOR.Laney.ViewModels"
         mc:Ignorable="d" d:DesignWidth="720" d:DesignHeight="640"
         x:Class="ELOR.Laney.Views.SettingsWindow" x:DataType="vm:SettingsViewModel"
         Width="720" Height="640"
+        WindowDecorations="None"
         Background="{DynamicResource VKBackgroundPageBrush}"
         Title="{x:Static i18n:Resources.settings}">
-  <Grid RowDefinitions="Auto *" ColumnDefinitions="240 *">
-    <Grid x:Name="CategoriesPanel" Grid.Row="1">
+  <vkw:DialogWindow.Resources>
+    <DataTemplate x:Key="SettingsSearchResultTemplate" x:DataType="mdl:SettingsSearchResult">
+      <Grid MinHeight="52" Margin="12,6" ColumnDefinitions="Auto *" Background="Transparent">
+        <vkui:VKIcon Width="28" Height="28" Margin="0,2,12,0" VerticalAlignment="Top" Foreground="{DynamicResource VKIconSecondaryBrush}" Id="{Binding IconId}"/>
+        <StackPanel Grid.Column="1">
+          <TextBlock Classes="Subhead" FontWeight="Medium" Foreground="{DynamicResource VKTextPrimaryBrush}" Text="{Binding Title}" TextTrimming="CharacterEllipsis"/>
+          <TextBlock Classes="Caption1" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="{Binding CategoryTitle}" TextTrimming="CharacterEllipsis"/>
+          <TextBlock Classes="Caption1" Foreground="{DynamicResource VKTextSubheadBrush}" Text="{Binding Subtitle}" TextTrimming="CharacterEllipsis" IsVisible="{Binding Subtitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+        </StackPanel>
+      </Grid>
+    </DataTemplate>
+  </vkw:DialogWindow.Resources>
+
+  <Border BorderBrush="{DynamicResource LaneyBorderSubtleBrush}" BorderThickness="1" Background="{DynamicResource VKBackgroundPageBrush}">
+  <Grid RowDefinitions="Auto Auto *" ColumnDefinitions="240 *">
+    <Grid Grid.Row="1" Margin="12,0,8,8">
+      <TextBox x:Name="SettingsSearchBox" Classes="Search" Text="{Binding SearchQuery, Mode=TwoWay}"/>
+    </Grid>
+
+    <Grid x:Name="CategoriesPanel" Grid.Row="2">
       <Grid.Styles>
         <Style Selector="ListBoxItem">
           <Setter Property="Padding" Value="0"/>
         </Style>
       </Grid.Styles>
-      <ListBox x:Name="CategoriesList" Margin="8,0,0,0" ItemTemplate="{StaticResource CellItemTemplate}" ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory, Mode=TwoWay}" SelectionMode="Toggle" SelectionChanged="CategoriesList_SelectionChanged"/>
+      <ListBox x:Name="CategoriesList" Margin="8,0,0,0" IsVisible="{Binding !IsSearchActive}" ItemTemplate="{StaticResource CellItemTemplate}" ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory, Mode=TwoWay}" SelectionMode="Toggle" SelectionChanged="CategoriesList_SelectionChanged"/>
+
+      <Grid IsVisible="{Binding IsSearchActive}">
+        <ListBox x:Name="SearchResultsList" Margin="8,0,0,0" IsVisible="{Binding HasSearchResults}" ItemTemplate="{StaticResource SettingsSearchResultTemplate}" ItemsSource="{Binding SearchResults}" SelectionMode="Single" SelectionChanged="SearchResultsList_SelectionChanged"/>
+
+        <vkui:Placeholder x:Name="NoSearchResultsPlaceholder" Classes="Compact" IsVisible="{Binding ShowNoSearchResults}" VerticalAlignment="Center">
+          <vkui:Placeholder.Icon>
+            <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon28SearchOutline}"/>
+          </vkui:Placeholder.Icon>
+        </vkui:Placeholder>
+      </Grid>
     </Grid>
-    <ContentControl x:Name="ContentPanel" Grid.Column="1" Grid.Row="1">
+    <ContentControl x:Name="ContentPanel" Grid.Column="1" Grid.Row="2">
       <ContentControl.Styles>
         <Style Selector="vkui|Cell /template/ ContentPresenter#AfterControl > ToggleSwitch">
           <Setter Property="VerticalAlignment" Value="Top"/>
@@ -65,4 +95,5 @@
     <Rectangle x:Name="SearchBoxTopMarginForLinux" Height="12"/>
     <vkui:WindowTitleBar x:Name="TitleBar" Grid.ColumnSpan="2" CanShowTitle="True" CanMove="True"/>
   </Grid>
+  </Border>
 </vkw:DialogWindow>

@@ -378,6 +378,21 @@
   <data name="chats" xml:space="preserve">
     <value>Чаты</value>
   </data>
+  <data name="chat_filter_unread" xml:space="preserve">
+    <value>Непрочитанные</value>
+  </data>
+  <data name="chat_filter_important" xml:space="preserve">
+    <value>Важные</value>
+  </data>
+  <data name="chat_filter_unanswered" xml:space="preserve">
+    <value>Неотвеченные</value>
+  </data>
+  <data name="chat_filter_empty" xml:space="preserve">
+    <value>В этом фильтре чатов нет</value>
+  </data>
+  <data name="laney_only_badge" xml:space="preserve">
+    <value>Только Laney</value>
+  </data>
   <data name="private_messages" xml:space="preserve">
     <value>Личные сообщения</value>
   </data>
@@ -1035,11 +1050,222 @@
   <data name="settings_appearance" xml:space="preserve">
     <value>Внешний вид</value>
   </data>
+  <data name="settings_chats" xml:space="preserve">
+    <value>Чаты</value>
+  </data>
+  <data name="settings_messages" xml:space="preserve">
+    <value>Сообщения</value>
+  </data>
   <data name="settings_notifications" xml:space="preserve">
     <value>Уведомления</value>
   </data>
   <data name="settings_privacy" xml:space="preserve">
     <value>Приватность</value>
+  </data>
+  <data name="settings_stickers" xml:space="preserve">
+    <value>Стикеры</value>
+  </data>
+  <data name="settings_attachments" xml:space="preserve">
+    <value>Вложения</value>
+  </data>
+  <data name="settings_audio" xml:space="preserve">
+    <value>Аудио</value>
+  </data>
+  <data name="settings_automation" xml:space="preserve">
+    <value>Автоматизация</value>
+  </data>
+  <data name="settings_performance" xml:space="preserve">
+    <value>Производительность</value>
+  </data>
+  <data name="settings_network" xml:space="preserve">
+    <value>Сеть</value>
+  </data>
+  <data name="settings_security" xml:space="preserve">
+    <value>Безопасность</value>
+  </data>
+  <data name="settings_experiments" xml:space="preserve">
+    <value>Эксперименты</value>
+  </data>
+  <data name="settings_debug" xml:space="preserve">
+    <value>Debug</value>
+  </data>
+  <data name="settings_open_section" xml:space="preserve">
+    <value>Открыть раздел настроек</value>
+  </data>
+  <data name="settings_search_result_section" xml:space="preserve">
+    <value>Раздел: {0}</value>
+  </data>
+  <data name="settings_search_placeholder" xml:space="preserve">
+    <value>Поиск настроек</value>
+  </data>
+  <data name="settings_search_empty_title" xml:space="preserve">
+    <value>Ничего не найдено</value>
+  </data>
+  <data name="settings_search_empty_text" xml:space="preserve">
+    <value>Попробуй другое слово. Настройки не телепаты.</value>
+  </data>
+  <data name="cm_local_quiet" xml:space="preserve"><value>Локальная тишина</value></data>
+  <data name="cm_local_quiet_subtitle" xml:space="preserve"><value>Заглушить toast и звук локально на время; VK не трогаем</value></data>
+  <data name="cm_until" xml:space="preserve"><value>До {0}</value></data>
+  <data name="cm_antispam_enable" xml:space="preserve"><value>Включить анти-спам</value></data>
+  <data name="cm_antispam_disable" xml:space="preserve"><value>Выключить анти-спам</value></data>
+  <data name="cm_antispam_subtitle" xml:space="preserve"><value>Локально скрывать повторы и link+spam-keyword</value></data>
+  <data name="cm_theme_profile" xml:space="preserve"><value>Оформление в профиле</value></data>
+  <data name="cm_theme_profile_subtitle" xml:space="preserve"><value>Фон, картинка, плотность, шрифт и bubble style</value></data>
+  <data name="cm_attachments_gallery" xml:space="preserve"><value>Галерея вложений</value></data>
+  <data name="cm_attachments_gallery_subtitle" xml:space="preserve"><value>Локально по загруженной истории, с фильтром по типам</value></data>
+  <data name="cm_download_attachments" xml:space="preserve"><value>Скачать вложения</value></data>
+  <data name="cm_download_attachments_subtitle" xml:space="preserve"><value>Загруженная история, фильтры, дедуп, sidecar JSON</value></data>
+  <data name="cm_send_gift" xml:space="preserve"><value>Отправить подарок</value></data>
+  <data name="cm_send_gift_to_author" xml:space="preserve"><value>Отправить подарок автору</value></data>
+  <data name="cm_send_gift_subtitle" xml:space="preserve"><value>Открыть выбор подарка VK</value></data>
+  <data name="cm_archive" xml:space="preserve"><value>В архив</value></data>
+  <data name="cm_archive_subtitle" xml:space="preserve"><value>Скрыть из обычных папок локально</value></data>
+  <data name="cm_unarchive" xml:space="preserve"><value>Вернуть из архива</value></data>
+  <data name="cm_unarchive_subtitle" xml:space="preserve"><value>Снова показывать в обычных папках</value></data>
+  <data name="cm_e2e_profile" xml:space="preserve"><value>Laney E2E в профиле</value></data>
+  <data name="cm_e2e_profile_subtitle" xml:space="preserve"><value>Ключи, handshake, fingerprint и backup</value></data>
+  <data name="cm_open_split_view" xml:space="preserve"><value>Открыть во втором слоте</value></data>
+  <data name="cm_open_split_view_subtitle" xml:space="preserve"><value>Два чата рядом без отдельного окна</value></data>
+  <data name="cm_open_floating_window" xml:space="preserve"><value>Открыть мини-окно</value></data>
+  <data name="cm_open_floating_window_subtitle" xml:space="preserve"><value>Поверх всех окон, отдельный компактный чат</value></data>
+  <data name="cm_jump_to_date" xml:space="preserve"><value>Перейти к дате</value></data>
+  <data name="cm_jump_to_date_subtitle" xml:space="preserve"><value>Найти ближайшее сообщение без полного backfill</value></data>
+  <data name="cm_section_debug" xml:space="preserve"><value>Отладка</value></data>
+  <data name="cm_section_status_notifications" xml:space="preserve"><value>Статус и уведомления</value></data>
+  <data name="cm_section_appearance_security" xml:space="preserve"><value>Оформление и безопасность</value></data>
+  <data name="cm_section_workspace" xml:space="preserve"><value>Рабочее пространство</value></data>
+  <data name="cm_section_attachments" xml:space="preserve"><value>Вложения</value></data>
+  <data name="cm_section_local_rules" xml:space="preserve"><value>Локальные правила</value></data>
+  <data name="cm_section_danger_zone" xml:space="preserve"><value>Опасная зона</value></data>
+  <data name="cm_section_activity" xml:space="preserve"><value>Активность</value></data>
+  <data name="cm_section_reply_forward" xml:space="preserve"><value>Ответ и пересылка</value></data>
+  <data name="cm_section_copying" xml:space="preserve"><value>Копирование</value></data>
+  <data name="cm_section_organization" xml:space="preserve"><value>Организация</value></data>
+  <data name="cm_section_diagnostics" xml:space="preserve"><value>Диагностика</value></data>
+  <data name="cm_section_quick_actions" xml:space="preserve"><value>Быстрые действия</value></data>
+  <data name="cm_section_local" xml:space="preserve"><value>Локально</value></data>
+  <data name="cm_local_reaction" xml:space="preserve"><value>Laney-only реакция</value></data>
+  <data name="cm_local_reaction_subtitle" xml:space="preserve"><value>Локально, в VK не отправляется</value></data>
+  <data name="cm_quick_reactions" xml:space="preserve"><value>Быстрые реакции</value></data>
+  <data name="cm_quick_reactions_subtitle" xml:space="preserve"><value>Персональный набор для этого чата</value></data>
+  <data name="cm_clean_copy" xml:space="preserve"><value>Копия без автора</value></data>
+  <data name="cm_clean_copy_subtitle" xml:space="preserve"><value>Новое сообщение; несовместимые типы будут пропущены</value></data>
+  <data name="cm_copy_plain_text" xml:space="preserve"><value>Копировать текст</value></data>
+  <data name="cm_copy_plain_text_subtitle" xml:space="preserve"><value>Без форматирования</value></data>
+  <data name="cm_copy_markdown_text" xml:space="preserve"><value>Копировать Markdown</value></data>
+  <data name="cm_copy_markdown_text_subtitle" xml:space="preserve"><value>С маркерами форматирования</value></data>
+  <data name="cm_copy_message_link" xml:space="preserve"><value>Копировать ссылку на сообщение</value></data>
+  <data name="cm_copy_all_links" xml:space="preserve"><value>Копировать все ссылки</value></data>
+  <data name="cm_todo" xml:space="preserve"><value>В todo</value></data>
+  <data name="cm_remind" xml:space="preserve"><value>Напомнить</value></data>
+  <data name="cm_soft_delete" xml:space="preserve"><value>Скрыть локально</value></data>
+  <data name="cm_mute_sender" xml:space="preserve"><value>Mute автора</value></data>
+  <data name="cm_mute_sender_subtitle" xml:space="preserve"><value>Без локальных уведомлений от автора в этом чате</value></data>
+  <data name="cm_shadowban_sender" xml:space="preserve"><value>Теневой бан автора</value></data>
+  <data name="cm_shadowban_sender_subtitle" xml:space="preserve"><value>Скрыть его сообщения только в этом чате</value></data>
+  <data name="cm_delete_dry_run" xml:space="preserve"><value>Симулятор удаления</value></data>
+  <data name="cm_self_destruct" xml:space="preserve"><value>Self-destruct</value></data>
+  <data name="cm_message_inspector" xml:space="preserve"><value>Инспектор сообщения</value></data>
+  <data name="cm_message_inspector_subtitle" xml:space="preserve"><value>Payload, вложения, reactions, read/debug info</value></data>
+  <data name="cm_bulk_cleanup" xml:space="preserve"><value>Массовая очистка</value></data>
+  <data name="cm_attachment_search" xml:space="preserve"><value>Найти вложение</value></data>
+  <data name="cm_audio_message_from_file" xml:space="preserve"><value>Голосовое из файла</value></data>
+  <data name="cm_import_telegram_stickers" xml:space="preserve"><value>Импорт Telegram-стикеров</value></data>
+  <data name="cm_mini_pack_builder" xml:space="preserve"><value>Конструктор мини-пака</value></data>
+  <data name="cm_image_editor" xml:space="preserve"><value>Редактор изображения</value></data>
+  <data name="cm_local_photo_album" xml:space="preserve"><value>Фото/альбом с диска</value></data>
+  <data name="cm_frequent_files" xml:space="preserve"><value>Частые файлы</value></data>
+  <data name="cm_file_as_document" xml:space="preserve"><value>Файл как документ</value></data>
+  <data name="cm_e2e_document" xml:space="preserve"><value>E2E-документ</value></data>
+  <data name="cm_section_local_files" xml:space="preserve"><value>Локальные файлы</value></data>
+  <data name="cm_section_stickers_images" xml:space="preserve"><value>Стикеры и изображения</value></data>
+  <data name="cm_section_extra" xml:space="preserve"><value>Дополнительно</value></data>
+  <data name="cm_pinned_in_composer" xml:space="preserve"><value>Закреплено в composer</value></data>
+  <data name="cm_quick_reply_chat" xml:space="preserve"><value>Быстрый ответ этого чата</value></data>
+  <data name="cm_frequent_phrase" xml:space="preserve"><value>Частая фраза</value></data>
+  <data name="cm_recent_snippet" xml:space="preserve"><value>Recent snippet</value></data>
+  <data name="cm_template_later" xml:space="preserve"><value>Шаблон: отвечу позже</value></data>
+  <data name="cm_template_call" xml:space="preserve"><value>Шаблон: созвон</value></data>
+  <data name="cm_make_todo_from_text" xml:space="preserve"><value>Сделать todo из текста</value></data>
+  <data name="cm_make_reminder_from_text" xml:space="preserve"><value>Сделать reminder из текста</value></data>
+  <data name="cm_schedule_15m" xml:space="preserve"><value>Отложить на 15 минут</value></data>
+  <data name="cm_schedule_1h" xml:space="preserve"><value>Отложить на 1 час</value></data>
+  <data name="cm_repeat_daily" xml:space="preserve"><value>Повторять ежедневно</value></data>
+  <data name="cm_first_time_24h" xml:space="preserve"><value>Первый раз через 24 часа</value></data>
+  <data name="cm_save_quick_reply" xml:space="preserve"><value>Сохранить быстрый ответ</value></data>
+  <data name="cm_only_this_chat" xml:space="preserve"><value>Только для этого чата</value></data>
+  <data name="cm_save_filter_reply" xml:space="preserve"><value>Сохранить ответ для папки</value></data>
+  <data name="cm_save_person_reply" xml:space="preserve"><value>Сохранить ответ человеку</value></data>
+  <data name="cm_need_sender_or_history" xml:space="preserve"><value>Нужен sender id или история</value></data>
+  <data name="cm_pin_current_text" xml:space="preserve"><value>Закрепить текущий текст</value></data>
+  <data name="cm_show_above_composer" xml:space="preserve"><value>Показывать над composer</value></data>
+  <data name="cm_clear_quick_replies" xml:space="preserve"><value>Очистить быстрые ответы</value></data>
+  <data name="cm_clear_filter_replies" xml:space="preserve"><value>Очистить ответы папки</value></data>
+  <data name="cm_clear_person_replies" xml:space="preserve"><value>Очистить ответы человеку</value></data>
+  <data name="cm_clear_pinned_reply" xml:space="preserve"><value>Снять закрепленный ответ</value></data>
+  <data name="cm_prepare_encrypt" xml:space="preserve"><value>Подготовить /encrypt</value></data>
+  <data name="cm_quiet_15m" xml:space="preserve"><value>Тихо на 15 минут</value></data>
+  <data name="cm_quiet_1h" xml:space="preserve"><value>Тихо на 1 час</value></data>
+  <data name="cm_quiet_until_tomorrow" xml:space="preserve"><value>Тихо до завтра</value></data>
+  <data name="cm_quiet_clear" xml:space="preserve"><value>Снять локальную тишину</value></data>
+  <data name="cm_quiet_clear_subtitle" xml:space="preserve"><value>Toast и звук снова включатся по обычным правилам</value></data>
+  <data name="cm_quiet_cleared_title" xml:space="preserve"><value>Локальная тишина снята</value></data>
+  <data name="cm_quiet_cleared_body" xml:space="preserve"><value>VK не трогали.</value></data>
+  <data name="cm_quiet_applied_title" xml:space="preserve"><value>Чат заглушен локально</value></data>
+  <data name="cm_quiet_applied_body" xml:space="preserve"><value>До {0}. VK не беспокоили.</value></data>
+  <data name="cm_e2e_change_key_profile" xml:space="preserve"><value>Сменить ключ/профиль</value></data>
+  <data name="cm_e2e_setup" xml:space="preserve"><value>Настроить E2E</value></data>
+  <data name="cm_e2e_profile_mode_subtitle" xml:space="preserve"><value>Balanced, Paranoid или Legacy-compatible</value></data>
+  <data name="cm_e2e_copy_handshake" xml:space="preserve"><value>X25519 handshake: скопировать мой токен</value></data>
+  <data name="cm_e2e_copy_handshake_subtitle" xml:space="preserve"><value>Нормальный обмен ключами через VK/QR/clipboard</value></data>
+  <data name="cm_e2e_import_handshake" xml:space="preserve"><value>X25519 handshake: импортировать токен</value></data>
+  <data name="cm_e2e_import_handshake_subtitle" xml:space="preserve"><value>Вставь токен собеседника и получи ответный</value></data>
+  <data name="cm_e2e_import_backup" xml:space="preserve"><value>Импорт trusted-device backup</value></data>
+  <data name="cm_e2e_import_backup_subtitle" xml:space="preserve"><value>Восстановить ключи из зашифрованного backup-token</value></data>
+  <data name="cm_e2e_fingerprint" xml:space="preserve"><value>Fingerprint и SAS</value></data>
+  <data name="cm_e2e_fingerprint_subtitle" xml:space="preserve"><value>Ручная сверка ключа</value></data>
+  <data name="cm_e2e_unverify" xml:space="preserve"><value>Снять отметку сверки</value></data>
+  <data name="cm_e2e_verify" xml:space="preserve"><value>Отметить ключ сверенным</value></data>
+  <data name="cm_e2e_unverify_subtitle" xml:space="preserve"><value>Если fingerprint больше не доверяешь</value></data>
+  <data name="cm_e2e_verify_subtitle" xml:space="preserve"><value>После сверки SAS/fingerprint с собеседником</value></data>
+  <data name="cm_e2e_auto_encrypt_enabled" xml:space="preserve"><value>Автошифрование текста включено</value></data>
+  <data name="cm_e2e_auto_encrypt" xml:space="preserve"><value>Автошифровать исходящий текст</value></data>
+  <data name="cm_e2e_auto_encrypt_subtitle" xml:space="preserve"><value>Обычная отправка станет Laney E2E payload</value></data>
+  <data name="cm_e2e_rotate_keys" xml:space="preserve"><value>Повернуть X25519-ключи</value></data>
+  <data name="cm_e2e_rotate_keys_subtitle" xml:space="preserve"><value>Создать новый handshake-token, старую сверку снять</value></data>
+  <data name="cm_e2e_export_backup" xml:space="preserve"><value>Экспорт trusted-device backup</value></data>
+  <data name="cm_e2e_export_backup_subtitle" xml:space="preserve"><value>Зашифрованный перенос ключей на свой второй клиент</value></data>
+  <data name="cm_e2e_reset_chat" xml:space="preserve"><value>Сбросить E2E для чата</value></data>
+  <data name="cm_e2e_reset_chat_subtitle" xml:space="preserve"><value>Удалить локальные ключи и статус</value></data>
+  <data name="cm_attachment_preview" xml:space="preserve"><value>Быстрый preview</value></data>
+  <data name="cm_attachment_open_original" xml:space="preserve"><value>Открыть оригинал</value></data>
+  <data name="cm_attachment_copy_link" xml:space="preserve"><value>Скопировать ссылку</value></data>
+  <data name="session_dev_show_captcha" xml:space="preserve"><value>Показать капчу</value></data>
+  <data name="session_dev_show_in_app_notification" xml:space="preserve"><value>Показать уведомление в приложении</value></data>
+  <data name="session_dev_show_system_notification" xml:space="preserve"><value>Показать системное уведомление</value></data>
+  <data name="session_dev_invalidate_lp_key" xml:space="preserve"><value>Сбросить LongPoll-ключ</value></data>
+  <data name="session_dev_clear_images_cache" xml:space="preserve"><value>Очистить кэш изображений</value></data>
+  <data name="session_dev_clear_cached_names" xml:space="preserve"><value>Очистить кэш имён пользователей/групп</value></data>
+  <data name="session_dev_open_emoji_stickers_window" xml:space="preserve"><value>Открыть emoji/стикеры в отдельном окне</value></data>
+  <data name="session_dev_emoji_stickers_title" xml:space="preserve"><value>Emoji и стикеры</value></data>
+  <data name="session_dev_field_test" xml:space="preserve"><value>Field test</value></data>
+  <data name="session_dev_result" xml:space="preserve"><value>Результат</value></data>
+  <data name="session_dev_sending_message" xml:space="preserve"><value>Отправка сообщения</value></data>
+  <data name="session_dev_text_label" xml:space="preserve"><value>Текст</value></data>
+  <data name="session_dev_toast_body" xml:space="preserve"><value>Ура, кролик Gex! Да, тестовое уведомление живое.</value></data>
+  <data name="session_dev_toast_context" xml:space="preserve"><value>в чате "Geckos"</value></data>
+  <data name="privacy_not_available" xml:space="preserve">
+    <value>Настройки приватности недоступны в этом режиме.</value>
+  </data>
+  <data name="privacy_no_settings" xml:space="preserve">
+    <value>VK не вернул настройки приватности для этого аккаунта.</value>
+  </data>
+  <data name="panic_lock_title" xml:space="preserve">
+    <value>Laney заблокирован</value>
+  </data>
+  <data name="panic_lock_unlock" xml:space="preserve">
+    <value>Разблокировать</value>
   </data>
   <data name="settings_blacklist" xml:space="preserve">
     <value>Чёрный список</value>
@@ -1163,6 +1389,12 @@
   </data>
   <data name="delete_for_all" xml:space="preserve">
     <value>Удалить для всех</value>
+  </data>
+  <data name="msg_scrub_before_delete" xml:space="preserve">
+    <value>Заменить текст перед удалением</value>
+  </data>
+  <data name="msg_scrubbed_text" xml:space="preserve">
+    <value>[удалено]</value>
   </data>
   <data name="message_deleted_single" xml:space="preserve">
     <value>Сообщение удалено.</value>

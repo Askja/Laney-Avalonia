@@ -189,9 +189,12 @@ namespace ELOR.VKAPILib {
 
         private async Task<T> HandleCaptchaRequest<T>(APIException apiex, string method, Dictionary<string, string> parameters) {
             if (CaptchaHandler != null) {
+                string captchaUrl = !String.IsNullOrWhiteSpace(apiex.CaptchaImage) ? apiex.CaptchaImage : apiex.RedirectUrl;
+                if (String.IsNullOrWhiteSpace(captchaUrl)) throw apiex;
+
                 CaptchaHandlerData chd = new CaptchaHandlerData {
                     SID = apiex.CaptchaSID,
-                    Image = new Uri(apiex.CaptchaImage)
+                    Image = new Uri(captchaUrl)
                 };
                 string key = String.Empty;
                 key = await CaptchaHandler.Invoke(chd);

@@ -96,7 +96,7 @@ namespace ELOR.VKAPILib.Objects {
         public int Views { get; set; }
 
         private PhotoSizes GetFirstFrame(double maxWidth) {
-            if (FirstFrame == null && FirstFrame.Count == 0) return null;
+            if (FirstFrame == null || FirstFrame.Count == 0) return null;
             PhotoSizes cps = null;
             foreach (PhotoSizes ps in FirstFrame) {
                 if (cps == null) cps = ps;

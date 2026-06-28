@@ -22,10 +22,29 @@ using System.Threading;
 using System.Threading.Tasks;
 using ToastNotifications.Avalonia;
 using VKUI.Controls;
+using Regex = System.Text.RegularExpressions.Regex;
+using RegexMatchTimeoutException = System.Text.RegularExpressions.RegexMatchTimeoutException;
+using RegexOptions = System.Text.RegularExpressions.RegexOptions;
 
 namespace ELOR.Laney.ViewModels {
     public sealed class ChatViewModel : CommonViewModel, IMessagesListHolder {
         private static uint _instances = 0;
+        private static readonly string[] BuiltInUrgentNotificationTokens = [
+            "срочно",
+            "важно",
+            "критично",
+            "горит",
+            "авария",
+            "инцидент",
+            "прод",
+            "urgent",
+            "asap",
+            "critical",
+            "incident",
+            "prod",
+            "alert"
+        ];
+        private static readonly string[] VipLocalTags = ["vip", "important", "favorite", "critical"];
         private VKSession session;
 
         private PeerType _peerType;
@@ -34,12 +53,14 @@ namespace ELOR.Laney.ViewModels {
         private string _subtitle;
         private string _activityStatus;
         private Uri _avatar;
+        private string _sourceTitle;
+        private Uri _sourceAvatar;
         private bool _isVerified;
         private UserOnlineInfo _online;
         private int _onlineMembersCount;
         private SortId _sortId;
         private int _unreadMessagesCount;
-        private ObservableCollection<MessageViewModel> _receivedMessages = new ObservableCollection<MessageViewModel>();
+        private BatchedObservableCollection<MessageViewModel> _receivedMessages = new BatchedObservableCollection<MessageViewModel>();
         private MessagesCollection _displayedMessages;
         private MessageViewModel _pinnedMessage;
         private PushSettings _pushSettings;
@@ -49,11 +70,17 @@ namespace ELOR.Laney.ViewModels {
         private CanWrite _canwrite;
         private ComposerViewModel _composer;
         private bool _isMarkedAsUnread;
+        private bool _isImportant;
+        private bool _isUnanswered;
         private bool _isPinned;
         private bool _isFavoritesChat;
         private ObservableCollection<int> _mentions;
         private bool _hasMention;
         private bool _hasSelfDestructMessage;
+        private bool _hasE2EStatus;
+        private string _e2eStatusText;
+        private string _e2eStatusIconId;
+        private string _e2eStatusTip;
         private ObservableCollection<int> _unreadReactions;
         private string _restrictionReason;
         private bool _isCurrentOpenedChat;
@@ -62,17 +89,31 @@ namespace ELOR.Laney.ViewModels {
         private RelayCommand _openProfileCommand;
         private RelayCommand _goToLastMessageCommand;
         private RelayCommand _goToLastReactedMessageCommand;
+        private const int ShadowBanTextRuleLimit = 32;
+        private const int ShadowBanTextRuleMaxLength = 160;
+        private static readonly TimeSpan ShadowBanRegexTimeout = TimeSpan.FromMilliseconds(60);
+        private static readonly string[] AntiSpamLinkMarkers = ["http://", "https://", "vk.cc/", "t.me/", "bit.ly/", "clck.ru/"];
+        private static readonly string[] AntiSpamKeywords = ["казино", "ставк", "букмек", "крипт", "airdrop", "заработ", "доход", "инвест", "скидк", "промокод", "подпишись", "розыгрыш"];
+        private static readonly string[] SuspiciousLinkMarkers = ["vk.cc/", "bit.ly/", "clck.ru/", "tinyurl.com/", "goo.gl/", "t.co/", "xn--"];
+        private static readonly string[] SuspiciousLinkTokens = ["free", "bonus", "airdrop", "giveaway", "casino", "wallet", "seed", "verify", "приз", "бонус", "розыгрыш", "кошелек", "подтверди"];
 
+        public VKSession Session { get { return session; } }
         public PeerType PeerType { get { return _peerType; } private set { _peerType = value; OnPropertyChanged(); } }
         public long PeerId { get { return _peerId; } private set { _peerId = value; OnPropertyChanged(); } }
-        public string Title { get { return _title; } private set { _title = value; OnPropertyChanged(); OnPropertyChanged(nameof(Initials)); } }
-        public string Subtitle { get { return _subtitle; } private set { _subtitle = value; OnPropertyChanged(); } }
-        public string ActivityStatus { get { return _activityStatus; } set { _activityStatus = value; OnPropertyChanged(); } }
-        public Uri Avatar { get { return _avatar; } private set { _avatar = value; OnPropertyChanged(); } }
+        public string Title { get { return _title; } private set { _title = value; OnPropertyChanged(); OnPropertyChanged(nameof(Initials)); OnPropertyChanged(nameof(DisplayTitle)); OnPropertyChanged(nameof(DisplayInitials)); } }
+        public string Subtitle { get { return _subtitle; } private set { _subtitle = value; OnPropertyChanged(); OnPropertyChanged(nameof(DisplaySubtitle)); } }
+        public string ActivityStatus { get { return _activityStatus; } set { _activityStatus = value; OnPropertyChanged(); OnPropertyChanged(nameof(DisplayActivityStatus)); } }
+        public Uri Avatar { get { return _avatar; } private set { _avatar = value; OnPropertyChanged(); OnPropertyChanged(nameof(DisplayAvatar)); } }
         public bool IsVerified { get { return _isVerified; } private set { _isVerified = value; OnPropertyChanged(); } }
         public UserOnlineInfo Online { get { return _online; } set { _online = value; OnPropertyChanged(); } }
         public int OnlineMembersCount { get { return _onlineMembersCount; } set { _onlineMembersCount = value; OnPropertyChanged(); } }
         public string Initials { get { return _title.GetInitials(PeerId.IsChat() || PeerId.IsGroup()); } }
+        public string DisplayTitle { get { return Settings.StreamerMode ? PrivacyMask.GetPeerTitle(PeerId) : Title; } }
+        public string DisplaySubtitle { get { return Settings.StreamerMode && !String.IsNullOrWhiteSpace(Subtitle) ? PrivacyMask.HiddenSubtitle : Subtitle; } }
+        public string DisplayActivityStatus { get { return Settings.StreamerMode && !String.IsNullOrWhiteSpace(ActivityStatus) ? PrivacyMask.HiddenActivity : ActivityStatus; } }
+        public Uri DisplayAvatar { get { return Settings.StreamerMode ? null : Avatar; } }
+        public string DisplayInitials { get { return Settings.StreamerMode ? PrivacyMask.GetPeerInitials(PeerId) : Initials; } }
+        public long DisplayAvatarSeed { get { return Settings.StreamerMode ? 0 : PeerId; } }
         public SortId SortId { get { return _sortId; } set { _sortId = value; OnPropertyChanged(); OnPropertyChanged(nameof(SortIndex)); } }
         public ulong SortIndex { get { return GetSortIndex(); } }
         public int UnreadMessagesCount { get { return _unreadMessagesCount; } private set { _unreadMessagesCount = value; OnPropertyChanged(); } }
@@ -87,11 +128,21 @@ namespace ELOR.Laney.ViewModels {
         public CanWrite CanWrite { get { return _canwrite; } private set { _canwrite = value; OnPropertyChanged(); } }
         public ComposerViewModel Composer { get { return _composer; } private set { _composer = value; OnPropertyChanged(); } }
         public bool IsMarkedAsUnread { get { return _isMarkedAsUnread; } private set { _isMarkedAsUnread = value; OnPropertyChanged(); } }
+        public bool IsImportant { get { return _isImportant; } private set { _isImportant = value; OnPropertyChanged(); } }
+        public bool IsUnanswered { get { return _isUnanswered; } private set { _isUnanswered = value; OnPropertyChanged(); } }
         public bool IsPinned { get { return _isPinned; } private set { _isPinned = value; OnPropertyChanged(); } }
+        public bool IsArchived { get { return Settings.IsPeerArchived(PeerId); } }
+        public IReadOnlyList<string> LocalTags { get { return Settings.GetPeerLocalTags(PeerId); } }
+        public string LocalTagsText { get { return Settings.GetPeerLocalTagsText(PeerId); } }
+        public bool HasLocalTags { get { return LocalTags.Count > 0; } }
         public bool IsFavoritesChat { get { return _isFavoritesChat; } private set { _isFavoritesChat = value; OnPropertyChanged(); } }
         public ObservableCollection<int> Mentions { get { return _mentions; } private set { _mentions = value; OnPropertyChanged(); } }
         public bool HasMention { get { return _hasMention; } private set { _hasMention = value; OnPropertyChanged(); } }
         public bool HasSelfDestructMessage { get { return _hasSelfDestructMessage; } private set { _hasSelfDestructMessage = value; OnPropertyChanged(); } }
+        public bool HasE2EStatus { get { return _hasE2EStatus; } private set { _hasE2EStatus = value; OnPropertyChanged(); } }
+        public string E2EStatusText { get { return _e2eStatusText; } private set { _e2eStatusText = value; OnPropertyChanged(); } }
+        public string E2EStatusIconId { get { return _e2eStatusIconId; } private set { _e2eStatusIconId = value; OnPropertyChanged(); } }
+        public string E2EStatusTip { get { return _e2eStatusTip; } private set { _e2eStatusTip = value; OnPropertyChanged(); } }
         public string MentionIconId { get { return GetMentionIcon(); } }
         public ObservableCollection<int> UnreadReactions { get { return _unreadReactions; } set { _unreadReactions = value; OnPropertyChanged(); } }
         public string RestrictionReason { get { return _restrictionReason; } private set { _restrictionReason = value; OnPropertyChanged(); } }
@@ -125,6 +176,21 @@ namespace ELOR.Laney.ViewModels {
         public EventHandler<MessageViewModel> MessageAddedToLast;
 
         Elapser<LongPollActivityInfo> ActivityStatusUsers = new Elapser<LongPollActivityInfo>();
+        private readonly object pendingLongPollMessagesLock = new object();
+        private readonly List<PendingLongPollMessage> pendingLongPollMessages = new List<PendingLongPollMessage>();
+        private bool pendingLongPollFlushQueued;
+
+        private readonly struct PendingLongPollMessage {
+            public Message Message { get; }
+            public int Flags { get; }
+            public bool IncrementUnreadCounter { get; }
+
+            public PendingLongPollMessage(Message message, int flags, bool incrementUnreadCounter) {
+                Message = message;
+                Flags = flags;
+                IncrementUnreadCounter = incrementUnreadCounter;
+            }
+        }
 
         public ChatViewModel(VKSession session, long peerId, Message lastMessage = null, bool needSetup = false) {
             _instances++;
@@ -135,13 +201,14 @@ namespace ELOR.Laney.ViewModels {
             Composer = new ComposerViewModel(session, this);
             SetUpEvents();
             PeerId = peerId;
+            RefreshE2EState();
             Title = peerId.ToString();
             MessageViewModel msg = null;
             if (lastMessage != null) {
                 msg = MessageViewModel.Create(lastMessage, session);
                 if (!lastMessage.IsPartial) FixState(msg);
                 if (SortId == null) SortId = new SortId { MajorId = 0, MinorId = lastMessage.Id };
-                ReceivedMessages.Add(msg);
+                if (!IsMessageLocallyHidden(msg)) ReceivedMessages.Add(msg);
             }
             // needSetup нужен в случае, когда мы не переходим в беседу и не загружаем сообщения,
             // но надо загрузить инфу о чате, которую можно получить при загрузке сообщений.
@@ -159,8 +226,9 @@ namespace ELOR.Laney.ViewModels {
             if (lastMessage != null) {
                 MessageViewModel msg = MessageViewModel.Create(lastMessage, session);
                 FixState(msg);
-                ReceivedMessages.Add(msg);
+                if (!IsMessageLocallyHidden(msg)) ReceivedMessages.Add(msg);
             }
+            RefreshE2EState();
         }
 
         ~ChatViewModel() {
@@ -178,6 +246,11 @@ namespace ELOR.Laney.ViewModels {
                     await UpdateOnlineMembersCountAsync();
                 })();
             }
+        }
+
+        public void ApplyConversationUpdate(Conversation conversation) {
+            if (conversation == null) return;
+            Setup(conversation);
         }
 
         private async Task GetInfoFromAPIAndSetupAsync(Message message, MessageViewModel msg) {
@@ -289,6 +362,8 @@ namespace ELOR.Laney.ViewModels {
             OutRead = c.OutReadCMID;
             PushSettings = c.PushSettings;
             IsMarkedAsUnread = c.IsMarkedUnread;
+            IsImportant = c.Important;
+            IsUnanswered = c.Unanswered;
             IsPinned = SortId.MajorId > 0 && SortId.MajorId % 16 == 0;
 
             if (PushSettings == null) PushSettings = new PushSettings {
@@ -348,6 +423,11 @@ namespace ELOR.Laney.ViewModels {
                 Title = $"E-Mail {PeerId}";
             }
 
+            _sourceTitle = Title;
+            _sourceAvatar = Avatar;
+            ApplyLocalPeerOverrides();
+            RefreshE2EState();
+
             // Checking and displaying activity status
             if (DemoMode.IsEnabled) {
                 var ds = DemoMode.GetDemoSessionById(session.Id);
@@ -365,6 +445,76 @@ namespace ELOR.Laney.ViewModels {
             }
 
             UpdateRestrictionInfo();
+        }
+
+        public void ApplyLocalPeerOverrides() {
+            string alias = Settings.GetPeerLocalAlias(PeerId);
+            Uri localAvatar = Settings.GetPeerLocalAvatarUri(PeerId);
+
+            Title = String.IsNullOrWhiteSpace(alias) ? _sourceTitle ?? Title : alias;
+            Avatar = localAvatar ?? _sourceAvatar;
+        }
+
+        public void RefreshStreamerMode() {
+            OnPropertyChanged(nameof(DisplayTitle));
+            OnPropertyChanged(nameof(DisplaySubtitle));
+            OnPropertyChanged(nameof(DisplayActivityStatus));
+            OnPropertyChanged(nameof(DisplayAvatar));
+            OnPropertyChanged(nameof(DisplayInitials));
+            OnPropertyChanged(nameof(DisplayAvatarSeed));
+            OnPropertyChanged(nameof(LastMessage));
+
+            foreach (MessageViewModel message in ReceivedMessages) {
+                message.RefreshStreamerMode();
+            }
+            PinnedMessage?.RefreshStreamerMode();
+        }
+
+        public void RefreshLocalFolderState() {
+            OnPropertyChanged(nameof(IsArchived));
+            OnPropertyChanged(nameof(LocalTags));
+            OnPropertyChanged(nameof(LocalTagsText));
+            OnPropertyChanged(nameof(HasLocalTags));
+        }
+
+        public void RefreshE2EState() {
+            E2EPeerState state = E2EManager.GetPeerState(PeerId);
+            if (state == null) {
+                HasE2EStatus = false;
+                E2EStatusText = null;
+                E2EStatusIconId = null;
+                E2EStatusTip = null;
+                return;
+            }
+
+            string profileTitle = E2ESecurityProfileIds.GetTitle(state.ProfileId);
+            bool hasLocalKeys = E2EKeyStore.HasPeerKeys(PeerId, state.ProfileId);
+
+            HasE2EStatus = true;
+            E2EStatusIconId = state.IsKeyChanged
+                ? VKIconNames.Icon20UnlockOutline
+                : state.IsVerified ? VKIconNames.Icon20Check : VKIconNames.Icon20LockOutline;
+
+            if (state.IsKeyChanged) {
+                E2EStatusText = $"E2E {profileTitle}: ключ изменился";
+            } else if (state.IsVerified) {
+                E2EStatusText = $"E2E {profileTitle}: сверен";
+            } else if (hasLocalKeys) {
+                E2EStatusText = $"E2E {profileTitle}: не сверен";
+            } else if (state.IsLaneyPeer) {
+                E2EStatusText = $"Laney E2E: нужен ключ";
+            } else {
+                E2EStatusText = $"E2E {profileTitle}";
+            }
+            if (state.UsesX25519Handshake && hasLocalKeys) E2EStatusText += " · X25519";
+            if (state.AutoEncryptText && hasLocalKeys) E2EStatusText += " · auto";
+
+            string fingerprint = String.IsNullOrWhiteSpace(state.Fingerprint) ? "нет fingerprint" : state.Fingerprint;
+            string sas = String.IsNullOrWhiteSpace(state.Sas) ? "нет SAS" : state.Sas;
+            string backup = state.TrustedBackupCreatedAtUnix > 0
+                ? DateTimeOffset.FromUnixTimeSeconds(state.TrustedBackupCreatedAtUnix).ToLocalTime().ToString("g")
+                : "нет";
+            E2EStatusTip = $"{E2EStatusText}\nFingerprint: {fingerprint}\nSAS: {sas}\nMode: {(state.UsesX25519Handshake ? "X25519/HKDF chain" : "passphrase static")}\nAuto-encrypt: {(state.AutoEncryptText ? "on" : "off")}\nTrusted backup: {backup}";
         }
 
         private void UpdateSubtitleForChat() {
@@ -572,6 +722,10 @@ namespace ELOR.Laney.ViewModels {
             }
         }
 
+        public async Task ReloadMessagesAsync() {
+            await LoadMessagesAsync();
+        }
+
         public async Task GoToMessageAsync(int id) {
             if (id == 0) return;
             if (DisplayedMessages == null) {
@@ -587,11 +741,125 @@ namespace ELOR.Laney.ViewModels {
             }
         }
 
+        public async Task JumpToDateAsync(DateTime date) {
+            DateTime target = date.Date;
+            if (DemoMode.IsEnabled) {
+                await JumpToDateInDemoAsync(target);
+                return;
+            }
+
+            int loadedMessageId = FindLoadedMessageIdByDate(target);
+            if (loadedMessageId > 0) {
+                await GoToMessageAsync(loadedMessageId);
+                return;
+            }
+
+            int messageId = await FindMessageIdByDateViaApiAsync(target);
+            if (messageId > 0) await GoToMessageAsync(messageId);
+        }
+
+        private async Task JumpToDateInDemoAsync(DateTime target) {
+            DemoModeSession ds = DemoMode.GetDemoSessionById(session.Id);
+            Message message = ds.Messages
+                .Where(m => m.PeerId == PeerId && m.DateTime >= target)
+                .OrderBy(m => m.DateUnix)
+                .ThenBy(m => m.ConversationMessageId)
+                .FirstOrDefault();
+
+            message ??= ds.Messages
+                .Where(m => m.PeerId == PeerId)
+                .OrderByDescending(m => m.DateUnix)
+                .ThenByDescending(m => m.ConversationMessageId)
+                .FirstOrDefault();
+
+            if (message != null) await GoToMessageAsync(message.ConversationMessageId);
+        }
+
+        private int FindLoadedMessageIdByDate(DateTime target) {
+            if (DisplayedMessages == null || DisplayedMessages.Count == 0) return 0;
+
+            MessageViewModel message = DisplayedMessages
+                .Where(m => m.SentTime >= target)
+                .OrderBy(m => m.SentTime)
+                .ThenBy(m => m.ConversationMessageId)
+                .FirstOrDefault();
+
+            return message?.ConversationMessageId ?? 0;
+        }
+
+        private async Task<int> FindMessageIdByDateViaApiAsync(DateTime target) {
+            int lastMessageId = LastMessage?.ConversationMessageId ?? DisplayedMessages?.LastOrDefault()?.ConversationMessageId ?? 0;
+            if (lastMessageId <= 0) return 0;
+
+            Message lastMessage = await LoadDateProbeMessageAsync(lastMessageId);
+            if (lastMessage != null && lastMessage.DateTime < target) return lastMessage.ConversationMessageId;
+
+            int low = 1;
+            int high = lastMessageId;
+            int best = lastMessage?.ConversationMessageId ?? 0;
+
+            for (int i = 0; i < 18 && low <= high; i++) {
+                int middle = low + (high - low) / 2;
+                List<Message> page = await LoadDateProbeMessagesAsync(middle);
+                if (page.Count == 0) {
+                    high = middle - 1;
+                    continue;
+                }
+
+                Message firstAtOrAfter = page
+                    .Where(m => m.DateTime >= target)
+                    .OrderBy(m => m.DateUnix)
+                    .ThenBy(m => m.ConversationMessageId)
+                    .FirstOrDefault();
+
+                int minId = page.Min(m => m.ConversationMessageId);
+                int maxId = page.Max(m => m.ConversationMessageId);
+
+                if (firstAtOrAfter != null) {
+                    best = firstAtOrAfter.ConversationMessageId;
+                    high = minId - 1;
+                } else {
+                    low = maxId + 1;
+                }
+            }
+
+            return best;
+        }
+
+        private async Task<Message> LoadDateProbeMessageAsync(int conversationMessageId) {
+            List<Message> messages = await LoadDateProbeMessagesAsync(conversationMessageId, 1);
+            return messages.FirstOrDefault();
+        }
+
+        private async Task<List<Message>> LoadDateProbeMessagesAsync(int conversationMessageId, int count = 24) {
+            MessagesHistoryResponse mhr = await session.API.Messages.GetHistoryAsync(session.GroupId, PeerId, -count / 2, count, conversationMessageId, true, VKAPIHelper.Fields, false, Constants.NestedMessagesLimit);
+            CacheManager.Add(mhr.Profiles);
+            CacheManager.Add(mhr.Groups);
+            return mhr.Items?
+                .Where(m => m.PeerId == PeerId && m.ConversationMessageId > 0)
+                .DistinctBy(m => m.ConversationMessageId)
+                .OrderBy(m => m.ConversationMessageId)
+                .ToList() ?? new List<Message>();
+        }
+
         private async Task LoadMessagesAsync(int startMessageId = -1) {
             if (DemoMode.IsEnabled) {
                 DemoModeSession ds = DemoMode.GetDemoSessionById(session.Id);
-                var messages = ds.Messages.Where(m => m.PeerId == PeerId).ToList();
-                DisplayedMessages = new MessagesCollection(MessageViewModel.BuildFromAPI(messages, session, true, FixState));
+                List<Message> allMessages = ds.Messages.Where(m => m.PeerId == PeerId).OrderBy(m => m.ConversationMessageId).ToList();
+                int demoCount = Constants.MessagesCount;
+                int center = startMessageId > 0 ? startMessageId : allMessages.LastOrDefault()?.ConversationMessageId ?? 0;
+                int centerIndex = Math.Max(0, allMessages.FindIndex(m => m.ConversationMessageId >= center));
+                int startIndex = startMessageId > 0
+                    ? Math.Max(0, centerIndex - demoCount / 2)
+                    : Math.Max(0, allMessages.Count - demoCount);
+                var messages = allMessages.Skip(startIndex).Take(demoCount).ToList();
+                DisplayedMessages = new MessagesCollection(FilterLocallyVisibleMessages(MessageViewModel.BuildFromAPI(messages, session, true, FixState)));
+                await ApplyExpiredSelfDestructMessagesAsync();
+                RefreshE2EState();
+                _ = OfflineCacheStore.SaveChatSnapshotAsync(this);
+                int scrollTo = startMessageId > 0 ? startMessageId : InRead;
+                MessageViewModel scrollToMsg = scrollTo > 0 ? DisplayedMessages.GetById(scrollTo) : null;
+                if (scrollToMsg != null) ScrollToMessageRequested?.Invoke(this, scrollToMsg);
 
                 return;
             }
@@ -613,7 +881,10 @@ namespace ELOR.Laney.ViewModels {
 
                 Setup(mhr.Conversations[0]);
                 mhr.Items?.Reverse();
-                DisplayedMessages = new MessagesCollection(MessageViewModel.BuildFromAPI(mhr.Items, session, false, FixState));
+                DisplayedMessages = new MessagesCollection(FilterLocallyVisibleMessages(MessageViewModel.BuildFromAPI(mhr.Items, session, false, FixState)));
+                await ApplyExpiredSelfDestructMessagesAsync();
+                RefreshE2EState();
+                _ = OfflineCacheStore.SaveChatSnapshotAsync(this);
 
                 int scrollTo = 0;
                 if (startMessageId > 0) scrollTo = startMessageId;
@@ -635,6 +906,7 @@ namespace ELOR.Laney.ViewModels {
                     await LoadMembersAsync();
                 }
             } catch (Exception ex) {
+                if (await TryLoadOfflineMessagesAsync(startMessageId, ex)) return;
                 Placeholder = PlaceholderViewModel.GetForException(ex, async (o) => await LoadMessagesAsync(startMessageId));
             } finally {
                 IsLoading = false;
@@ -645,7 +917,11 @@ namespace ELOR.Laney.ViewModels {
         }
 
         public async Task LoadPreviousMessagesAsync(CancellationToken? ct) {
-            if (DemoMode.IsEnabled || DisplayedMessages?.Count == 0 || IsLoading) return;
+            if (DemoMode.IsEnabled) {
+                await LoadPreviousDemoMessagesAsync();
+                return;
+            }
+            if (DisplayedMessages?.Count == 0 || IsLoading) return;
             int count = Constants.MessagesCount;
 
             try {
@@ -656,11 +932,14 @@ namespace ELOR.Laney.ViewModels {
                 CacheManager.Add(mhr.Groups);
                 mhr.Items?.Reverse();
                 MessagesChunkLoaded?.Invoke(this, false);
-                DisplayedMessages.InsertRange(mhr.Items?.Select(m => {
+                DisplayedMessages.InsertRange(FilterLocallyVisibleMessages(mhr.Items?.Select(m => {
                     var msg = MessageViewModel.Create(m, session);
                     FixState(msg);
                     return msg;
-                }).ToList());
+                })));
+                await ApplyExpiredSelfDestructMessagesAsync();
+                RefreshE2EState();
+                _ = OfflineCacheStore.SaveChatSnapshotAsync(this);
             } catch (Exception ex) {
                 if (await ExceptionHelper.ShowErrorDialogAsync(session.Window, ex)) {
                     await LoadPreviousMessagesAsync(ct);
@@ -671,7 +950,11 @@ namespace ELOR.Laney.ViewModels {
         }
 
         public async Task LoadNextMessagesAsync(CancellationToken? ct) {
-            if (DemoMode.IsEnabled || DisplayedMessages?.Count == 0 || IsLoading) return;
+            if (DemoMode.IsEnabled) {
+                await LoadNextDemoMessagesAsync();
+                return;
+            }
+            if (DisplayedMessages?.Count == 0 || IsLoading) return;
             if (LastMessage?.ConversationMessageId == DisplayedMessages.LastOrDefault()?.ConversationMessageId) return;
             int count = Constants.MessagesCount;
 
@@ -683,17 +966,483 @@ namespace ELOR.Laney.ViewModels {
                 CacheManager.Add(mhr.Groups);
                 mhr.Items?.Reverse();
                 MessagesChunkLoaded?.Invoke(this, true);
-                DisplayedMessages.InsertRange(mhr.Items?.Select(m => {
+                DisplayedMessages.InsertRange(FilterLocallyVisibleMessages(mhr.Items?.Select(m => {
                     var msg = MessageViewModel.Create(m, session);
                     FixState(msg);
                     return msg;
-                }).ToList());
+                })));
+                await ApplyExpiredSelfDestructMessagesAsync();
+                RefreshE2EState();
+                _ = OfflineCacheStore.SaveChatSnapshotAsync(this);
             } catch (Exception ex) {
                 if (await ExceptionHelper.ShowErrorDialogAsync(session.Window, ex)) {
                     await LoadNextMessagesAsync(ct);
                 }
             } finally {
                 IsLoading = false;
+            }
+        }
+
+        private async Task LoadPreviousDemoMessagesAsync() {
+            if (DisplayedMessages?.Count == 0 || IsLoading) return;
+
+            DemoModeSession ds = DemoMode.GetDemoSessionById(session.Id);
+            int firstId = DisplayedMessages.First.ConversationMessageId;
+            List<Message> messages = ds.Messages
+                .Where(m => m.PeerId == PeerId && m.ConversationMessageId < firstId)
+                .OrderByDescending(m => m.ConversationMessageId)
+                .Take(Constants.MessagesCount)
+                .OrderBy(m => m.ConversationMessageId)
+                .ToList();
+            if (messages.Count == 0) return;
+
+            Log.Information("LoadPreviousMessages demo peer: {0}, count: {1}, displayed messages count: {2}", PeerId, messages.Count, DisplayedMessages.Count);
+            MessagesChunkLoaded?.Invoke(this, false);
+            DisplayedMessages.InsertRange(FilterLocallyVisibleMessages(MessageViewModel.BuildFromAPI(messages, session, true, FixState)));
+            await ApplyExpiredSelfDestructMessagesAsync();
+            RefreshE2EState();
+            _ = OfflineCacheStore.SaveChatSnapshotAsync(this);
+        }
+
+        private async Task LoadNextDemoMessagesAsync() {
+            if (DisplayedMessages?.Count == 0 || IsLoading) return;
+            if (LastMessage?.ConversationMessageId == DisplayedMessages.LastOrDefault()?.ConversationMessageId) return;
+
+            DemoModeSession ds = DemoMode.GetDemoSessionById(session.Id);
+            int lastId = DisplayedMessages.Last.ConversationMessageId;
+            List<Message> messages = ds.Messages
+                .Where(m => m.PeerId == PeerId && m.ConversationMessageId > lastId)
+                .OrderBy(m => m.ConversationMessageId)
+                .Take(Constants.MessagesCount)
+                .ToList();
+            if (messages.Count == 0) return;
+
+            Log.Information("LoadNextMessages demo peer: {0}, count: {1}, displayed messages count: {2}", PeerId, messages.Count, DisplayedMessages.Count);
+            MessagesChunkLoaded?.Invoke(this, true);
+            DisplayedMessages.InsertRange(FilterLocallyVisibleMessages(MessageViewModel.BuildFromAPI(messages, session, true, FixState)));
+            await ApplyExpiredSelfDestructMessagesAsync();
+            RefreshE2EState();
+            _ = OfflineCacheStore.SaveChatSnapshotAsync(this);
+        }
+
+        private async Task<bool> TryLoadOfflineMessagesAsync(int startMessageId, Exception sourceException) {
+            List<MessageViewModel> messages = await OfflineCacheStore.LoadChatMessagesAsync(session, this, startMessageId, Constants.MessagesCount, FixState);
+            if (messages.Count == 0) return false;
+
+            Log.Warning(sourceException, "Loaded offline chat snapshot after history load failure. Peer={PeerId}; messages={Count}", PeerId, messages.Count);
+            Placeholder = null;
+            DisplayedMessages = new MessagesCollection(FilterLocallyVisibleMessages(messages));
+            RefreshE2EState();
+
+            int scrollTo = startMessageId > 0 ? startMessageId : DisplayedMessages.LastOrDefault()?.ConversationMessageId ?? 0;
+            MessageViewModel scrollToMsg = scrollTo > 0 ? DisplayedMessages.GetById(scrollTo) : null;
+            scrollToMsg ??= DisplayedMessages.LastOrDefault();
+            if (scrollToMsg != null) ScrollToMessageRequested?.Invoke(this, scrollToMsg);
+            return true;
+        }
+
+        public List<MessageViewModel> HideMessagesLocally(IEnumerable<MessageViewModel> messages) {
+            if (DisplayedMessages == null || messages == null) return new List<MessageViewModel>();
+
+            List<MessageViewModel> hiddenMessages = messages
+                .Where(m => m != null && DisplayedMessages.Contains(m))
+                .DistinctBy(m => m.ConversationMessageId)
+                .OrderBy(m => m.ConversationMessageId)
+                .ToList();
+
+            if (hiddenMessages.Count == 0) return hiddenMessages;
+
+            Settings.HideMessagesLocally(PeerId, hiddenMessages.Select(m => m.ConversationMessageId));
+            foreach (MessageViewModel message in hiddenMessages) {
+                DisplayedMessages.Remove(message);
+            }
+
+            Log.Information("Messages hidden locally. Peer={PeerId}; count={Count}", PeerId, hiddenMessages.Count);
+            return hiddenMessages;
+        }
+
+        public void RestoreLocallyHiddenMessages(IEnumerable<MessageViewModel> messages) {
+            List<MessageViewModel> restoredMessages = messages?
+                .Where(m => m != null)
+                .DistinctBy(m => m.ConversationMessageId)
+                .OrderBy(m => m.ConversationMessageId)
+                .ToList() ?? new List<MessageViewModel>();
+
+            if (restoredMessages.Count == 0) return;
+
+            Settings.UnhideMessagesLocally(PeerId, restoredMessages.Select(m => m.ConversationMessageId));
+            if (DisplayedMessages == null) {
+                DisplayedMessages = new MessagesCollection(restoredMessages);
+            } else {
+                DisplayedMessages.InsertRange(restoredMessages);
+            }
+
+            Log.Information("Locally hidden messages restored. Peer={PeerId}; count={Count}", PeerId, restoredMessages.Count);
+        }
+
+        public int ShadowBanSenderLocally(long senderId) {
+            if (senderId == 0 || senderId == session.Id) return 0;
+
+            Settings.ShadowBanSenderLocally(PeerId, senderId);
+            List<MessageViewModel> displayed = DisplayedMessages?
+                .Where(m => m.SenderId == senderId)
+                .ToList() ?? new List<MessageViewModel>();
+            List<MessageViewModel> received = ReceivedMessages
+                .Where(m => m.SenderId == senderId)
+                .ToList();
+
+            foreach (MessageViewModel message in displayed) {
+                DisplayedMessages.Remove(message);
+            }
+
+            foreach (MessageViewModel message in received) {
+                ReceivedMessages.Remove(message);
+            }
+
+            Log.Information("Sender shadow-banned locally. Peer={PeerId}; sender={SenderId}; displayed={DisplayedCount}; received={ReceivedCount}", PeerId, senderId, displayed.Count, received.Count);
+            return displayed.Count + received.Count;
+        }
+
+        public bool IsSenderShadowBanned(long senderId) {
+            return Settings.IsSenderShadowBanned(PeerId, senderId);
+        }
+
+        public void MuteSenderLocally(long senderId) {
+            if (senderId == 0 || senderId == session.Id) return;
+
+            Settings.MuteSenderLocally(PeerId, senderId);
+            Log.Information("Sender muted locally. Peer={PeerId}; sender={SenderId}", PeerId, senderId);
+        }
+
+        public bool IsSenderMutedLocally(long senderId) {
+            return Settings.IsSenderMutedLocally(PeerId, senderId);
+        }
+
+        public void RefreshSelfDestructState() {
+            HasSelfDestructMessage = Settings.GetSelfDestructMessages(PeerId).Count > 0;
+        }
+
+        public async Task ApplyExpiredSelfDestructMessagesAsync() {
+            List<SelfDestructMessageSchedule> expired = Settings.GetExpiredSelfDestructMessages(PeerId, DateTimeOffset.Now);
+            if (expired.Count == 0) {
+                RefreshSelfDestructState();
+                return;
+            }
+
+            List<int> ids = expired.Select(s => s.ConversationMessageId).Distinct().ToList();
+            List<MessageViewModel> displayed = DisplayedMessages?
+                .Where(m => ids.Contains(m.ConversationMessageId))
+                .ToList() ?? new List<MessageViewModel>();
+
+            Settings.HideMessagesLocally(PeerId, ids);
+            foreach (MessageViewModel message in displayed) {
+                DisplayedMessages.Remove(message);
+            }
+
+            if (!DemoMode.IsEnabled && expired.Any(s => s.BestEffortDelete)) {
+                List<int> deleteIds = expired.Where(s => s.BestEffortDelete).Select(s => s.ConversationMessageId).Distinct().ToList();
+                try {
+                    await session.API.Messages.DeleteAsync(session.GroupId, PeerId, deleteIds, false, false);
+                } catch (Exception ex) {
+                    Log.Warning(ex, "Self-destruct best-effort VK delete failed. Peer={PeerId}; count={Count}", PeerId, deleteIds.Count);
+                }
+            }
+
+            Settings.ClearSelfDestructMessages(PeerId, ids);
+            RefreshSelfDestructState();
+            Log.Information("Self-destruct applied. Peer={PeerId}; count={Count}", PeerId, ids.Count);
+        }
+
+        private List<MessageViewModel> FilterLocallyVisibleMessages(IEnumerable<MessageViewModel> messages) {
+            List<MessageViewModel> source = messages?.ToList() ?? new List<MessageViewModel>();
+            HashSet<int> hiddenIds = Settings.GetLocallyHiddenMessageIds(PeerId);
+            HashSet<long> shadowBannedSenderIds = Settings.GetShadowBannedSenderIds(PeerId);
+            List<ShadowBanTextRule> shadowTextRules = BuildShadowBanTextRules(Settings.GetShadowBannedTextRules(PeerId));
+            ShadowBannedAttachmentKinds shadowAttachmentKinds = Settings.GetShadowBannedAttachmentKinds(PeerId);
+            if (hiddenIds.Count == 0
+                && shadowBannedSenderIds.Count == 0
+                && shadowTextRules.Count == 0
+                && shadowAttachmentKinds == ShadowBannedAttachmentKinds.None
+                && !IsGroupAntiSpamEnabled()) return source;
+
+            List<MessageViewModel> visible = source.Where(m => !IsMessageLocallyHidden(m, hiddenIds, shadowBannedSenderIds, shadowTextRules, shadowAttachmentKinds)).ToList();
+            return FilterGroupSpamMessages(visible);
+        }
+
+        private bool IsMessageLocallyHidden(MessageViewModel message) {
+            return IsMessageLocallyHidden(
+                message,
+                Settings.GetLocallyHiddenMessageIds(PeerId),
+                Settings.GetShadowBannedSenderIds(PeerId),
+                BuildShadowBanTextRules(Settings.GetShadowBannedTextRules(PeerId)),
+                Settings.GetShadowBannedAttachmentKinds(PeerId));
+        }
+
+        private bool IsGroupAntiSpamEnabled() {
+            return PeerType == PeerType.Chat && Settings.IsPeerAntiSpamEnabled(PeerId);
+        }
+
+        private List<MessageViewModel> FilterGroupSpamMessages(List<MessageViewModel> source) {
+            if (!IsGroupAntiSpamEnabled() || source.Count == 0) return source;
+
+            List<MessageViewModel> visible = new List<MessageViewModel>(source.Count);
+            Dictionary<long, HashSet<string>> senderRecentTexts = new Dictionary<long, HashSet<string>>();
+            List<int> quarantineIds = new List<int>();
+
+            foreach (MessageViewModel message in source) {
+                if (IsGroupSpamMessage(message, senderRecentTexts)) {
+                    if (message.ConversationMessageId > 0) quarantineIds.Add(message.ConversationMessageId);
+                    Log.Information("Local anti-spam hidden message. Peer={PeerId}; cmid={Cmid}; sender={SenderId}", PeerId, message.ConversationMessageId, message.SenderId);
+                    continue;
+                }
+
+                RememberSpamSignature(message, senderRecentTexts);
+                visible.Add(message);
+            }
+
+            if (quarantineIds.Count > 0) Settings.HideMessagesLocally(PeerId, quarantineIds);
+            return visible;
+        }
+
+        private bool IsGroupSpamMessage(MessageViewModel message, Dictionary<long, HashSet<string>> senderRecentTexts) {
+            if (!IsGroupAntiSpamEnabled() || message == null || message.IsOutgoing || message.IsImportant || message.Action != null) return false;
+
+            string signature = NormalizeSpamText(message.Text);
+            if (!String.IsNullOrWhiteSpace(signature)
+                && senderRecentTexts.TryGetValue(message.SenderId, out HashSet<string> senderTexts)
+                && senderTexts.Contains(signature)) return true;
+
+            return IsLinkKeywordSpam(message) || IsCapsSpam(message) || IsSuspiciousLinkSpam(message);
+        }
+
+        private bool IsGroupSpamMessage(MessageViewModel message) {
+            if (!IsGroupAntiSpamEnabled() || message == null || message.IsOutgoing || message.IsImportant || message.Action != null) return false;
+
+            IEnumerable<MessageViewModel> recentMessages = ReceivedMessages?
+                .Where(m => m != null && m.SenderId == message.SenderId)
+                .Reverse()
+                .Take(12) ?? Array.Empty<MessageViewModel>();
+            string signature = NormalizeSpamText(message.Text);
+            if (!String.IsNullOrWhiteSpace(signature) && recentMessages.Any(m => NormalizeSpamText(m.Text) == signature)) return true;
+
+            return IsLinkKeywordSpam(message) || IsCapsSpam(message) || IsSuspiciousLinkSpam(message);
+        }
+
+        private static void RememberSpamSignature(MessageViewModel message, Dictionary<long, HashSet<string>> senderRecentTexts) {
+            string signature = NormalizeSpamText(message?.Text);
+            if (String.IsNullOrWhiteSpace(signature)) return;
+
+            if (!senderRecentTexts.TryGetValue(message.SenderId, out HashSet<string> senderTexts)) {
+                senderTexts = new HashSet<string>(StringComparer.Ordinal);
+                senderRecentTexts[message.SenderId] = senderTexts;
+            }
+
+            if (senderTexts.Count >= 12) senderTexts.Clear();
+            senderTexts.Add(signature);
+        }
+
+        private static bool IsLinkKeywordSpam(MessageViewModel message) {
+            string text = message.Text;
+            if (String.IsNullOrWhiteSpace(text)) return false;
+
+            bool hasLink = AntiSpamLinkMarkers.Any(marker => text.Contains(marker, StringComparison.OrdinalIgnoreCase))
+                || message.Attachments?.Any(a => a.Type == AttachmentType.Link) == true;
+            if (!hasLink) return false;
+
+            return AntiSpamKeywords.Any(keyword => text.Contains(keyword, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static bool IsCapsSpam(MessageViewModel message) {
+            string text = message?.Text;
+            if (String.IsNullOrWhiteSpace(text) || text.Length < 24) return false;
+
+            int letters = 0;
+            int upper = 0;
+            foreach (char c in text) {
+                if (!Char.IsLetter(c)) continue;
+
+                letters++;
+                if (Char.IsUpper(c)) upper++;
+            }
+
+            return letters >= 14 && (double)upper / letters >= 0.78;
+        }
+
+        private static bool IsSuspiciousLinkSpam(MessageViewModel message) {
+            string text = message?.Text;
+            if (String.IsNullOrWhiteSpace(text)) return false;
+
+            bool hasLink = AntiSpamLinkMarkers.Any(marker => text.Contains(marker, StringComparison.OrdinalIgnoreCase))
+                || message.Attachments?.Any(a => a.Type == AttachmentType.Link) == true;
+            if (!hasLink) return false;
+
+            int linkMarkers = AntiSpamLinkMarkers.Count(marker => text.Contains(marker, StringComparison.OrdinalIgnoreCase));
+            bool hasSuspiciousMarker = SuspiciousLinkMarkers.Any(marker => text.Contains(marker, StringComparison.OrdinalIgnoreCase));
+            bool hasSuspiciousToken = SuspiciousLinkTokens.Any(token => text.Contains(token, StringComparison.OrdinalIgnoreCase));
+
+            return linkMarkers >= 2 || hasSuspiciousMarker && (text.Length < 220 || hasSuspiciousToken);
+        }
+
+        private static string NormalizeSpamText(string text) {
+            if (String.IsNullOrWhiteSpace(text)) return String.Empty;
+
+            string normalized = new string(text
+                .Where(c => !Char.IsWhiteSpace(c) && !Char.IsPunctuation(c))
+                .Take(180)
+                .ToArray())
+                .ToLowerInvariant();
+
+            return normalized.Length < 12 ? String.Empty : normalized;
+        }
+
+        private static bool IsMessageLocallyHidden(MessageViewModel message, HashSet<int> hiddenIds, HashSet<long> shadowBannedSenderIds, List<ShadowBanTextRule> shadowTextRules, ShadowBannedAttachmentKinds shadowAttachmentKinds) {
+            if (message == null) return true;
+            return hiddenIds.Contains(message.ConversationMessageId)
+                || shadowBannedSenderIds.Contains(message.SenderId)
+                || IsMessageFromAutoBlockedUser(message)
+                || IsMessageShadowBannedByRelation(message, shadowBannedSenderIds, shadowTextRules)
+                || IsMessageShadowBannedByText(message, shadowTextRules)
+                || IsMessageShadowBannedByAttachment(message, shadowAttachmentKinds);
+        }
+
+        private static List<ShadowBanTextRule> BuildShadowBanTextRules(string rulesText) {
+            if (String.IsNullOrWhiteSpace(rulesText)) return new List<ShadowBanTextRule>();
+
+            List<ShadowBanTextRule> rules = new List<ShadowBanTextRule>();
+            string[] lines = rulesText.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            foreach (string line in lines) {
+                if (rules.Count >= ShadowBanTextRuleLimit) break;
+
+                string rule = line.Trim();
+                if (rule.Length == 0 || rule.Length > ShadowBanTextRuleMaxLength) continue;
+
+                if (rule.Length > 2 && rule.StartsWith("/") && rule.EndsWith("/")) {
+                    try {
+                        rules.Add(new ShadowBanTextRule(new Regex(rule[1..^1], RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, ShadowBanRegexTimeout)));
+                    } catch (ArgumentException ex) {
+                        Log.Warning(ex, "Invalid shadow-ban regex rule skipped.");
+                    }
+                } else {
+                    rules.Add(new ShadowBanTextRule(rule));
+                }
+            }
+
+            return rules;
+        }
+
+        private static bool IsMessageShadowBannedByText(MessageViewModel message, List<ShadowBanTextRule> rules) {
+            return IsTextShadowBanned(message?.Text, rules);
+        }
+
+        private static bool IsMessageFromAutoBlockedUser(MessageViewModel message) {
+            return IsSenderAutoBlocked(message.SenderId);
+        }
+
+        private static bool IsSenderAutoBlocked(long senderId) {
+            if (!Settings.AutoBlockBlacklistedUsers || !senderId.IsUser()) return false;
+
+            User user = CacheManager.GetUser(senderId);
+            return user?.BlacklistedByMe == 1;
+        }
+
+        private static bool IsMessageShadowBannedByRelation(MessageViewModel message, HashSet<long> shadowBannedSenderIds, List<ShadowBanTextRule> shadowTextRules) {
+            if (message == null) return false;
+            if ((shadowBannedSenderIds == null || shadowBannedSenderIds.Count == 0)
+                && (shadowTextRules == null || shadowTextRules.Count == 0)
+                && !Settings.AutoBlockBlacklistedUsers) return false;
+
+            if (IsApiMessageShadowBannedByRelation(message.ReplyMessage, shadowBannedSenderIds, shadowTextRules, 0)) return true;
+            if (message.ForwardedMessages == null || message.ForwardedMessages.Count == 0) return false;
+
+            foreach (Message forwarded in message.ForwardedMessages) {
+                if (IsApiMessageShadowBannedByRelation(forwarded, shadowBannedSenderIds, shadowTextRules, 0)) return true;
+            }
+
+            return false;
+        }
+
+        private static bool IsApiMessageShadowBannedByRelation(Message message, HashSet<long> shadowBannedSenderIds, List<ShadowBanTextRule> shadowTextRules, int depth) {
+            if (message == null || depth > 16) return false;
+            if (shadowBannedSenderIds?.Contains(message.FromId) == true) return true;
+            if (IsSenderAutoBlocked(message.FromId)) return true;
+            if (IsTextShadowBanned(message.Text, shadowTextRules)) return true;
+
+            if (IsApiMessageShadowBannedByRelation(message.ReplyMessage, shadowBannedSenderIds, shadowTextRules, depth + 1)) return true;
+            if (message.ForwardedMessages == null || message.ForwardedMessages.Count == 0) return false;
+
+            foreach (Message forwarded in message.ForwardedMessages) {
+                if (IsApiMessageShadowBannedByRelation(forwarded, shadowBannedSenderIds, shadowTextRules, depth + 1)) return true;
+            }
+
+            return false;
+        }
+
+        private static bool IsMessageShadowBannedByAttachment(MessageViewModel message, ShadowBannedAttachmentKinds kinds) {
+            if (kinds == ShadowBannedAttachmentKinds.None) return false;
+
+            if (kinds.HasFlag(ShadowBannedAttachmentKinds.Forwarded) && message.ForwardedMessages?.Count > 0) return true;
+            if (message.Attachments == null || message.Attachments.Count == 0) return false;
+
+            foreach (Attachment attachment in message.Attachments) {
+                if (attachment == null) continue;
+
+                if (kinds.HasFlag(ShadowBannedAttachmentKinds.Voice)
+                    && attachment.Type == AttachmentType.AudioMessage) return true;
+
+                if (kinds.HasFlag(ShadowBannedAttachmentKinds.Link)
+                    && attachment.Type == AttachmentType.Link) return true;
+
+                if (kinds.HasFlag(ShadowBannedAttachmentKinds.Sticker)
+                    && (attachment.Type == AttachmentType.Sticker || attachment.Type == AttachmentType.UGCSticker)) return true;
+
+                if (kinds.HasFlag(ShadowBannedAttachmentKinds.Graffiti)
+                    && attachment.Type == AttachmentType.Graffiti) return true;
+            }
+
+            return false;
+        }
+
+        private bool ShouldSuppressLocalNotification(MessageViewModel message) {
+            if (message == null || message.SenderId == session.Id) return false;
+            if (Settings.IsPeerQuietNow(PeerId, DateTimeOffset.Now)) return true;
+            if (Settings.IsSenderMutedLocally(PeerId, message.SenderId)) return true;
+
+            List<ShadowBanTextRule> quietTextRules = BuildShadowBanTextRules(Settings.GetPeerQuietTextRules(PeerId));
+            return IsMessageShadowBannedByText(message, quietTextRules);
+        }
+
+        private static bool IsTextShadowBanned(string text, List<ShadowBanTextRule> rules) {
+            if (rules == null || rules.Count == 0 || String.IsNullOrEmpty(text)) return false;
+
+            foreach (ShadowBanTextRule rule in rules) {
+                if (rule.IsMatch(text)) return true;
+            }
+
+            return false;
+        }
+
+        private sealed class ShadowBanTextRule {
+            private readonly string text;
+            private readonly Regex regex;
+
+            public ShadowBanTextRule(string text) {
+                this.text = text;
+            }
+
+            public ShadowBanTextRule(Regex regex) {
+                this.regex = regex;
+            }
+
+            public bool IsMatch(string value) {
+                if (String.IsNullOrEmpty(value)) return false;
+                if (regex == null) return value.Contains(text, StringComparison.OrdinalIgnoreCase);
+
+                try {
+                    return regex.IsMatch(value);
+                } catch (RegexMatchTimeoutException ex) {
+                    Log.Warning(ex, "Shadow-ban regex timeout.");
+                    return false;
+                }
             }
         }
 
@@ -738,58 +1487,107 @@ namespace ELOR.Laney.ViewModels {
 
         private void LongPoll_MessageReceived(LongPoll longPoll, Message message, int flags, bool incrementUnreadCounter) {
             if (message.PeerId != PeerId) return;
-            new System.Action(async () => {
-                await Dispatcher.UIThread.InvokeAsync(async () => {
-                    MessageViewModel msg = MessageViewModel.Create(message, session);
+            QueueLongPollMessage(message, flags, incrementUnreadCounter);
+        }
 
-                    bool isMention = false;
-                    if (!message.IsSilent && message.MentionedUsers != null) {
-                        if (message.MentionedUsers.Count == 0) { // признак того, что пушнули всех (@all)
-                            isMention = true;
-                        } else {
-                            isMention = message.MentionedUsers.Contains(session.Id);
-                        }
-                    }
+        private void QueueLongPollMessage(Message message, int flags, bool incrementUnreadCounter) {
+            lock (pendingLongPollMessagesLock) {
+                pendingLongPollMessages.Add(new PendingLongPollMessage(message, flags, incrementUnreadCounter));
+                if (pendingLongPollFlushQueued) return;
+                pendingLongPollFlushQueued = true;
+            }
 
-                    if (!message.IsPartial) {
-                        bool isUnread = flags.HasFlag(1) && !flags.HasFlag(8388608);
-                        msg.State = isUnread ? MessageVMState.Unread : MessageVMState.Read;
-                        if (!message.IsSilent) await ShowSystemNotificationAsync(msg, isMention);
-                    } else {
-                        if (!message.IsSilent) {
-                            Log.Information($"Adding message {message.PeerId}_{message.ConversationMessageId} to pending for notification... (by longpoll)");
-                            pendingMessages.Add(message.ConversationMessageId, isMention);
-                        }
-                    }
+            Dispatcher.UIThread.Post(async () => await FlushLongPollMessagesAsync(), DispatcherPriority.Background);
+        }
 
-                    bool canAddToDisplayedMessages = DisplayedMessages?.Last?.ConversationMessageId == ReceivedMessages.LastOrDefault()?.ConversationMessageId;
+        private async Task FlushLongPollMessagesAsync() {
+            await Task.Delay(16);
 
-                    if (ReceivedMessages.Count >= Constants.MessagesCount) {
-                        var oldReceived = _receivedMessages;
-                        _receivedMessages = new ObservableCollection<MessageViewModel> { msg };
-                        oldReceived.Clear();
-                        oldReceived = null;
-                        Log.Information($"All received messages except the last one is removed from cache in chat {Id}");
-                    } else {
-                        ReceivedMessages.Add(msg);
-                    }
+            List<PendingLongPollMessage> batch;
+            lock (pendingLongPollMessagesLock) {
+                batch = pendingLongPollMessages.ToList();
+                pendingLongPollMessages.Clear();
+                pendingLongPollFlushQueued = false;
+            }
 
-                    // if (message.Action != null) ParseActionMessage(message.FromId, message.Action, message.Attachments);
-                    // if (!flags.HasFlag(65536)) UpdateSortId(SortId.MajorId, msg.Id);
-                    if (msg.SenderId != session.Id && incrementUnreadCounter) UnreadMessagesCount++;
-                    if (canAddToDisplayedMessages) {
-                        if (DisplayedMessages == null) {
-                            DisplayedMessages = new MessagesCollection(new List<MessageViewModel>() { msg });
-                        } else {
-                            DisplayedMessages.Insert(msg);
-                        }
-                    }
+            if (batch.Count == 0) return;
+            if (!Dispatcher.UIThread.CheckAccess()) {
+                await Dispatcher.UIThread.InvokeAsync(async () => await ApplyLongPollMessagesAsync(batch));
+                return;
+            }
 
-                    // Remove user from activity status
-                    var status = ActivityStatusUsers.RegisteredObjects.Where(m => m.MemberId == message.FromId).FirstOrDefault();
-                    if (status != null) ActivityStatusUsers.Remove(status);
-                });
-            })();
+            await ApplyLongPollMessagesAsync(batch);
+        }
+
+        private async Task ApplyLongPollMessagesAsync(List<PendingLongPollMessage> batch) {
+            IDisposable receivedBatch = _receivedMessages.DeferNotifications();
+            IDisposable displayedBatch = DisplayedMessages?.DeferNotifications();
+            try {
+                foreach (PendingLongPollMessage item in batch) {
+                    await ApplyLongPollMessageAsync(item.Message, item.Flags, item.IncrementUnreadCounter);
+                }
+            } finally {
+                displayedBatch?.Dispose();
+                receivedBatch.Dispose();
+            }
+        }
+
+        private async Task ApplyLongPollMessageAsync(Message message, int flags, bool incrementUnreadCounter) {
+            MessageViewModel msg = MessageViewModel.Create(message, session);
+            if (IsMessageLocallyHidden(msg)) return;
+            if (IsGroupSpamMessage(msg)) {
+                Settings.HideMessagesLocally(PeerId, new[] { msg.ConversationMessageId });
+                await QuickActionStore.AddAutoRuleHitAsync(PeerId, msg.ConversationMessageId, "moderation:quarantine", 14);
+                Log.Information("Local anti-spam suppressed incoming message. Peer={PeerId}; cmid={Cmid}; sender={SenderId}", PeerId, msg.ConversationMessageId, msg.SenderId);
+                return;
+            }
+
+            bool suppressLocalNotification = ShouldSuppressLocalNotification(msg);
+            bool isMention = false;
+            if (!message.IsSilent && message.MentionedUsers != null) {
+                if (message.MentionedUsers.Count == 0) { // признак того, что пушнули всех (@all)
+                    isMention = true;
+                } else {
+                    isMention = message.MentionedUsers.Contains(session.Id);
+                }
+            }
+
+            if (!message.IsPartial) {
+                bool isUnread = flags.HasFlag(1) && !flags.HasFlag(8388608);
+                msg.State = isUnread ? MessageVMState.Unread : MessageVMState.Read;
+                _ = AutoReplyEngine.ApplyAsync(this, msg, isMention);
+                if (!message.IsSilent && !suppressLocalNotification) await ShowSystemNotificationAsync(msg, isMention);
+            } else {
+                if (!message.IsSilent) {
+                    Log.Information($"Adding message {message.PeerId}_{message.ConversationMessageId} to pending for notification... (by longpoll)");
+                    pendingMessages[message.ConversationMessageId] = suppressLocalNotification ? false : isMention;
+                }
+            }
+
+            bool canAddToDisplayedMessages = DisplayedMessages?.Last?.ConversationMessageId == ReceivedMessages.LastOrDefault()?.ConversationMessageId;
+
+            if (ReceivedMessages.Count >= Constants.MessagesCount) {
+                ReceivedMessages.Clear();
+                ReceivedMessages.Add(msg);
+                Log.Information($"All received messages except the last one is removed from cache in chat {Id}");
+            } else {
+                ReceivedMessages.Add(msg);
+            }
+
+            // if (message.Action != null) ParseActionMessage(message.FromId, message.Action, message.Attachments);
+            // if (!flags.HasFlag(65536)) UpdateSortId(SortId.MajorId, msg.Id);
+            if (msg.SenderId != session.Id && incrementUnreadCounter) UnreadMessagesCount++;
+            if (canAddToDisplayedMessages) {
+                if (DisplayedMessages == null) {
+                    DisplayedMessages = new MessagesCollection(new List<MessageViewModel>() { msg });
+                } else {
+                    DisplayedMessages.Insert(msg);
+                }
+            }
+
+            // Remove user from activity status
+            var status = ActivityStatusUsers.RegisteredObjects.Where(m => m.MemberId == message.FromId).FirstOrDefault();
+            if (status != null) ActivityStatusUsers.Remove(status);
         }
 
         private void LongPoll_MessageEdited(LongPoll longPoll, Message message, int flags, bool incrementUnreadCounter) {
@@ -802,7 +1600,7 @@ namespace ELOR.Laney.ViewModels {
                         bool isMention = pendingMessages[message.ConversationMessageId];
                         pendingMessages.Remove(message.ConversationMessageId);
                         MessageViewModel msg = ReceivedMessages.Where(m => m.ConversationMessageId == message.ConversationMessageId).FirstOrDefault();
-                        if (msg != null) await ShowSystemNotificationAsync(msg, isMention);
+                        if (msg != null && !ShouldSuppressLocalNotification(msg)) await ShowSystemNotificationAsync(msg, isMention);
                     }
 
                     if (LastMessage?.ConversationMessageId == message.ConversationMessageId) {
@@ -1206,19 +2004,23 @@ namespace ELOR.Laney.ViewModels {
         private async Task ShowSystemNotificationAsync(MessageViewModel message, bool isMention) {
             bool notifsEnabled = PeerType == PeerType.Chat ? Settings.NotificationsGroupChat : Settings.NotificationsPrivate;
             if (!notifsEnabled) return;
+            if (message.IsOutgoing) return;
+            if (await TryApplyAutoRulesAsync(message, isMention)) return;
+            if (!CanShowNotificationInQuietMode(message, isMention)) return;
 
             bool soundSettings = PeerType == PeerType.Chat ? Settings.NotificationsGroupChatSound : Settings.NotificationsPrivateSound;
             bool sound = !PushSettings.NoSound && soundSettings;
             bool canNotify = isMention ? true : CanNotify();
-            if (message.IsOutgoing || !canNotify) return;
+            if (!canNotify) return;
             Log.Information($"ChatViewModel: about to show new message notification ({message.PeerId}_{message.ConversationMessageId}). Is mention: {isMention}.");
             await Task.Delay(20); // имя отправителя может не оказаться в кеше вовремя.
 
-            string text = message.ToString();
-            string chatName = PeerType == PeerType.Chat ? Localizer.GetFormatted("in_chat", Title) : null;
+            string text = Settings.StreamerMode ? "Сообщение скрыто" : message.ToString();
+            string senderName = Settings.StreamerMode ? "Скрытый отправитель" : message.SenderName;
+            string chatName = Settings.StreamerMode ? null : PeerType == PeerType.Chat ? Localizer.GetFormatted("in_chat", Title) : null;
 
-            var ava = await BitmapManager.GetBitmapAsync(message.SenderAvatar, 56, 56);
-            var t = new ToastNotification(message, session.Name, message.SenderName, text, chatName, ava);
+            var ava = Settings.StreamerMode ? null : await BitmapManager.GetBitmapAsync(message.SenderAvatar, 56, 56, BitmapCacheKind.Avatar);
+            var t = new ToastNotification(message, session.Name, senderName, text, chatName, ava);
             t.OnClick += () => {
                 Log.Information($"ChatViewModel: clicked on message {message.PeerId}_{message.ConversationMessageId}");
                 session.TryOpenWindow();
@@ -1232,6 +2034,62 @@ namespace ELOR.Laney.ViewModels {
                 var bb2 = AssetsManager.OpenAsset(new Uri("avares://laney/Assets/Audio/bb2.mp3"));
                 LMediaPlayer.SFX?.PlayStream(bb2);
             }
+        }
+
+        private async Task<bool> TryApplyAutoRulesAsync(MessageViewModel message, bool isMention) {
+            AutomationRuleRunResult userRules = await AutomationRuleEngine.ApplyAsync(this, message, isMention);
+            if (userRules.SuppressNotification) return true;
+
+            if (!SmartChatClassifier.TryGetAutoRule(this, message, isMention, out string category, out int ttlDays)) return false;
+
+            await QuickActionStore.AddAutoRuleHitAsync(PeerId, message.ConversationMessageId, category, ttlDays);
+            Log.Information($"Auto-rules muted notification ({message.PeerId}_{message.ConversationMessageId}). Category: {category}; TTL: {ttlDays} days.");
+            return true;
+        }
+
+        private bool CanShowNotificationInQuietMode(MessageViewModel message, bool isMention) {
+            if (!Settings.IsDontAnnoyMeActive(DateTime.Now)) return true;
+            if (isMention && Settings.DontAnnoyMeAllowMentions) return true;
+            if (Settings.DontAnnoyMeAllowImportant && IsVipOrImportantNotification(message)) return true;
+            return HasQuietModeKeyword(message) || HasBuiltInUrgentPattern(message);
+        }
+
+        private bool IsVipOrImportantNotification(MessageViewModel message) {
+            if (IsImportant || IsPinned || message?.IsImportant == true) return true;
+            if (HasVipLocalTag(PeerId)) return true;
+            return message != null && HasVipLocalTag(message.SenderId);
+        }
+
+        private static bool HasVipLocalTag(long peerId) {
+            if (peerId == 0) return false;
+            return VipLocalTags.Any(tag => Settings.PeerHasLocalTag(peerId, tag));
+        }
+
+        private static bool HasQuietModeKeyword(MessageViewModel message) {
+            string keywords = Settings.DontAnnoyMeKeywords;
+            if (String.IsNullOrWhiteSpace(keywords)) return false;
+
+            string text = message?.Text;
+            if (String.IsNullOrWhiteSpace(text)) return false;
+
+            string[] tokens = keywords.Split(new[] { ',', ';', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            foreach (string token in tokens) {
+                if (token.Length == 0) continue;
+                if (text.IndexOf(token, StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            }
+
+            return false;
+        }
+
+        private static bool HasBuiltInUrgentPattern(MessageViewModel message) {
+            string text = message?.Text;
+            if (String.IsNullOrWhiteSpace(text)) return false;
+
+            foreach (string token in BuiltInUrgentNotificationTokens) {
+                if (text.IndexOf(token, StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            }
+
+            return false;
         }
 
         private bool CanNotify() {

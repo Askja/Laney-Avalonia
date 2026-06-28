@@ -44,18 +44,26 @@
       <ControlTemplate>
         <StackPanel x:Name="DismissArea" Background="Transparent">
           <ContentPresenter x:Name="AboveContentRoot" HorizontalAlignment="Left" Content="{TemplateBinding Above}"/>
-          <Border x:Name="FlyoutPresenterRoot" HorizontalAlignment="Left" Cursor="Arrow" BorderThickness="0" BorderBrush="{DynamicResource VKSeparatorCommonBrush}" Margin="12,6,12,14" VerticalAlignment="Center" CornerRadius="8" Background="{DynamicResource VKBackgroundContentBrush}" BoxShadow="{StaticResource VKElevation3}">
-            <ContentPresenter x:Name="FlyoutContent" Content="{TemplateBinding Content}"/>
+          <Border x:Name="FlyoutPresenterRoot" HorizontalAlignment="Left" Cursor="Arrow" BorderThickness="1" BorderBrush="{DynamicResource VKModalCardBorderBrush}" Margin="6,4,6,10" VerticalAlignment="Center" CornerRadius="8" Background="{DynamicResource VKModalCardBackgroundBrush}" BoxShadow="{StaticResource VKElevation3}">
+            <ScrollViewer x:Name="FlyoutScroll" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+              <ContentPresenter x:Name="FlyoutContent" Content="{TemplateBinding Content}"/>
+            </ScrollViewer>
           </Border>
         </StackPanel>
       </ControlTemplate>
     </Setter>
 
     <Style Selector="^.ActionSheet /template/ Border#FlyoutPresenterRoot">
-      <Setter Property="Margin" Value="12,6,12,24"/>
-      <Setter Property="CornerRadius" Value="12"/>
-      <Setter Property="BoxShadow" Value="0 0 2 #14000000, 0 8 24 #14000000"/>
+      <Setter Property="Margin" Value="6,4,6,10"/>
+      <Setter Property="MinWidth" Value="240"/>
+      <Setter Property="MaxWidth" Value="420"/>
+      <Setter Property="CornerRadius" Value="8"/>
+      <Setter Property="BoxShadow" Value="0 0 2 #18000000, 0 12 32 #26000000"/>
       <Setter Property="BorderThickness" Value="1"/>
+    </Style>
+
+    <Style Selector="^.ActionSheet /template/ ScrollViewer#FlyoutScroll">
+      <Setter Property="MaxHeight" Value="560"/>
     </Style>
 
     <Style Selector="^.ActionSheet /template/ ContentPresenter#FlyoutContent">

@@ -35,10 +35,9 @@ namespace ELOR.Laney.Views.Modals {
 
             DataContext = new PeerProfileViewModel(session, peerId);
             ViewModel.CloseWindowRequested += ViewModel_CloseWindowRequested;
+            ViewModel.FocusLocalNoteRequested += ViewModel_FocusLocalNoteRequested;
 
-            if (peerId.IsChat()) {
-                Tabs.Items.Remove(UserInfoTab);
-            } else {
+            if (!peerId.IsChat()) {
                 Tabs.Items.Remove(ChatMembersTab);
             }
 
@@ -58,6 +57,14 @@ namespace ELOR.Laney.Views.Modals {
             SecondButton.CommandParameter = SecondButton;
             ThirdButton.CommandParameter = ThirdButton;
             MoreButton.CommandParameter = MoreButton;
+            E2ESetupButton.CommandParameter = E2ESetupButton;
+            E2ECreateHandshakeButton.CommandParameter = E2ECreateHandshakeButton;
+            E2EImportHandshakeButton.CommandParameter = E2EImportHandshakeButton;
+            E2EFingerprintButton.CommandParameter = E2EFingerprintButton;
+            E2ERotateButton.CommandParameter = E2ERotateButton;
+            E2EExportBackupButton.CommandParameter = E2EExportBackupButton;
+            E2EImportBackupButton.CommandParameter = E2EImportBackupButton;
+            E2EResetButton.CommandParameter = E2EResetButton;
 #if LINUX
             TitleBar.IsVisible = false;
 #elif MAC
@@ -104,7 +111,14 @@ namespace ELOR.Laney.Views.Modals {
 
         private void ViewModel_CloseWindowRequested(object sender, EventArgs e) {
             (sender as PeerProfileViewModel).CloseWindowRequested -= ViewModel_CloseWindowRequested;
+            (sender as PeerProfileViewModel).FocusLocalNoteRequested -= ViewModel_FocusLocalNoteRequested;
             Close();
+        }
+
+        private void ViewModel_FocusLocalNoteRequested(object sender, EventArgs e) {
+            Tabs.SelectedItem = UserInfoTab;
+            LocalNoteBox.Focus();
+            LocalNoteBox.CaretIndex = LocalNoteBox.Text?.Length ?? 0;
         }
 
         private void OnAttachmentContextRequested(object sender, ContextRequestedEventArgs e) {

@@ -8,21 +8,29 @@ namespace OAuthWebView {
     public class OAuthWindow {
         Uri startUri;
         Uri endUri;
+        Func<Uri, bool> completeWhen;
         string title;
         System.Drawing.Size size;
         public string LocalDataPath { get; set; } // Only Windows, for WebView2
 
         Uri currentUri;
-        ManualResetEventSlim mres;
 #if WIN
         OAuthWindowWin32 w32;
 #else
+        ManualResetEventSlim mres;
 	    Window window;
 #endif
 
         public OAuthWindow(Uri startUri, Uri endUri, string windowTitle, int width, int height) {
             this.startUri = startUri;
             this.endUri = endUri;
+            title = windowTitle;
+            size = new System.Drawing.Size(width, height);
+        }
+
+        public OAuthWindow(Uri startUri, Func<Uri, bool> completeWhen, string windowTitle, int width, int height) {
+            this.startUri = startUri;
+            this.completeWhen = completeWhen;
             title = windowTitle;
             size = new System.Drawing.Size(width, height);
         }
@@ -36,16 +44,16 @@ namespace OAuthWebView {
 
             Console.WriteLine($"win32 result: {res}. Now returning URI.");
             System.Diagnostics.Debug.WriteLine($"win32 result: {res}. Now returning URI.");
-            return currentUri.AbsolutePath == endUri.AbsolutePath ? currentUri : null;
+            return IsCompleted(currentUri) ? currentUri : null;
 #else
             return await StartAuthenticationAsyncNonWin();
 #endif
         }
 
-        static bool appInitialized = false;
-
 #if WIN
 #else
+        static bool appInitialized = false;
+
         public async Task<Uri> StartAuthenticationAsyncNonWin() {
             if (!appInitialized) {
 #if LINUX
@@ -92,7 +100,7 @@ namespace OAuthWebView {
             // Cannot dispose the window object yet...
             Console.WriteLine($"MRES is set! Now returning URI.");
             mres.Dispose();
-            return currentUri.AbsolutePath == endUri.AbsolutePath ? currentUri : null;
+            return IsCompleted(currentUri) ? currentUri : null;
         }
 
         private void Window_Closed(object sender, EventArgs e) {
@@ -108,7 +116,7 @@ namespace OAuthWebView {
             Console.WriteLine($"Navigating to {url}");
             System.Diagnostics.Debug.WriteLine($"Navigating to {url}");
             currentUri = new Uri(url);
-            if (currentUri.AbsolutePath == endUri.AbsolutePath) {
+            if (IsCompleted(currentUri)) {
                 w32.Destroy();
             }
         }
@@ -116,10 +124,16 @@ namespace OAuthWebView {
         private void Window_Navigating(object sender, NavigatingEventArgs e) {
             Console.WriteLine($"Navigating to {e.Url}");
             currentUri = e.Url;
-            if (currentUri.AbsolutePath == endUri.AbsolutePath) {
+            if (IsCompleted(currentUri)) {
                 window.Close();
             }
         }
 #endif
+
+        private bool IsCompleted(Uri uri) {
+            if (uri == null) return false;
+            if (completeWhen != null) return completeWhen(uri);
+            return endUri != null && uri.AbsolutePath == endUri.AbsolutePath;
+        }
     }
 }

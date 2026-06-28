@@ -37,24 +37,48 @@ namespace ELOR.Laney.Views {
 
             ChatsList.Loaded += ChatsList_Loaded;
 
-            ChatsList.ItemTemplate = Resources[Settings.ChatItemMoreRows ? "ChatItemTemplate3Row" : "ChatItemTemplate2Row"] as DataTemplate;
+            ApplyChatListTemplate(false);
             Settings.SettingChanged += Settings_SettingChanged;
         }
 
         private void Settings_SettingChanged(string key, object value) {
             switch (key) {
                 case Settings.CHAT_ITEM_MORE_ROWS:
-                    DataTemplate template = Resources[(bool)value ? "ChatItemTemplate3Row" : "ChatItemTemplate2Row"] as DataTemplate;
-                    ChatsList.ItemTemplate = template;
-
-                    // Костыль для того, чтобы шаблон действительно сменился.
-                    ChatsList.ItemsSource = null;
-                    var prop = ChatsList.GetObservable(DataContextProperty)
-                        .OfType<VKSession>()
-                        .Select(v => v.ImViewModel.SortedChats);
-                    ChatsList.Bind(ListBox.ItemsSourceProperty, prop);
+                case Settings.CHAT_LIST_LAYOUT:
+                    ApplyChatListTemplate(true);
+                    break;
+                case Settings.CHAT_LIST_DENSITY:
+                case Settings.CHAT_LIST_AVATAR_SIZE:
+                case Settings.CHAT_LIST_AVATAR_SHAPE:
+                case Settings.CHAT_LIST_FONT_SIZE:
+                    RebindChatsListItemsSource();
+                    break;
+                case Settings.STREAMER_MODE:
+                    Session?.ImViewModel?.RefreshStreamerMode();
                     break;
             }
+        }
+
+        private void ApplyChatListTemplate(bool refreshItems) {
+            string key = Settings.ChatListLayout switch {
+                ChatListLayoutIds.Compact => "ChatItemTemplateCompact",
+                ChatListLayoutIds.Telegram => "ChatItemTemplate3Row",
+                ChatListLayoutIds.MediaRich => "ChatItemTemplateMediaRich",
+                ChatListLayoutIds.SplitFolder => "ChatItemTemplateSplitFolder",
+                _ => Settings.ChatItemMoreRows ? "ChatItemTemplate3Row" : "ChatItemTemplate2Row"
+            };
+
+            ChatsList.ItemTemplate = Resources[key] as DataTemplate;
+            if (refreshItems) RebindChatsListItemsSource();
+        }
+
+        private void RebindChatsListItemsSource() {
+            // Костыль для того, чтобы шаблон действительно сменился.
+            ChatsList.ItemsSource = null;
+            var prop = ChatsList.GetObservable(DataContextProperty)
+                .OfType<VKSession>()
+                .Select(v => v.ImViewModel.SortedChats);
+            ChatsList.Bind(ListBox.ItemsSourceProperty, prop);
         }
 
         private void ChatsList_Loaded(object sender, RoutedEventArgs e) {

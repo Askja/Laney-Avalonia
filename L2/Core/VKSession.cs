@@ -6,6 +6,7 @@ using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Platform;
 using Avalonia.Threading;
+using ELOR.Laney.Core.Localization;
 using ELOR.Laney.DataModels;
 using ELOR.Laney.Execute;
 using ELOR.Laney.Execute.Objects;
@@ -20,11 +21,14 @@ using ELOR.VKAPILib;
 using ELOR.VKAPILib.Objects;
 using ELOR.VKAPILib.Objects.HandlerDatas;
 using ELOR.VKAPILib.Objects.Messages;
+using OAuthWebView;
 using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using ToastNotifications.Avalonia;
@@ -37,14 +41,22 @@ namespace ELOR.Laney.Core {
         private Uri? _avatar;
         private ImViewModel _imViewModel;
         private ChatViewModel _currentOpenedChat;
+        private ChatViewModel _secondaryOpenedChat;
 
         public long Id { get { return GroupId > 0 ? -GroupId : UserId; } }
         public long UserId { get; private set; }
         public long GroupId { get; private set; }
-        public string Name { get { return _name; } private set { _name = value; OnPropertyChanged(); } }
-        public Uri? Avatar { get { return _avatar; } private set { _avatar = value; OnPropertyChanged(); } }
+        public string Name { get { return _name; } private set { _name = value; OnPropertyChanged(); OnPropertyChanged(nameof(DisplayName)); OnPropertyChanged(nameof(DisplayInitials)); } }
+        public Uri? Avatar { get { return _avatar; } private set { _avatar = value; OnPropertyChanged(); OnPropertyChanged(nameof(DisplayAvatar)); } }
+        public string DisplayName { get { return Settings.StreamerMode ? PrivacyMask.GetPeerTitle(Id) : Name; } }
+        public Uri? DisplayAvatar { get { return Settings.StreamerMode ? null : Avatar; } }
+        public string DisplayInitials { get { return Settings.StreamerMode ? PrivacyMask.GetPeerInitials(Id) : Name.GetInitials(IsGroup); } }
+        public long DisplayAvatarSeed { get { return Settings.StreamerMode ? 0 : Id; } }
         public ImViewModel ImViewModel { get { return _imViewModel; } private set { _imViewModel = value; OnPropertyChanged(); } }
         public ChatViewModel CurrentOpenedChat { get { return _currentOpenedChat; } set { _currentOpenedChat = value; OnPropertyChanged(); } }
+        public ChatViewModel SecondaryOpenedChat { get { return _secondaryOpenedChat; } private set { _secondaryOpenedChat = value; OnPropertyChanged(); OnPropertyChanged(nameof(IsSplitViewOpen)); OnPropertyChanged(nameof(SecondaryChatColumnWidth)); } }
+        public bool IsSplitViewOpen { get { return SecondaryOpenedChat != null; } }
+        public GridLength SecondaryChatColumnWidth { get { return IsSplitViewOpen ? new GridLength(1, GridUnitType.Star) : new GridLength(0); } }
 
         public bool IsGroup => GroupId > 0;
         public VKAPI API { get; private set; }
@@ -166,12 +178,12 @@ namespace ELOR.Laney.Core {
             if (!DemoMode.IsEnabled) {
                 ActionSheetItem captcha = new ActionSheetItem {
                     Before = new VKIcon { Id = VKIconNames.Icon20GearOutline },
-                    Header = "Show captcha",
+                    Header = Localizer.Get("session_dev_show_captcha"),
                 };
                 captcha.Click += async (a, b) => {
                     try {
                         int i = await API.CallMethodAsync<int>("captcha.force");
-                        await new VKUIDialog("Result", i.ToString()).ShowDialog<int>(ModalWindow);
+                        await new VKUIDialog(Localizer.Get("session_dev_result"), i.ToString()).ShowDialog<int>(ModalWindow);
                     } catch (Exception ex) {
                         await ExceptionHelper.ShowErrorDialogAsync(ModalWindow, ex, true);
                     }
@@ -180,49 +192,49 @@ namespace ELOR.Laney.Core {
 
                 ActionSheetItem notif = new ActionSheetItem {
                     Before = new VKIcon { Id = VKIconNames.Icon20ArticleOutline },
-                    Header = "Show in-app notification",
+                    Header = Localizer.Get("session_dev_show_in_app_notification"),
                 };
                 notif.Click += (a, b) => {
-                    ShowNotification(new Notification("Header", null, NotificationType.Success, TimeSpan.FromSeconds(10)));
+                    ShowNotification(new Notification(Localizer.Get("session_dev_notification_header"), null, NotificationType.Success, TimeSpan.FromSeconds(10)));
                 };
                 devmenu.Add(notif);
 
                 ActionSheetItem snotif = new ActionSheetItem {
                     Before = new VKIcon { Id = VKIconNames.Icon20NotificationOutline },
-                    Header = "Show system notification",
+                    Header = Localizer.Get("session_dev_show_system_notification"),
                 };
                 snotif.Click += async (a, b) => {
                     sysNotifTest++;
-                    var ava = await BitmapManager.GetBitmapAsync(new Uri("https://elor.top/res/images/rez_ava.png"));
-                    var img = await BitmapManager.GetBitmapAsync(new Uri("https://elor.top/res/images/gex_holmes.png"));
-                    var t = new ToastNotification(sysNotifTest, Name, $"Rez ({sysNotifTest})", "Hurray for bunny Gex!\nHe sure is a funny Gex!", "in chat\"Geckos\"", ava, img);
+                    var ava = await BitmapManager.GetBitmapAsync(new Uri("https://elor.top/res/images/rez_ava.png"), 0, 0, BitmapCacheKind.Avatar);
+                    var img = await BitmapManager.GetBitmapAsync(new Uri("https://elor.top/res/images/gex_holmes.png"), 0, 0, BitmapCacheKind.Attachment);
+                    var t = new ToastNotification(sysNotifTest, Name, $"Rez ({sysNotifTest})", Localizer.Get("session_dev_toast_body"), Localizer.Get("session_dev_toast_context"), ava, img);
                     t.OnClick += async () => {
-                        await new VKUIDialog("Result", t.AssociatedObject.ToString()).ShowDialog<int>(ModalWindow);
+                        await new VKUIDialog(Localizer.Get("session_dev_result"), t.AssociatedObject.ToString()).ShowDialog<int>(ModalWindow);
                     };
                     t.OnSendClick += async (text) => {
-                        await new VKUIDialog("Sending message", t.AssociatedObject.ToString() + "\nText: " + text).ShowDialog<int>(ModalWindow);
+                        await new VKUIDialog(Localizer.Get("session_dev_sending_message"), $"{t.AssociatedObject}\n{Localizer.Get("session_dev_text_label")}: {text}").ShowDialog<int>(ModalWindow);
                     };
-                    _systemNotificationManager?.Show(t);
+                    ShowSystemNotification(t);
                 };
                 devmenu.Add(snotif);
 
                 ActionSheetItem lpht = new ActionSheetItem {
                     Before = new VKIcon { Id = VKIconNames.Icon20BugOutline },
-                    Header = "Invalidate LP key",
+                    Header = Localizer.Get("session_dev_invalidate_lp_key"),
                 };
                 lpht.Click += (a, b) => LongPoll.DebugInvalidateLPKey();
                 devmenu.Add(lpht);
 
                 ActionSheetItem imgc = new ActionSheetItem {
                     Before = new VKIcon { Id = VKIconNames.Icon20DeleteOutline },
-                    Header = "Clear images cache",
+                    Header = Localizer.Get("session_dev_clear_images_cache"),
                 };
                 imgc.Click += (a, b) => BitmapManager.ClearCachedImages();
                 devmenu.Add(imgc);
 
                 ActionSheetItem csc = new ActionSheetItem {
                     Before = new VKIcon { Id = VKIconNames.Icon20DeleteOutline },
-                    Header = "Clear cached user/group names",
+                    Header = Localizer.Get("session_dev_clear_cached_names"),
                 };
                 csc.Click += (a, b) => {
                     CacheManager.ClearUsersAndGroupsCache();
@@ -231,7 +243,7 @@ namespace ELOR.Laney.Core {
 
                 ActionSheetItem stemw = new ActionSheetItem {
                     Before = new VKIcon { Id = VKIconNames.Icon20GearOutline },
-                    Header = "Open emoji/stickers panel in separated window",
+                    Header = Localizer.Get("session_dev_open_emoji_stickers_window"),
                 };
                 stemw.Click += (a, b) => {
                     Window stemwnd = new Window {
@@ -243,7 +255,7 @@ namespace ELOR.Laney.Core {
                             Height = 438,
                             DataContext = new EmojiStickerPickerViewModel(this)
                         },
-                        Title = "Emoji & stickers"
+                        Title = Localizer.Get("session_dev_emoji_stickers_title")
                     };
                     stemwnd.Show();
                 };
@@ -276,7 +288,7 @@ namespace ELOR.Laney.Core {
 
             TrayMenu.Items.Add(new NativeMenuItemSeparator());
 
-            var ft = new NativeMenuItem { Header = "Field test" };
+            var ft = new NativeMenuItem { Header = Localizer.Get("session_dev_field_test") };
             ft.Click += (a, b) => {
                 new FieldTestWindow().Show();
             };
@@ -319,7 +331,7 @@ namespace ELOR.Laney.Core {
 
             TrayMenu.Items.Add(new NativeMenuItemSeparator());
 
-            var ft = new NativeMenuItem { Header = "Field test" };
+            var ft = new NativeMenuItem { Header = Localizer.Get("session_dev_field_test") };
             ft.Click += (a, b) => {
                 new FieldTestWindow().Show();
             };
@@ -401,6 +413,7 @@ namespace ELOR.Laney.Core {
                 if (!dontUpdateSessionsList) {
                     sessions.Add(this);
 
+                    int backgroundGroupLongPollsStarted = 0;
                     foreach (var group in info.Groups) {
                         CacheManager.Add(group);
                         if (group.CanMessage == 0) continue;
@@ -425,7 +438,13 @@ namespace ELOR.Laney.Core {
 
                         var glp = info.LongPolls.Where(lps => lps.SessionId == group.Id).FirstOrDefault();
                         if (glp != null) {
-                            gs.SetUpLongPoll(glp);
+                            bool startLongPoll = ShouldStartBackgroundGroupLongPoll(backgroundGroupLongPollsStarted);
+                            gs.SetUpLongPoll(glp, startLongPoll);
+                            if (startLongPoll) {
+                                backgroundGroupLongPollsStarted++;
+                            } else {
+                                Log.Information("VKSession > Init: background LongPoll for group {0} is delayed.", group.Id);
+                            }
                         } else {
                             Log.Warning($"VKSession > Init: LongPoll for group {group.Id} not found in response!");
                         }
@@ -494,11 +513,13 @@ namespace ELOR.Laney.Core {
             }
         }
 
-        private void SetUpLongPoll(LongPollInfoForSession lp) {
+        private void SetUpLongPoll(LongPollInfoForSession lp, bool run = true) {
             if (LongPoll == null) LongPoll = new LongPoll(API, Id, GroupId);
+            if (run && LongPoll.IsRunning) return;
             LongPoll.SetUp(lp.LongPoll);
+            LongPoll.StateChanged -= LongPoll_StateChanged;
             LongPoll.StateChanged += LongPoll_StateChanged;
-            LongPoll.Run();
+            if (run && !LongPoll.IsRunning) LongPoll.Run();
         }
 
         private void Window_Activated(object sender, EventArgs e) {
@@ -580,6 +601,7 @@ namespace ELOR.Laney.Core {
                     var wd = new VKUIWaitDialog<StartSessionResponse>();
                     StartSessionResponse response = await wd.ShowAsync(Window, API.GetGroupsWithLongPollAsync(groupIds));
 
+                    int backgroundGroupLongPollsStarted = 0;
                     foreach (var group in response.Groups) {
                         CacheManager.Add(group);
                         if (group.CanMessage == 0) continue;
@@ -604,7 +626,13 @@ namespace ELOR.Laney.Core {
 
                         var glp = response.LongPolls.Where(lps => lps.SessionId == group.Id).FirstOrDefault();
                         if (glp != null) {
-                            gs.SetUpLongPoll(glp);
+                            bool startLongPoll = ShouldStartBackgroundGroupLongPoll(backgroundGroupLongPollsStarted);
+                            gs.SetUpLongPoll(glp, startLongPoll);
+                            if (startLongPoll) {
+                                backgroundGroupLongPollsStarted++;
+                            } else {
+                                Log.Information("VKSession > UpdateGroupSessions: background LongPoll for group {0} is delayed.", group.Id);
+                            }
                         } else {
                             Log.Warning($"VKSession > UpdateGroupSessions: LongPoll for group {group.Id} not found in response!");
                         }
@@ -616,6 +644,11 @@ namespace ELOR.Laney.Core {
                     if (await ExceptionHelper.ShowErrorDialogAsync(Window, ex)) UpdateGroupSessions(groupIds);
                 }
             })();
+        }
+
+        private static bool ShouldStartBackgroundGroupLongPoll(int startedCount) {
+            int limit = Settings.GroupsBackgroundLongPollLimit;
+            return limit > 0 && startedCount < limit;
         }
 
         #endregion
@@ -667,6 +700,43 @@ namespace ELOR.Laney.Core {
 
             CloseAllSMVWindows();
 
+            ChatViewModel chat = GetOrCreateDisplayedChat(peerId, messageId);
+            CurrentOpenedChat = chat;
+            CurrentOpenedChatChanged?.Invoke(this, chat.PeerId);
+            chat.OnDisplayed(messageId);
+            Window.SwitchToSide(true);
+            AfterChatDisplayed();
+        }
+
+        public void OpenSecondaryChat(long peerId, int messageId = -1) {
+            if (peerId == 0) {
+                CloseSecondaryChat();
+                return;
+            }
+
+            CloseAllSMVWindows();
+
+            ChatViewModel chat = GetOrCreateDisplayedChat(peerId, messageId);
+            SecondaryOpenedChat = chat;
+            chat.OnDisplayed(messageId);
+            Window.SwitchToSide(true);
+            AfterChatDisplayed();
+        }
+
+        public void CloseSecondaryChat() {
+            SecondaryOpenedChat = null;
+        }
+
+        public void OpenFloatingChat(long peerId, int messageId = -1) {
+            if (peerId == 0) return;
+
+            ChatViewModel chat = GetOrCreateDisplayedChat(peerId, messageId);
+            chat.OnDisplayed(messageId);
+            FloatingChatWindow.ShowFor(this, chat);
+            AfterChatDisplayed();
+        }
+
+        private ChatViewModel GetOrCreateDisplayedChat(long peerId, int messageId) {
             ChatViewModel chat = CacheManager.GetChat(Id, peerId);
             Log.Information("VKSession: getting to chat {0}. cmid: {1}; cached: {2}", peerId, messageId, chat != null);
             if (chat == null) {
@@ -676,20 +746,23 @@ namespace ELOR.Laney.Core {
                 // Clear displayed messages in older opened chats
                 if (openedChats.Count >= Constants.MaxCachedChatsCount) {
                     var oldChat = openedChats.Dequeue();
-                    oldChat.Unload();
+                    if (!ReferenceEquals(oldChat, CurrentOpenedChat) && !ReferenceEquals(oldChat, SecondaryOpenedChat)) {
+                        oldChat.Unload();
+                    }
                 }
             }
-            CurrentOpenedChat = chat;
-            CurrentOpenedChatChanged?.Invoke(this, chat.PeerId);
-            chat.OnDisplayed(messageId);
-            Window.SwitchToSide(true);
+
+            openedChats.Enqueue(chat);
+            return chat;
+        }
+
+        private void AfterChatDisplayed() {
             if (gcCollectTriggerCounter >= 2) {
                 gcCollectTriggerCounter = 0;
                 BitmapManager.ClearCachedImages();
             } else {
                 gcCollectTriggerCounter++;
             }
-            openedChats.Enqueue(chat);
         }
 
         public void Share(long fromPeerId, List<MessageViewModel> messages) {
@@ -719,6 +792,7 @@ namespace ELOR.Laney.Core {
         }
 
         public void ShowSystemNotification(ToastNotification notification) {
+            if (NativeNotificationService.Show(notification)) return;
             _systemNotificationManager?.Show(notification);
         }
 
@@ -759,7 +833,21 @@ namespace ELOR.Laney.Core {
                 case Settings.STICKERS_SUGGEST:
                     new System.Action(async () => await StickersManager.InitKeywordsAsync())();
                     break;
+                case Settings.STREAMER_MODE:
+                    foreach (VKSession session in Sessions) {
+                        session.RefreshStreamerMode();
+                    }
+                    break;
             }
+        }
+
+        private void RefreshStreamerMode() {
+            OnPropertyChanged(nameof(DisplayName));
+            OnPropertyChanged(nameof(DisplayAvatar));
+            OnPropertyChanged(nameof(DisplayInitials));
+            OnPropertyChanged(nameof(DisplayAvatarSeed));
+            ImViewModel?.RefreshStreamerMode();
+            CurrentOpenedChat?.RefreshStreamerMode();
         }
 
         public static void StartDemoSession(DemoModeSession mainSession) {
@@ -799,6 +887,12 @@ namespace ELOR.Laney.Core {
         }
 
         public static async Task<string> ShowCaptchaAsync(Window parent, Uri image) {
+            if (IsInteractiveCaptchaUri(image)) {
+                string token = await ShowInteractiveCaptchaAsync(parent, image);
+                if (!String.IsNullOrWhiteSpace(token)) return token;
+                return await ShowCaptchaTokenInputAsync(parent);
+            }
+
             return await Task.Factory.StartNew(() => {
                 string code = null;
 
@@ -828,6 +922,131 @@ namespace ELOR.Laney.Core {
 
                 return code;
             });
+        }
+
+        private static bool IsInteractiveCaptchaUri(Uri uri) {
+            if (uri == null) return false;
+            string source = uri.AbsoluteUri;
+            return source.Contains("not_robot_captcha", StringComparison.OrdinalIgnoreCase)
+                || source.Contains("captchaNotRobot", StringComparison.OrdinalIgnoreCase)
+                || (uri.Host.Contains("id.vk.com", StringComparison.OrdinalIgnoreCase)
+                    && source.Contains("session_token", StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static async Task<string> ShowInteractiveCaptchaAsync(Window parent, Uri startUri) {
+            try {
+                string localDataPath = Path.Combine(App.LocalDataPath, "webview2", "captcha");
+                Directory.CreateDirectory(localDataPath);
+
+                OAuthWindow captchaWindow = new OAuthWindow(startUri, HasCaptchaToken, "VK captcha", 480, 720) {
+                    LocalDataPath = localDataPath
+                };
+
+                Uri resultUri = await StartBrowserWindowAsync(captchaWindow);
+                return TryExtractCaptchaToken(resultUri);
+            } catch (Exception ex) {
+                Log.Error(ex, "Unable to show VK interactive captcha.");
+                await ExceptionHelper.ShowErrorDialogAsync(parent, ex, true);
+                return null;
+            }
+        }
+
+        private static Task<Uri> StartBrowserWindowAsync(OAuthWindow window) {
+            TaskCompletionSource<Uri> tcs = new TaskCompletionSource<Uri>();
+            Thread thread = new Thread(() => {
+                try {
+                    Uri result = window.StartAuthenticationAsync().GetAwaiter().GetResult();
+                    tcs.TrySetResult(result);
+                } catch (Exception ex) {
+                    tcs.TrySetException(ex);
+                }
+            });
+
+            if (OperatingSystem.IsWindows()) thread.SetApartmentState(ApartmentState.STA);
+            thread.IsBackground = true;
+            thread.Start();
+            return tcs.Task;
+        }
+
+        private static async Task<string> ShowCaptchaTokenInputAsync(Window parent) {
+            return await Task.Factory.StartNew(() => {
+                string token = null;
+
+                Dispatcher.UIThread.InvokeAsync(async () => {
+                    TextBlock caption = new TextBlock {
+                        Width = 360,
+                        TextWrapping = TextWrapping.Wrap,
+                        Text = "Пройди VK captcha в открытом окне. Если токен не подхватился сам, вставь сюда финальный URL или captcha_key."
+                    };
+                    TextBox tokenTxt = new TextBox {
+                        Width = 360,
+                        Margin = new Thickness(0, 12, 0, 0),
+                        PlaceholderText = "captcha_key, success_token или URL"
+                    };
+
+                    StackPanel panel = new StackPanel {
+                        HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center
+                    };
+                    panel.Children.Add(caption);
+                    panel.Children.Add(tokenTxt);
+
+                    VKUIDialog dialog = new VKUIDialog("VK captcha", null);
+                    dialog.DialogContent = panel;
+                    int result = await dialog.ShowDialog<int>(parent);
+                    if (result == 1) token = TryExtractCaptchaToken(tokenTxt.Text) ?? tokenTxt.Text?.Trim();
+                }).Wait();
+
+                return token;
+            });
+        }
+
+        private static bool HasCaptchaToken(Uri uri) {
+            return !String.IsNullOrWhiteSpace(TryExtractCaptchaToken(uri));
+        }
+
+        private static string TryExtractCaptchaToken(string source) {
+            if (String.IsNullOrWhiteSpace(source)) return null;
+
+            if (Uri.TryCreate(source, UriKind.Absolute, out Uri uri)) {
+                return TryExtractCaptchaToken(uri);
+            }
+
+            return TryExtractCaptchaTokenFromParameters(source);
+        }
+
+        private static string TryExtractCaptchaToken(Uri uri) {
+            if (uri == null) return null;
+
+            string queryToken = TryExtractCaptchaTokenFromParameters(uri.Query);
+            if (!String.IsNullOrWhiteSpace(queryToken)) return queryToken;
+
+            return TryExtractCaptchaTokenFromParameters(uri.Fragment);
+        }
+
+        private static string TryExtractCaptchaTokenFromParameters(string parameters) {
+            if (String.IsNullOrWhiteSpace(parameters)) return null;
+
+            string source = parameters.TrimStart('?', '#');
+            string[] pairs = source.Split('&', StringSplitOptions.RemoveEmptyEntries);
+            foreach (string pair in pairs) {
+                string[] keyValue = pair.Split('=', 2);
+                if (keyValue.Length != 2) continue;
+
+                string key = WebUtility.UrlDecode(keyValue[0]);
+                if (!IsCaptchaTokenKey(key)) continue;
+
+                return WebUtility.UrlDecode(keyValue[1]);
+            }
+
+            return null;
+        }
+
+        private static bool IsCaptchaTokenKey(string key) {
+            return key.Equals("captcha_key", StringComparison.OrdinalIgnoreCase)
+                || key.Equals("success_token", StringComparison.OrdinalIgnoreCase)
+                || key.Equals("captcha_token", StringComparison.OrdinalIgnoreCase)
+                || key.Equals("token", StringComparison.OrdinalIgnoreCase)
+                || key.Equals("key", StringComparison.OrdinalIgnoreCase);
         }
 
         public static List<long> GetAddedGroupIds() {

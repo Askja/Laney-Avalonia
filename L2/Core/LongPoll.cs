@@ -2,6 +2,7 @@
 using ELOR.Laney.DataModels;
 using ELOR.Laney.Execute.Objects;
 using ELOR.Laney.Helpers;
+using ELOR.Laney.Core.Logging;
 using ELOR.VKAPILib;
 using ELOR.VKAPILib.Objects;
 using Serilog;
@@ -41,6 +42,10 @@ namespace ELOR.Laney.Core {
 
         private LongPollState _state;
         public LongPollState State { get { return _state; } private set { _state = value; StateChanged?.Invoke(this, value); } }
+        public bool IsRunning => _isRunning;
+        public DateTimeOffset? LastSyncUtc { get; private set; }
+        public DateTimeOffset? LastErrorUtc { get; private set; }
+        public int LastUpdatesCount { get; private set; }
 
         public LongPoll(VKAPI api, long sessionId, long groupId) {
             _api = api;
@@ -52,7 +57,7 @@ namespace ELOR.Laney.Core {
 
             if (Settings.EnableLongPollLogs) {
                 long lid = groupId == 0 ? sessionId : -groupId;
-                loggerConfig = loggerConfig.WriteTo.File(Path.Combine(App.LocalDataPath, "logs", $"L2_LP_{lid}_.log"),
+                loggerConfig = loggerConfig.WriteTo.File(new SafeLogFormatter(), Path.Combine(App.LocalDataPath, "logs", $"L2_LP_{lid}_.log"),
                     buffered: true, retainedFileCountLimit: 20, flushToDiskInterval: TimeSpan.FromSeconds(30)).MinimumLevel.Information();
             }
 
@@ -132,7 +137,10 @@ namespace ELOR.Laney.Core {
                         JsonNode jr = await JsonNode.ParseAsync(respstr);
                         httpResponse.Dispose();
                         if (jr["updates"] != null) {
-                            await ParseUpdatesAsync(jr["updates"].AsArray());
+                            JsonArray updates = jr["updates"].AsArray();
+                            await ParseUpdatesAsync(updates);
+                            LastSyncUtc = DateTimeOffset.UtcNow;
+                            LastUpdatesCount = updates.Count;
                             _timeStamp = (int)jr["ts"];
                             _pts = (int)jr["pts"];
                             State = LongPollState.Working;
@@ -142,6 +150,7 @@ namespace ELOR.Laney.Core {
                             string errText = jr["error"].ToString();
                             _log.Error($"LongPoll error! Code {errCode}, message: {errText}. Restarting after {WAIT_AFTER_FAIL} sec...");
 
+                            LastErrorUtc = DateTimeOffset.UtcNow;
                             State = LongPollState.Failed;
                             await Task.Delay(WAIT_AFTER_FAIL * 1000).ConfigureAwait(false);
                             Restart();
@@ -151,6 +160,7 @@ namespace ELOR.Laney.Core {
                     } catch (Exception ex) {
                         bool isConnectionLost = ExceptionHelper.IsExceptionAboutNetworkIssue(ex);
                         _log.Error(ex, $"Exception when parsing LongPoll events! Trying after {WAIT_AFTER_FAIL} sec.");
+                        LastErrorUtc = DateTimeOffset.UtcNow;
 
                         if (isConnectionLost) {
                             State = isConnectionLost ? LongPollState.NoInternet : LongPollState.Failed;
@@ -185,11 +195,14 @@ namespace ELOR.Laney.Core {
 
                         // TODO: кешировать беседы.
                         await ParseUpdatesAsync(response.History, response.Messages.Items, response.Conversations);
+                        LastSyncUtc = DateTimeOffset.UtcNow;
+                        LastUpdatesCount = response.History?.Count ?? 0;
 
                         if (response.More) _pts = response.NewPTS;
                         trying = response.More;
                     } catch (Exception ex) {
                         bool isConnectionLost = ExceptionHelper.IsExceptionAboutNetworkIssue(ex);
+                        LastErrorUtc = DateTimeOffset.UtcNow;
                         State = isConnectionLost ? LongPollState.NoInternet : LongPollState.Failed;
                         if (isConnectionLost) {
                             _log.Error(ex, $"Exception while getting LongPoll history! Trying after {WAIT_AFTER_FAIL} sec.");

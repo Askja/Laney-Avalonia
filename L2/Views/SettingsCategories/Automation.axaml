@@ -1,0 +1,240 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vkui="using:VKUI.Controls"
+             xmlns:vm="using:ELOR.Laney.ViewModels.SettingsCategories"
+             xmlns:mdl="using:ELOR.Laney.DataModels"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="ELOR.Laney.Views.SettingsCategories.Automation" x:DataType="vm:AutomationViewModel">
+  <ScrollViewer>
+    <StackPanel>
+      <Border Classes="Group" VerticalAlignment="Top">
+        <StackPanel>
+          <Grid Classes="GroupHeader">
+            <TextBlock Text="Не беси меня режим"/>
+          </Grid>
+          <vkui:Cell Header="Тихие часы" Subtitle="Обычные уведомления молчат, важное пробивается.">
+            <vkui:Cell.After>
+              <ToggleSwitch IsChecked="{Binding DontAnnoyMeMode, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell IsVisible="{Binding DontAnnoyMeMode}" Header="Период">
+            <vkui:Cell.After>
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <ComboBox Classes="Alternate" Width="92" ItemsSource="{Binding Hours}" SelectedItem="{Binding CurrentDontAnnoyMeStartHour, Mode=TwoWay}">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="mdl:TwoStringTuple">
+                      <TextBlock Text="{Binding Item2}"/>
+                    </DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+                <TextBlock Text="-" VerticalAlignment="Center"/>
+                <ComboBox Classes="Alternate" Width="92" ItemsSource="{Binding Hours}" SelectedItem="{Binding CurrentDontAnnoyMeEndHour, Mode=TwoWay}">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="mdl:TwoStringTuple">
+                      <TextBlock Text="{Binding Item2}"/>
+                    </DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+              </StackPanel>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell IsVisible="{Binding DontAnnoyMeMode}" Header="Пропускать упоминания">
+            <vkui:Cell.After>
+              <ToggleSwitch IsChecked="{Binding DontAnnoyMeAllowMentions, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell IsVisible="{Binding DontAnnoyMeMode}" Header="Пропускать важные/VIP чаты" Subtitle="Также работают локальные теги vip, important, favorite и critical.">
+            <vkui:Cell.After>
+              <ToggleSwitch IsChecked="{Binding DontAnnoyMeAllowImportant, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell IsVisible="{Binding DontAnnoyMeMode}" Header="Ключевые слова" Subtitle="Через запятую; встроенные urgent/asap/срочно/инцидент тоже пробивают тишину.">
+            <vkui:Cell.After>
+              <TextBox Width="240" Text="{Binding DontAnnoyMeKeywords, Mode=TwoWay}" PlaceholderText="работа, срочно, прод"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="Group" VerticalAlignment="Top">
+        <StackPanel>
+          <Grid Classes="GroupHeader">
+            <TextBlock Text="Правила"/>
+          </Grid>
+          <vkui:Cell Header="Rules engine" Subtitle="{Binding AutomationRulesSummary}">
+            <vkui:Cell.After>
+              <Button Classes="Secondary" Content="Сбросить пример" Command="{Binding ResetAutomationRulesCommand}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Кто / где / что / когда" Subtitle="{Binding AutomationRulesShape}"/>
+          <Border Margin="12,0,12,8">
+            <TextBlock Classes="Caption1" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="{Binding AutomationRulesExample}" TextWrapping="Wrap"/>
+          </Border>
+          <Border Margin="12,0,12,12">
+            <TextBox MinHeight="160" MaxHeight="260"
+                     TextWrapping="Wrap"
+                     AcceptsReturn="True"
+                     Text="{Binding AutomationRulesText, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                     PlaceholderText="peer=*; contains=чек,оплата; action=mute; duration=2h"/>
+          </Border>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="Group" VerticalAlignment="Top">
+        <StackPanel>
+          <Grid Classes="GroupHeader" ColumnDefinitions="* Auto">
+            <TextBlock Text="Отложенные сообщения"/>
+            <Button Grid.Column="1" Classes="Tertiary" Command="{Binding RefreshScheduledMessagesCommand}">
+              <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon20RecentOutline}"/>
+            </Button>
+          </Grid>
+          <vkui:Cell Header="Локальная очередь" Subtitle="{Binding ScheduledMessagesSummary}">
+            <vkui:Cell.After>
+              <TextBlock Classes="Caption1" Text="/later · /repeat" Foreground="{DynamicResource VKTextSecondaryBrush}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <Border Margin="12,0,12,12" IsVisible="{Binding !HasScheduledMessages}">
+            <TextBlock Classes="Subhead" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="Пусто. Создать можно через /later 15m текст или /repeat 1d текст." TextWrapping="Wrap"/>
+          </Border>
+          <ItemsControl ItemsSource="{Binding ScheduledMessages}" Margin="12,0,12,12" IsVisible="{Binding HasScheduledMessages}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:ScheduledMessageQueueItemViewModel">
+                <Grid ColumnDefinitions="* Auto" ColumnSpacing="10" Margin="0,5">
+                  <StackPanel Spacing="3">
+                    <TextBlock Classes="Subhead" FontWeight="Medium" Text="{Binding Title}" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Classes="Caption1" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="{Binding Subtitle}"/>
+                    <TextBlock Classes="Caption1" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="{Binding RepeatText}"/>
+                    <TextBlock Text="{Binding Text}" TextWrapping="Wrap" MaxLines="2"/>
+                  </StackPanel>
+                  <Button Grid.Column="1" Classes="Tertiary Destructive" Width="36" Height="36" Padding="0" Command="{Binding CancelCommand}">
+                    <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon20DeleteOutline}"/>
+                  </Button>
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="Group" VerticalAlignment="Top">
+        <StackPanel>
+          <Grid Classes="GroupHeader">
+            <TextBlock Text="Автоответчик"/>
+          </Grid>
+          <vkui:Cell Header="Auto-replies" Subtitle="{Binding AutoReplyRulesSummary}">
+            <vkui:Cell.After>
+              <Button Classes="Secondary" Content="Сбросить пример" Command="{Binding ResetAutoReplyRulesCommand}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <Border Margin="12,0,12,12">
+            <TextBox MinHeight="140" MaxHeight="240"
+                     TextWrapping="Wrap"
+                     AcceptsReturn="True"
+                     Text="{Binding AutoReplyRulesText, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                     PlaceholderText="enabled=true; peer=private; hours=22-8; cooldown=2h; text=Отвечу позже"/>
+          </Border>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="Group" VerticalAlignment="Top">
+        <StackPanel>
+          <Grid Classes="GroupHeader">
+            <TextBlock Text="Автостатус"/>
+          </Grid>
+          <vkui:Cell Header="Laney-only статус" Subtitle="Локальный статус в клиенте. VK-профиль не меняется.">
+            <vkui:Cell.After>
+              <ToggleSwitch IsChecked="{Binding AutoStatusEnabled, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell IsVisible="{Binding AutoStatusEnabled}" Header="Обычный режим">
+            <vkui:Cell.After>
+              <ComboBox Classes="Alternate" Width="148" ItemsSource="{Binding AutoStatuses}" SelectedItem="{Binding CurrentAutoStatusMode, Mode=TwoWay}">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="mdl:TwoStringTuple">
+                    <TextBlock Text="{Binding Item2}"/>
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell IsVisible="{Binding AutoStatusEnabled}" Header="Расписание">
+            <vkui:Cell.After>
+              <ToggleSwitch IsChecked="{Binding AutoStatusScheduleEnabled, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell IsVisible="{Binding CanConfigureAutoStatusSchedule}" Header="Период">
+            <vkui:Cell.After>
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <ComboBox Classes="Alternate" Width="92" ItemsSource="{Binding Hours}" SelectedItem="{Binding CurrentAutoStatusScheduleStartHour, Mode=TwoWay}">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="mdl:TwoStringTuple">
+                      <TextBlock Text="{Binding Item2}"/>
+                    </DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+                <TextBlock Text="-" VerticalAlignment="Center"/>
+                <ComboBox Classes="Alternate" Width="92" ItemsSource="{Binding Hours}" SelectedItem="{Binding CurrentAutoStatusScheduleEndHour, Mode=TwoWay}">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="mdl:TwoStringTuple">
+                      <TextBlock Text="{Binding Item2}"/>
+                    </DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+              </StackPanel>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell IsVisible="{Binding CanConfigureAutoStatusSchedule}" Header="Статус в период">
+            <vkui:Cell.After>
+              <ComboBox Classes="Alternate" Width="148" ItemsSource="{Binding AutoStatuses}" SelectedItem="{Binding CurrentAutoStatusScheduleMode, Mode=TwoWay}">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="mdl:TwoStringTuple">
+                    <TextBlock Text="{Binding Item2}"/>
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell IsVisible="{Binding AutoStatusEnabled}" Header="По активности ПК">
+            <vkui:Cell.After>
+              <ToggleSwitch IsChecked="{Binding AutoStatusIdleEnabled, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell IsVisible="{Binding CanConfigureAutoStatusIdle}" Header="После простоя">
+            <vkui:Cell.After>
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <ComboBox Classes="Alternate" Width="92" ItemsSource="{Binding IdleMinuteOptions}" SelectedItem="{Binding CurrentAutoStatusIdleMinutes, Mode=TwoWay}">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="mdl:TwoStringTuple">
+                      <TextBlock Text="{Binding Item2}"/>
+                    </DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+                <ComboBox Classes="Alternate" Width="148" ItemsSource="{Binding AutoStatuses}" SelectedItem="{Binding CurrentAutoStatusIdleMode, Mode=TwoWay}">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="mdl:TwoStringTuple">
+                      <TextBlock Text="{Binding Item2}"/>
+                    </DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+              </StackPanel>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell IsVisible="{Binding CanConfigureAutoStatusRules}" Header="Правила игры, музыки, календаря" Subtitle="{Binding AutoStatusRulesSummary}">
+            <vkui:Cell.After>
+              <Button Classes="Secondary" Content="Сбросить пример" Command="{Binding ResetAutoStatusRulesCommand}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <Border IsVisible="{Binding CanConfigureAutoStatusRules}" Margin="12,0,12,12">
+            <TextBox MinHeight="140" MaxHeight="240"
+                     TextWrapping="Wrap"
+                     AcceptsReturn="True"
+                     Text="{Binding AutoStatusRulesText, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                     PlaceholderText="enabled=true; kind=game; contains=steam,cs2; mode=gaming; reason=игра"/>
+          </Border>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

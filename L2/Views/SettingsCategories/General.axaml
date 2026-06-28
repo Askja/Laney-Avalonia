@@ -28,26 +28,22 @@
       <Border Classes="Group" VerticalAlignment="Top">
         <StackPanel>
           <Grid Classes="GroupHeader">
-            <TextBlock Text="{x:Static i18n:Resources.st_send_method}"/>
+            <TextBlock Text="Профиль интерфейса"/>
           </Grid>
-          <vkui:Cell Header="{x:Static i18n:Resources.st_send_method_1}" Subtitle="{x:Static i18n:Resources.st_send_method_1_desc}">
-            <vkui:Cell.Before>
-              <RadioButton GroupName="EnterBtn" IsChecked="{Binding SentViaEnter, Mode=TwoWay}"/>
-            </vkui:Cell.Before>
-          </vkui:Cell>
-          <vkui:Cell Header="{x:Static i18n:Resources.st_send_method_2}" Subtitle="{x:Static i18n:Resources.st_send_method_2_desc}">
-            <vkui:Cell.Before>
-              <RadioButton GroupName="EnterBtn" IsChecked="{Binding !SentViaEnter, Mode=TwoWay}"/>
-            </vkui:Cell.Before>
-          </vkui:Cell>
-          <vkui:Cell Header="{x:Static i18n:Resources.st_send_dpl}">
+          <vkui:Cell Header="Пресет" Subtitle="Быстрые наборы настроек под работу, ночь, слабое железо и стрим.">
             <vkui:Cell.After>
-              <ToggleSwitch IsChecked="{Binding DontParseLinks, Mode=TwoWay}"/>
-            </vkui:Cell.After>
-          </vkui:Cell>
-          <vkui:Cell Header="{x:Static i18n:Resources.st_send_nomentions}">
-            <vkui:Cell.After>
-              <ToggleSwitch IsChecked="{Binding DisableMentions, Mode=TwoWay}"/>
+              <StackPanel Orientation="Horizontal">
+                <Border Classes="LaneyOnlyBadge" Margin="0,0,8,0">
+                  <TextBlock Text="{x:Static i18n:Resources.laney_only_badge}"/>
+                </Border>
+                <ComboBox Classes="Alternate" ItemsSource="{Binding InterfaceProfiles}" SelectedItem="{Binding CurrentInterfaceProfile, Mode=TwoWay}">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="mdl:TwoStringTuple">
+                      <TextBlock Text="{Binding Item2}"/>
+                    </DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+              </StackPanel>
             </vkui:Cell.After>
           </vkui:Cell>
         </StackPanel>
@@ -55,18 +51,51 @@
       <Border Classes="Group" VerticalAlignment="Top">
         <StackPanel>
           <Grid Classes="GroupHeader">
-            <TextBlock Text="{x:Static i18n:Resources.st_stickers}"/>
+            <TextBlock Text="Backup настроек"/>
           </Grid>
-          <vkui:Cell Header="{x:Static i18n:Resources.st_stickers_suggest}" Subtitle="{x:Static i18n:Resources.st_stickers_suggest_desc}">
-            <vkui:Cell.After>
-              <ToggleSwitch IsChecked="{Binding SuggestStickers, Mode=TwoWay}"/>
-            </vkui:Cell.After>
+          <vkui:Cell Header="Режим данных" Subtitle="{Binding LocalDataMode}">
+            <vkui:Cell.Before>
+              <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon24DoneOutline}"/>
+            </vkui:Cell.Before>
           </vkui:Cell>
-          <vkui:Cell Header="{x:Static i18n:Resources.st_stickers_animate}" Subtitle="{x:Static i18n:Resources.st_stickers_animate_desc}">
-            <vkui:Cell.After>
-              <ToggleSwitch IsChecked="{Binding AnimateStickers, Mode=TwoWay}"/>
-            </vkui:Cell.After>
+          <vkui:Cell Header="Папка данных" Subtitle="{Binding LocalDataPath}">
+            <vkui:Cell.Before>
+              <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon24DoneOutline}"/>
+            </vkui:Cell.Before>
           </vkui:Cell>
+          <Button Classes="Tertiary" Click="ExportSettings_Click">
+            <vkui:Cell Header="Экспорт в JSON" Subtitle="Сохранить клиентские настройки без токенов, E2E-ключей, черновиков и локальной истории.">
+              <vkui:Cell.Before>
+                <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon24ShareOutline}"/>
+              </vkui:Cell.Before>
+            </vkui:Cell>
+          </Button>
+          <Button Classes="Tertiary" Click="ImportSettings_Click">
+            <vkui:Cell Header="Импорт из JSON" Subtitle="Применить настройки из backup-файла. Секреты и мусорные ключи игнорируются.">
+              <vkui:Cell.Before>
+                <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon16UploadOutline}"/>
+              </vkui:Cell.Before>
+            </vkui:Cell>
+          </Button>
+          <vkui:Cell Header="Локальная папка" Subtitle="{Binding LocalBackupDirectory}">
+            <vkui:Cell.Before>
+              <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon24DoneOutline}"/>
+            </vkui:Cell.Before>
+          </vkui:Cell>
+          <Button Classes="Tertiary" Click="ChooseBackupFolder_Click">
+            <vkui:Cell Header="Выбрать папку backup" Subtitle="Папка пользователя, куда Laney будет синхронизировать локальные данные аккаунта.">
+              <vkui:Cell.Before>
+                <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon24ShareOutline}"/>
+              </vkui:Cell.Before>
+            </vkui:Cell>
+          </Button>
+          <Button Classes="Tertiary" Click="SyncLocalBackup_Click">
+            <vkui:Cell Header="Синхронизировать локальный backup" Subtitle="Настройки, offline snapshots, quick-actions, stickers, automation и индексы без токенов и cache-мусора.">
+              <vkui:Cell.Before>
+                <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon16UploadOutline}"/>
+              </vkui:Cell.Before>
+            </vkui:Cell>
+          </Button>
         </StackPanel>
       </Border>
     </StackPanel>

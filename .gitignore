@@ -13,6 +13,11 @@
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 
+# Local IDE and AI-agent files
+.idea/
+AGENTS.md
+UI_PERFORMANCE_PLAN.md
+
 # Mono auto generated files
 mono_crash.*
 
@@ -44,6 +49,12 @@ Generated\ Files/
 # MSTest test Results
 [Tt]est[Rr]esult*/
 [Bb]uild[Ll]og.*
+*.trx
+
+# Local performance runs
+tools/perf-demo*.json
+tools/Measure-PerfDemo.ps1
+tools/New-PerfDemo.ps1
 
 # NUnit
 *.VisualState.xml

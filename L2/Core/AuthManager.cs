@@ -1,4 +1,5 @@
 ﻿using DeviceId;
+using ELOR.Laney.Core.Logging;
 using ELOR.Laney.Core.Network;
 using ELOR.Laney.Extensions;
 using ELOR.VKAPILib;
@@ -46,10 +47,10 @@ namespace ELOR.Laney.Core {
                 var err = root.AsObject();
                 string errtext = root["error_code"].GetValue<string>();
                 if (err.ContainsKey("error_info")) errtext = root["error_info"].GetValue<string>();
-                Log.Error($"DoConnectCodeAuthAsync: VK returns an error! {errtext}");
+                Log.Error("DoConnectCodeAuthAsync: VK returns an error! {Error}", SensitiveLogSanitizer.Sanitize(errtext));
                 throw new ApplicationException($"VK Authorization server (connect_code_auth) returns an error:\n{errtext}");
             } else {
-                Log.Error($"DoConnectAuthAsync: VK returns a non-standart response! {root.ToJsonString()}");
+                Log.Error("DoConnectAuthAsync: VK returns a non-standart response! {Response}", SensitiveLogSanitizer.Sanitize(root.ToJsonString()));
                 throw new ApplicationException($"VK Authorization server (connect_code_auth) returns a non-standart response");
             }
         }
@@ -86,17 +87,17 @@ namespace ELOR.Laney.Core {
                     tempAPI.WebRequestCallback = LNetExtensions.SendRequestToAPIViaLNetAsync;
                     return await tempAPI.Auth.GetOauthTokenAsync(appId, oauthScope, returnAuthHash, authUserHash);
                 } else {
-                    Log.Error($"DoConnectAuthAsync: Cannot get access_token and auth_user_hash! Full response: {root.ToJsonString()}");
+                    Log.Error("DoConnectAuthAsync: Cannot get access_token and auth_user_hash! Full response: {Response}", SensitiveLogSanitizer.Sanitize(root.ToJsonString()));
                     throw new ApplicationException("Cannot get access_token and auth_user_hash, because one of these fields is not returned");
                 }
             } else if (type == "error") {
                 var err = root.AsObject();
                 string errtext = root["error_code"].GetValue<string>();
                 if (err.ContainsKey("error_info")) errtext = root["error_info"].GetValue<string>();
-                Log.Error($"DoConnectAuthAsync: VK returns an error! Full response: {root.ToJsonString()}");
+                Log.Error("DoConnectAuthAsync: VK returns an error! Full response: {Response}", SensitiveLogSanitizer.Sanitize(root.ToJsonString()));
                 throw new ApplicationException($"VK Authorization server (connect_internal) returns an error:\n{errtext}");
             } else {
-                Log.Error($"DoConnectAuthAsync: VK returns a non-standart response! {root.ToJsonString()}");
+                Log.Error("DoConnectAuthAsync: VK returns a non-standart response! {Response}", SensitiveLogSanitizer.Sanitize(root.ToJsonString()));
                 throw new ApplicationException($"VK Authorization server (connect_internal) returns a non-standart response");
             }
         }

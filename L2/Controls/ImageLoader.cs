@@ -1,24 +1,25 @@
-﻿using Avalonia;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Shapes;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 using Avalonia.Svg.Skia;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
 using ELOR.Laney.Core;
-using ELOR.Laney.Extensions;
 using Serilog;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Reactive.Linq;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 using VKUI.Controls;
 
 namespace ELOR.Laney.Controls {
     public static class ImageLoader {
+        private const double ViewportPreloadMargin = 384;
+
         static ImageLoader() {
             SourceProperty.Changed
                 .Subscribe(args => OnSourceChanged((Image)args.Sender, args.NewValue.Value));
@@ -29,6 +30,9 @@ namespace ELOR.Laney.Controls {
             BackgroundSourceProperty.Changed
                 .Subscribe(args => OnBackgroundSourceChanged((Control)args.Sender, args.NewValue.Value));
 
+            BackgroundBlurRadiusProperty.Changed
+                .Subscribe(args => OnBackgroundBlurRadiusChanged((Control)args.Sender));
+
             FillSourceProperty.Changed
                 .Subscribe(args => OnFillSourceChanged((Shape)args.Sender, args.NewValue.Value));
 
@@ -36,214 +40,505 @@ namespace ELOR.Laney.Controls {
                 .Subscribe(args => OnImageChanged((Avatar)args.Sender, args.NewValue.Value));
         }
 
-        #region Weak load
-
         private static void OnAttachedToVisualTree(object sender, VisualTreeAttachmentEventArgs e) {
             Control control = sender as Control;
             control.AttachedToVisualTree -= OnAttachedToVisualTree;
-
-            Uri? uri = control.Resources["uri"] as Uri;
-            new Action(async () => await RegisterLoadImageAfterAppearingOnScreen(control, uri))();
+            LoadCurrentSource(control);
         }
 
-        static Dictionary<ScrollViewer, Dictionary<Control, Uri>> registeredControlsInScroll = new Dictionary<ScrollViewer, Dictionary<Control, Uri>>();
+        private static void OnDetachedFromVisualTree(object sender, VisualTreeAttachmentEventArgs e) {
+            if (sender is not Control control) return;
+            CancelLoad(control);
+            ClearLoadedImage(control);
+            control.LayoutUpdated -= OnActiveImageLayoutUpdated;
+            control.LayoutUpdated -= OnDeferredImageLayoutUpdated;
 
-        private static async Task RegisterLoadImageAfterAppearingOnScreen(Control sender, Uri? uri) {
-            await Task.Delay(8);
-            var parentScroll = sender.FindAncestorOfType<ListBox>();
-            if (parentScroll != null) {
-                var t = sender.TransformToVisual(parentScroll);
-                if (t != null) {
-                    var y = t.Value.M32;
-                    Debug.WriteLine($"+++ Image control pos: {y}");
-                    double pos = y + sender.DesiredSize.Height;
-                    if (pos <= 0) {  // Control is out of visible area
-                        ScrollViewer sv = parentScroll.Scroll as ScrollViewer;
-                        Debug.WriteLine($"+++ Registering image control...");
-                        if (registeredControlsInScroll.ContainsKey(sv)) {
-                            if (!registeredControlsInScroll[sv].ContainsKey(sender)) {
-                                registeredControlsInScroll[sv].Add(sender, uri);
-                            }
-                        } else {
-                            registeredControlsInScroll.Add(sv, new Dictionary<Control, Uri> { { sender, uri } });
-                            sv.ScrollChanged += CheckIsControlHasAppearOnScreen;
-                        }
-
-                        return;
-                    }
-                }
-            }
-
-            SetSourceInternal(sender, uri);
+            control.AttachedToVisualTree -= OnAttachedToVisualTree;
+            control.AttachedToVisualTree += OnAttachedToVisualTree;
         }
 
-        private static void CheckIsControlHasAppearOnScreen(object sender, ScrollChangedEventArgs e) {
-            ScrollViewer sv = sender as ScrollViewer;
-            if (registeredControlsInScroll.ContainsKey(sv)) {
-                var controls = registeredControlsInScroll[sv];
-
-                List<Control> toRemove = new List<Control>();
-
-                foreach (var c in controls) {
-                    Control control = c.Key;
-                    var t = control.TransformToVisual(sv);
-                    if (t != null) {
-                        var y = t.Value.M32;
-                        double pos = y + control.DesiredSize.Height;
-                        if (pos > 0) {  // Control is appear on screen
-                            Debug.WriteLine("+++ Image control has appeared on screen!");
-                            toRemove.Add(control);
-                            SetSourceInternal(control, c.Value);
-                        }
-                    }
-                }
-                foreach (var control in CollectionsMarshal.AsSpan(toRemove)) {
-                    controls.Remove(control);
-                }
-                registeredControlsInScroll[sv] = controls;
+        private static void LoadCurrentSource(Control control) {
+            switch (control) {
+                case Image image when GetSvgSource(image) != null:
+                    OnSvgSourceChanged(image, GetSvgSource(image));
+                    break;
+                case Image image:
+                    OnSourceChanged(image, GetSource(image));
+                    break;
+                case Avatar avatar:
+                    OnImageChanged(avatar, GetImage(avatar));
+                    break;
+                case Shape shape:
+                    OnFillSourceChanged(shape, GetFillSource(shape));
+                    break;
+                case Border border:
+                    OnBackgroundSourceChanged(border, GetBackgroundSource(border));
+                    break;
+                case TemplatedControl templatedControl:
+                    OnBackgroundSourceChanged(templatedControl, GetBackgroundSource(templatedControl));
+                    break;
             }
         }
 
-        private static void SetSourceInternal(Control sender, Uri uri) {
-            if (sender is Image image) {
-                OnSourceChangedInternal(image, uri);
-            } else if (sender is TemplatedControl tc && sender is not Avatar) {
-                OnBackgroundSourceChangedInternal(tc, uri);
-            } else if (sender is Border border) {
-                OnBackgroundSourceChangedInternal(border, uri);
-            } else if (sender is Shape shape) {
-                OnFillSourceChangedInternal(shape, uri);
-            } else if (sender is Avatar avatar) {
-                OnImageChangedInternal(avatar, uri);
+        private static bool EnsureAttached(Control control) {
+            if (!control.IsAttachedToVisualTree()) {
+                control.AttachedToVisualTree -= OnAttachedToVisualTree;
+                control.AttachedToVisualTree += OnAttachedToVisualTree;
+                return false;
             }
+
+            if (!IsNearViewport(control)) {
+                control.LayoutUpdated -= OnDeferredImageLayoutUpdated;
+                control.LayoutUpdated += OnDeferredImageLayoutUpdated;
+                return false;
+            }
+
+            control.LayoutUpdated -= OnDeferredImageLayoutUpdated;
+            return true;
         }
 
-        #endregion
+        private static void OnDeferredImageLayoutUpdated(object sender, EventArgs e) {
+            if (sender is not Control control) return;
+            if (!IsNearViewport(control)) return;
+
+            control.LayoutUpdated -= OnDeferredImageLayoutUpdated;
+            LoadCurrentSource(control);
+        }
+
+        private static void OnActiveImageLayoutUpdated(object sender, EventArgs e) {
+            if (sender is not Control control) return;
+            if (IsNearViewport(control)) return;
+
+            CancelLoad(control);
+            ClearLoadedImage(control);
+            control.LayoutUpdated -= OnActiveImageLayoutUpdated;
+            control.LayoutUpdated -= OnDeferredImageLayoutUpdated;
+            control.LayoutUpdated += OnDeferredImageLayoutUpdated;
+        }
+
+        private static bool IsNearViewport(Control control) {
+            TopLevel topLevel = TopLevel.GetTopLevel(control);
+            if (topLevel == null || control.Bounds.Width <= 0 || control.Bounds.Height <= 0) return true;
+
+            Point? topLeft = control.TranslatePoint(new Point(0, 0), topLevel);
+            if (topLeft == null) return true;
+
+            Rect viewport = new Rect(0, 0, topLevel.Bounds.Width, topLevel.Bounds.Height).Inflate(ViewportPreloadMargin);
+            Rect controlRect = new Rect(topLeft.Value, control.Bounds.Size);
+            return viewport.Intersects(controlRect);
+        }
+
+        private static ImageLoadState BeginLoad(Control control) {
+            CancelLoad(control);
+
+            ImageLoadState state = new ImageLoadState();
+            SetLoadState(control, state);
+
+            control.DetachedFromVisualTree -= OnDetachedFromVisualTree;
+            control.DetachedFromVisualTree += OnDetachedFromVisualTree;
+            control.LayoutUpdated -= OnActiveImageLayoutUpdated;
+            control.LayoutUpdated += OnActiveImageLayoutUpdated;
+            return state;
+        }
+
+        private static void FinishLoad(Control control, ImageLoadState state) {
+            if (ReferenceEquals(GetLoadState(control), state)) {
+                SetLoadState(control, null);
+                control.LayoutUpdated -= OnActiveImageLayoutUpdated;
+            }
+
+            state.Dispose();
+        }
+
+        private static void CancelLoad(Control control) {
+            ImageLoadState state = GetLoadState(control);
+            state?.Cancel();
+
+            if (state != null && ReferenceEquals(GetLoadState(control), state)) {
+                SetLoadState(control, null);
+            }
+
+            control.LayoutUpdated -= OnActiveImageLayoutUpdated;
+        }
+
+        private static bool IsCurrent(Control control, ImageLoadState state, Uri uri) {
+            return ReferenceEquals(GetLoadState(control), state)
+                && !state.Token.IsCancellationRequested
+                && IsCurrentUri(control, uri);
+        }
+
+        private static bool IsCurrentUri(Control control, Uri uri) {
+            return control switch {
+                Image image when GetSvgSource(image) != null => GetSvgSource(image) == uri,
+                Image image => GetSource(image) == uri,
+                Avatar avatar => GetImage(avatar) == uri,
+                Shape shape => GetFillSource(shape) == uri,
+                Border border => GetBackgroundSource(border) == uri,
+                TemplatedControl templatedControl => GetBackgroundSource(templatedControl) == uri,
+                _ => false
+            };
+        }
+
+        private static void ClearLoadedImage(Control control) {
+            switch (control) {
+                case Image image:
+                    image.Source = null;
+                    break;
+                case Avatar avatar:
+                    avatar.Image = null;
+                    break;
+                case Shape shape:
+                    shape.Fill = null;
+                    break;
+                case Border border:
+                    border.Background = null;
+                    break;
+                case ContentControl contentControl:
+                    contentControl.Background = null;
+                    break;
+            }
+        }
 
         private static void OnSourceChanged(Image sender, Uri? uri) {
-            if (sender.Parent == null) {
-                sender.Resources.Add("uri", uri);
-                sender.AttachedToVisualTree += OnAttachedToVisualTree;
-            } else {
-                new Action(async () => await RegisterLoadImageAfterAppearingOnScreen(sender, uri))();
-            }
-        }
-
-        private static void OnSourceChangedInternal(Image sender, Uri? uri) {
-            double dw = sender.Width != 0 ? sender.Width : sender.DesiredSize.Width;
-            double dh = sender.Height != 0 ? sender.Height : sender.DesiredSize.Height;
-
-            try {
-                if (uri != null) new Action(async () => {
-                    if (GetSource(sender) != uri) return;
-                    Bitmap bitmap = null;
-                    bitmap = await BitmapManager.GetBitmapAsync(uri, dw, dh);
-                    sender.Source = bitmap;
-                })();
-                // sender.Unloaded += Sender_Unloaded;
-            } catch (Exception ex) {
-                Log.Error(ex, "Cannot set bitmap to Image!");
-                sender.Source = null;
-            }
-        }
-
-        private static void OnSvgSourceChanged(Image sender, Uri uri) {
             if (uri == null) {
+                CancelLoad(sender);
+                UnregisterLifecycle(sender);
                 sender.Source = null;
                 return;
             }
-            double dw = sender.Width != 0 ? sender.Width : sender.DesiredSize.Width;
-            double dh = sender.Height != 0 ? sender.Height : sender.DesiredSize.Height;
 
-            new Action(async () => {
+            if (!EnsureAttached(sender)) return;
+            _ = LoadBitmapIntoImageAsync(sender, uri);
+        }
+
+        private static async Task LoadBitmapIntoImageAsync(Image sender, Uri uri) {
+            ImageLoadState state = BeginLoad(sender);
+            double decodeWidth = GetDecodeWidth(sender);
+            double decodeHeight = GetDecodeHeight(sender);
+
+            try {
+                using IDisposable lease = await MediaMemoryGovernor.EnterMediaLoadAsync(state.Token);
+                if (!IsCurrent(sender, state, uri) || !IsNearViewport(sender)) return;
+
+                Bitmap bitmap = await BitmapManager.GetBitmapAsync(uri, decodeWidth, decodeHeight, state.Token, BitmapCacheKind.Attachment);
+                if (!IsCurrent(sender, state, uri)) return;
+
+                await Dispatcher.UIThread.InvokeAsync(() => {
+                    if (IsCurrent(sender, state, uri)) sender.Source = bitmap;
+                });
+            } catch (OperationCanceledException) {
+                // Виртуализация выгрузила контрол или URI поменялся. Это штатный сценарий.
+            } catch (Exception ex) {
+                Log.Error(ex, "Cannot set bitmap to Image!");
+                await Dispatcher.UIThread.InvokeAsync(() => {
+                    if (IsCurrent(sender, state, uri)) sender.Source = null;
+                });
+            } finally {
+                FinishLoad(sender, state);
+            }
+        }
+
+        private static void OnSvgSourceChanged(Image sender, Uri? uri) {
+            if (uri == null) {
+                CancelLoad(sender);
+                UnregisterLifecycle(sender);
+                sender.Source = null;
+                return;
+            }
+
+            if (!EnsureAttached(sender)) return;
+            _ = LoadSvgIntoImageAsync(sender, uri);
+        }
+
+        private static async Task LoadSvgIntoImageAsync(Image sender, Uri uri) {
+            ImageLoadState state = BeginLoad(sender);
+
+            try {
                 SvgImage image = await CacheManager.GetStaticReactionImageAsync(uri);
-                if (image == null) return;
-                sender.Source = image;
-            })();
-            // sender.Unloaded += Sender_Unloaded;
-        }
+                if (image == null || !IsCurrent(sender, state, uri)) return;
 
-        private static void OnBackgroundSourceChanged(Control sender, Uri uri) {
-            if (sender.Parent == null) {
-                sender.Resources.Add("uri", uri);
-                sender.AttachedToVisualTree += OnAttachedToVisualTree;
-            } else {
-                new Action(async () => await RegisterLoadImageAfterAppearingOnScreen(sender, uri))();
+                await Dispatcher.UIThread.InvokeAsync(() => {
+                    if (IsCurrent(sender, state, uri)) sender.Source = image;
+                });
+            } catch (OperationCanceledException) {
+            } catch (Exception ex) {
+                Log.Error(ex, "Cannot set SVG to Image!");
+            } finally {
+                FinishLoad(sender, state);
             }
         }
 
-        private static void OnBackgroundSourceChangedInternal(TemplatedControl sender, Uri uri) {
-            double dw = sender.Width != 0 ? sender.Width : sender.DesiredSize.Width;
-            double dh = sender.Height != 0 ? sender.Height : sender.DesiredSize.Height;
+        private static void OnBackgroundSourceChanged(Control sender, Uri? uri) {
+            if (uri == null) {
+                CancelLoad(sender);
+                UnregisterLifecycle(sender);
+                ClearLoadedImage(sender);
+                return;
+            }
 
-            sender.Background = App.GetResource<SolidColorBrush>("VKBackgroundHoverBrush");
-            new Action(async () => await sender.SetImageBackgroundAsync(uri, dw, dh))();
-            // sender.Unloaded += Sender_Unloaded;
+            if (!EnsureAttached(sender)) return;
+            SetBackground(sender, App.GetResource<SolidColorBrush>("VKBackgroundHoverBrush"));
+            _ = LoadBitmapIntoBackgroundAsync(sender, uri);
         }
 
-        private static void OnBackgroundSourceChangedInternal(Border sender, Uri uri) {
-            double dw = sender.Width != 0 ? sender.Width : sender.DesiredSize.Width;
-            double dh = sender.Height != 0 ? sender.Height : sender.DesiredSize.Height;
+        private static async Task LoadBitmapIntoBackgroundAsync(Control sender, Uri uri) {
+            ImageLoadState state = BeginLoad(sender);
+            double decodeWidth = GetDecodeWidth(sender);
+            double decodeHeight = GetDecodeHeight(sender);
+            int blurRadius = GetBackgroundBlurRadius(sender);
+            if (blurRadius > 0) {
+                decodeWidth = GetBlurDecodeSize(decodeWidth);
+                decodeHeight = GetBlurDecodeSize(decodeHeight);
+            }
 
-            sender.Background = App.GetResource<SolidColorBrush>("VKBackgroundHoverBrush");
-            new Action(async () => await sender.SetImageBackgroundAsync(uri, dw, dh))();
-            // sender.Unloaded += Sender_Unloaded;
-        }
+            try {
+                using IDisposable lease = await MediaMemoryGovernor.EnterMediaLoadAsync(state.Token);
+                if (!IsCurrent(sender, state, uri) || !IsNearViewport(sender)) return;
 
-        private static void OnFillSourceChanged(Shape sender, Uri uri) {
-            if (sender.Parent == null) {
-                sender.Resources.Add("uri", uri);
-                sender.AttachedToVisualTree += OnAttachedToVisualTree;
-            } else {
-                new Action(async () => await RegisterLoadImageAfterAppearingOnScreen(sender, uri))();
+                Bitmap bitmap = await BitmapManager.GetBitmapAsync(uri, decodeWidth, decodeHeight, state.Token, BitmapCacheKind.Attachment);
+                if (!IsCurrent(sender, state, uri)) return;
+                if (blurRadius > 0) bitmap = CreateBlurredBitmap(bitmap, blurRadius);
+
+                ImageBrush brush = new ImageBrush(bitmap) {
+                    AlignmentX = AlignmentX.Center,
+                    AlignmentY = AlignmentY.Center,
+                    Stretch = Stretch.UniformToFill
+                };
+
+                await Dispatcher.UIThread.InvokeAsync(() => {
+                    if (IsCurrent(sender, state, uri)) SetBackground(sender, brush);
+                });
+            } catch (OperationCanceledException) {
+            } catch (Exception ex) {
+                Log.Error(ex, "Cannot set bitmap background!");
+            } finally {
+                FinishLoad(sender, state);
             }
         }
 
-        private static void OnFillSourceChangedInternal(Shape sender, Uri uri) {
-            double dw = sender.Width != 0 ? sender.Width : sender.DesiredSize.Width;
-            double dh = sender.Height != 0 ? sender.Height : sender.DesiredSize.Height;
+        private static void OnFillSourceChanged(Shape sender, Uri? uri) {
+            if (uri == null) {
+                CancelLoad(sender);
+                UnregisterLifecycle(sender);
+                sender.Fill = null;
+                return;
+            }
 
+            if (!EnsureAttached(sender)) return;
             sender.Fill = App.GetResource<SolidColorBrush>("VKBackgroundHoverBrush");
-            sender.SetImageFill(uri, dw, dh);
-            // sender.Unloaded += Sender_Unloaded;
+            _ = LoadBitmapIntoFillAsync(sender, uri);
         }
 
-        private static void OnImageChanged(Avatar sender, Uri uri) {
-            if (sender.Parent == null) {
-                sender.Resources.Add("uri", uri);
-                sender.AttachedToVisualTree += OnAttachedToVisualTree;
-            } else {
-                new Action(async () => await RegisterLoadImageAfterAppearingOnScreen(sender, uri))();
+        private static void OnBackgroundBlurRadiusChanged(Control sender) {
+            Uri uri = sender switch {
+                Border border => GetBackgroundSource(border),
+                TemplatedControl templatedControl => GetBackgroundSource(templatedControl),
+                _ => null
+            };
+            if (uri != null) OnBackgroundSourceChanged(sender, uri);
+        }
+
+        private static async Task LoadBitmapIntoFillAsync(Shape sender, Uri uri) {
+            ImageLoadState state = BeginLoad(sender);
+            double decodeWidth = GetDecodeWidth(sender);
+            double decodeHeight = GetDecodeHeight(sender);
+
+            try {
+                using IDisposable lease = await MediaMemoryGovernor.EnterMediaLoadAsync(state.Token);
+                if (!IsCurrent(sender, state, uri) || !IsNearViewport(sender)) return;
+
+                Bitmap bitmap = await BitmapManager.GetBitmapAsync(uri, decodeWidth, decodeHeight, state.Token, BitmapCacheKind.Attachment);
+                if (!IsCurrent(sender, state, uri)) return;
+
+                ImageBrush brush = new ImageBrush(bitmap) {
+                    AlignmentX = AlignmentX.Center,
+                    AlignmentY = AlignmentY.Center,
+                    Stretch = Stretch.UniformToFill
+                };
+
+                await Dispatcher.UIThread.InvokeAsync(() => {
+                    if (IsCurrent(sender, state, uri)) sender.Fill = brush;
+                });
+            } catch (OperationCanceledException) {
+            } catch (Exception ex) {
+                Log.Error(ex, "Cannot set bitmap fill!");
+            } finally {
+                FinishLoad(sender, state);
             }
         }
 
-        private static void OnImageChangedInternal(Avatar sender, Uri uri) {
-            double dw = sender.Width != 0 ? sender.Width : sender.DesiredSize.Width;
-            double dh = sender.Height != 0 ? sender.Height : sender.DesiredSize.Height;
+        private static void OnImageChanged(Avatar sender, Uri? uri) {
+            if (uri == null) {
+                CancelLoad(sender);
+                UnregisterLifecycle(sender);
+                sender.Image = null;
+                return;
+            }
 
-            sender.SetImage(uri, dw, dh);
-            // sender.Unloaded += Sender_Unloaded;
+            if (!EnsureAttached(sender)) return;
+            sender.Image = null;
+            _ = LoadBitmapIntoAvatarAsync(sender, uri);
         }
 
-        private static void Sender_Unloaded(object sender, Avalonia.Interactivity.RoutedEventArgs e) {
-            Debug.WriteLine($"Unloading image UI: {sender.GetType()}");
-            if (sender is Image img) {
-                img.Unloaded -= Sender_Unloaded;
-                img.Source = null;
-            } else if (sender is Border b) {
-                b.Unloaded -= Sender_Unloaded;
-                b.Background = null;
-            } else if (sender is Shape s) {
-                s.Unloaded -= Sender_Unloaded;
-                s.Fill = null;
-            } else if (sender is Avatar ava) {
-                ava.Unloaded -= Sender_Unloaded;
-                ava.Image = null;
+        private static async Task LoadBitmapIntoAvatarAsync(Avatar sender, Uri uri) {
+            ImageLoadState state = BeginLoad(sender);
+            double decodeWidth = GetDecodeWidth(sender);
+            double decodeHeight = GetDecodeHeight(sender);
+
+            try {
+                using IDisposable lease = await MediaMemoryGovernor.EnterMediaLoadAsync(state.Token);
+                if (!IsCurrent(sender, state, uri) || !IsNearViewport(sender)) return;
+
+                Bitmap bitmap = await BitmapManager.GetBitmapAsync(uri, decodeWidth, decodeHeight, state.Token, BitmapCacheKind.Avatar);
+                if (!IsCurrent(sender, state, uri)) return;
+
+                await Dispatcher.UIThread.InvokeAsync(() => {
+                    if (IsCurrent(sender, state, uri)) sender.Image = bitmap;
+                });
+            } catch (OperationCanceledException) {
+            } catch (Exception ex) {
+                Log.Error(ex, "Cannot set bitmap to Avatar!");
+            } finally {
+                FinishLoad(sender, state);
             }
         }
 
+        private static void SetBackground(Control control, IBrush brush) {
+            switch (control) {
+                case Border border:
+                    border.Background = brush;
+                    break;
+                case ContentControl contentControl:
+                    contentControl.Background = brush;
+                    break;
+            }
+        }
 
-        public static readonly AttachedProperty<Uri?> SourceProperty = AvaloniaProperty.RegisterAttached<Image, Uri?>("Source", typeof(ImageLoader));
+        private static double GetDecodeWidth(Control control) {
+            if (!double.IsNaN(control.Width) && control.Width > 0) return control.Width;
+            if (control.Bounds.Width > 0) return control.Bounds.Width;
+            if (control.DesiredSize.Width > 0) return control.DesiredSize.Width;
+            return 0;
+        }
+
+        private static double GetDecodeHeight(Control control) {
+            if (!double.IsNaN(control.Height) && control.Height > 0) return control.Height;
+            if (control.Bounds.Height > 0) return control.Bounds.Height;
+            if (control.DesiredSize.Height > 0) return control.DesiredSize.Height;
+            return 0;
+        }
+
+        private static double GetBlurDecodeSize(double value) {
+            if (value <= 0) return 720;
+            return Math.Min(value, 720);
+        }
+
+        private static Bitmap CreateBlurredBitmap(Bitmap source, int radius) {
+            PixelSize size = source.PixelSize;
+            if (size.Width <= 0 || size.Height <= 0) return source;
+
+            radius = Math.Clamp(radius, 1, 16);
+            int stride = size.Width * 4;
+            byte[] pixels = new byte[stride * size.Height];
+            GCHandle handle = GCHandle.Alloc(pixels, GCHandleType.Pinned);
+            try {
+                source.CopyPixels(new PixelRect(0, 0, size.Width, size.Height), handle.AddrOfPinnedObject(), pixels.Length, stride);
+            } finally {
+                handle.Free();
+            }
+
+            BoxBlur(pixels, size.Width, size.Height, radius);
+            WriteableBitmap bitmap = new WriteableBitmap(size, new Vector(96, 96), PixelFormats.Bgra8888, AlphaFormat.Premul);
+            using (ILockedFramebuffer framebuffer = bitmap.Lock()) {
+                Marshal.Copy(pixels, 0, framebuffer.Address, pixels.Length);
+            }
+            return bitmap;
+        }
+
+        private static void BoxBlur(byte[] pixels, int width, int height, int radius) {
+            byte[] temp = new byte[pixels.Length];
+
+            for (int y = 0; y < height; y++) {
+                for (int x = 0; x < width; x++) {
+                    AverageHorizontal(pixels, temp, width, height, radius, x, y);
+                }
+            }
+
+            for (int y = 0; y < height; y++) {
+                for (int x = 0; x < width; x++) {
+                    AverageVertical(temp, pixels, width, height, radius, x, y);
+                }
+            }
+        }
+
+        private static void AverageHorizontal(byte[] source, byte[] target, int width, int height, int radius, int x, int y) {
+            int left = Math.Max(0, x - radius);
+            int right = Math.Min(width - 1, x + radius);
+            int count = right - left + 1;
+            int b = 0;
+            int g = 0;
+            int r = 0;
+            int a = 0;
+
+            for (int xx = left; xx <= right; xx++) {
+                int sourceIndex = ((y * width) + xx) * 4;
+                b += source[sourceIndex];
+                g += source[sourceIndex + 1];
+                r += source[sourceIndex + 2];
+                a += source[sourceIndex + 3];
+            }
+
+            int targetIndex = ((y * width) + x) * 4;
+            target[targetIndex] = (byte)(b / count);
+            target[targetIndex + 1] = (byte)(g / count);
+            target[targetIndex + 2] = (byte)(r / count);
+            target[targetIndex + 3] = (byte)(a / count);
+        }
+
+        private static void AverageVertical(byte[] source, byte[] target, int width, int height, int radius, int x, int y) {
+            int top = Math.Max(0, y - radius);
+            int bottom = Math.Min(height - 1, y + radius);
+            int count = bottom - top + 1;
+            int b = 0;
+            int g = 0;
+            int r = 0;
+            int a = 0;
+
+            for (int yy = top; yy <= bottom; yy++) {
+                int sourceIndex = ((yy * width) + x) * 4;
+                b += source[sourceIndex];
+                g += source[sourceIndex + 1];
+                r += source[sourceIndex + 2];
+                a += source[sourceIndex + 3];
+            }
+
+            int targetIndex = ((y * width) + x) * 4;
+            target[targetIndex] = (byte)(b / count);
+            target[targetIndex + 1] = (byte)(g / count);
+            target[targetIndex + 2] = (byte)(r / count);
+            target[targetIndex + 3] = (byte)(a / count);
+        }
+
+        private static void UnregisterLifecycle(Control control) {
+            control.AttachedToVisualTree -= OnAttachedToVisualTree;
+            control.DetachedFromVisualTree -= OnDetachedFromVisualTree;
+            control.LayoutUpdated -= OnActiveImageLayoutUpdated;
+            control.LayoutUpdated -= OnDeferredImageLayoutUpdated;
+        }
+
+        private static readonly AttachedProperty<ImageLoadState?> LoadStateProperty =
+            AvaloniaProperty.RegisterAttached<Control, ImageLoadState?>("LoadState", typeof(ImageLoader));
+
+        private static ImageLoadState? GetLoadState(Control element) {
+            return element.GetValue(LoadStateProperty);
+        }
+
+        private static void SetLoadState(Control element, ImageLoadState? value) {
+            element.SetValue(LoadStateProperty, value);
+        }
+
+        public static readonly AttachedProperty<Uri?> SourceProperty =
+            AvaloniaProperty.RegisterAttached<Image, Uri?>("Source", typeof(ImageLoader));
 
         public static Uri? GetSource(Image element) {
             return element.GetValue(SourceProperty);
@@ -253,7 +548,8 @@ namespace ELOR.Laney.Controls {
             element.SetValue(SourceProperty, value);
         }
 
-        public static readonly AttachedProperty<Uri?> SvgSourceProperty = AvaloniaProperty.RegisterAttached<Image, Uri?>("Source", typeof(ImageLoader));
+        public static readonly AttachedProperty<Uri?> SvgSourceProperty =
+            AvaloniaProperty.RegisterAttached<Image, Uri?>("SvgSource", typeof(ImageLoader));
 
         public static Uri? GetSvgSource(Image element) {
             return element.GetValue(SvgSourceProperty);
@@ -263,7 +559,8 @@ namespace ELOR.Laney.Controls {
             element.SetValue(SvgSourceProperty, value);
         }
 
-        public static readonly AttachedProperty<Uri?> BackgroundSourceProperty = AvaloniaProperty.RegisterAttached<Control, Uri?>("BackgroundSource", typeof(ImageLoader));
+        public static readonly AttachedProperty<Uri?> BackgroundSourceProperty =
+            AvaloniaProperty.RegisterAttached<Control, Uri?>("BackgroundSource", typeof(ImageLoader));
 
         public static Uri? GetBackgroundSource(TemplatedControl element) {
             return element.GetValue(BackgroundSourceProperty);
@@ -274,24 +571,45 @@ namespace ELOR.Laney.Controls {
         }
 
         public static void SetBackgroundSource(TemplatedControl element, Uri? value) {
+            if (element == null) return;
             element.SetValue(BackgroundSourceProperty, value);
         }
 
         public static void SetBackgroundSource(Border element, Uri? value) {
+            if (element == null) return;
             element.SetValue(BackgroundSourceProperty, value);
         }
 
-        public static readonly AttachedProperty<Uri?> FillSourceProperty = AvaloniaProperty.RegisterAttached<Shape, Uri?>("FillSource", typeof(ImageLoader));
+        public static readonly AttachedProperty<int> BackgroundBlurRadiusProperty =
+            AvaloniaProperty.RegisterAttached<Control, int>("BackgroundBlurRadius", typeof(ImageLoader), 0);
+
+        public static int GetBackgroundBlurRadius(Border element) {
+            return element.GetValue(BackgroundBlurRadiusProperty);
+        }
+
+        public static int GetBackgroundBlurRadius(Control element) {
+            return element.GetValue(BackgroundBlurRadiusProperty);
+        }
+
+        public static void SetBackgroundBlurRadius(Border element, int value) {
+            if (element == null) return;
+            element.SetValue(BackgroundBlurRadiusProperty, Math.Clamp(value, 0, 16));
+        }
+
+        public static readonly AttachedProperty<Uri?> FillSourceProperty =
+            AvaloniaProperty.RegisterAttached<Shape, Uri?>("FillSource", typeof(ImageLoader));
 
         public static Uri? GetFillSource(Shape element) {
             return element.GetValue(FillSourceProperty);
         }
 
         public static void SetFillSource(Shape element, Uri? value) {
+            if (element == null) return;
             element.SetValue(FillSourceProperty, value);
         }
 
-        public static readonly AttachedProperty<Uri?> ImageProperty = AvaloniaProperty.RegisterAttached<Avatar, Uri?>("Image", typeof(ImageLoader));
+        public static readonly AttachedProperty<Uri?> ImageProperty =
+            AvaloniaProperty.RegisterAttached<Avatar, Uri?>("Image", typeof(ImageLoader));
 
         public static Uri? GetImage(Avatar element) {
             return element.GetValue(ImageProperty);
@@ -301,14 +619,18 @@ namespace ELOR.Laney.Controls {
             element.SetValue(ImageProperty, value);
         }
 
-        //public static readonly AttachedProperty<bool> IsLoadingProperty = AvaloniaProperty.RegisterAttached<Image, bool>("IsLoading", typeof(ImageLoader));
+        private sealed class ImageLoadState : IDisposable {
+            private readonly CancellationTokenSource cts = new CancellationTokenSource();
 
-        //public static bool GetIsLoading(Image element) {
-        //    return element.GetValue(IsLoadingProperty);
-        //}
+            public CancellationToken Token => cts.Token;
 
-        //private static void SetIsLoading(Image element, bool value) {
-        //    element.SetValue(IsLoadingProperty, value);
-        //}
+            public void Cancel() {
+                if (!cts.IsCancellationRequested) cts.Cancel();
+            }
+
+            public void Dispose() {
+                cts.Dispose();
+            }
+        }
     }
 }

@@ -32,7 +32,7 @@
         <vkui:VKIcon Foreground="{DynamicResource VKIconTertiaryBrush}" Id="{x:Static vkui:VKIconNames.Icon28CameraAddOutline}"/>
       </Button>
       <StackPanel Grid.Column="1" Margin="6,8,6,6">
-        <TextBox x:Name="ChatName" Watermark="{x:Static i18n:Resources.chat_creation_name_watermark}" Text="{Binding ChatName, Mode=TwoWay}"/>
+        <TextBox x:Name="ChatName" PlaceholderText="{x:Static i18n:Resources.chat_creation_name_watermark}" Text="{Binding ChatName, Mode=TwoWay}"/>
         <TextBlock Classes="Caption1" Foreground="{DynamicResource VKTextSecondaryBrush}" Margin="0,6,0,0" TextWrapping="Wrap" Text="{x:Static i18n:Resources.chat_creation_name_footnote}"/>
       </StackPanel>
     </Grid>
@@ -84,7 +84,7 @@
 
     <Grid x:Name="EmptyListContainer" Grid.Row="3" IsVisible="{Binding GroupedFriends, Mode=OneWay, Converter={x:Static ObjectConverters.IsNull}}">
       <vkui:Spinner HorizontalAlignment="Center" Width="32" Height="32" IsVisible="{Binding IsLoading, Mode=OneWay}"/>
-      <vkui:Placeholder VerticalAlignment="Center"
+      <vkui:Placeholder Classes="Compact" VerticalAlignment="Center"
                             IsVisible="{Binding Placeholder, Mode=OneWay, FallbackValue=False, Converter={x:Static ObjectConverters.IsNotNull}}"
                             Icon="{Binding Placeholder.Icon, Mode=OneWay}"
                             Header="{Binding Placeholder.Header, Mode=OneWay}"

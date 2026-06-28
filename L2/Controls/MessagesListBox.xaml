@@ -12,6 +12,11 @@
     <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto" />
     <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
     <Setter Property="ScrollViewer.IsScrollChainingEnabled" Value="True" />
+    <Setter Property="ItemsPanel">
+      <ItemsPanelTemplate>
+        <VirtualizingStackPanel/>
+      </ItemsPanelTemplate>
+    </Setter>
     <Setter Property="Template">
       <ControlTemplate>
         <Border Name="border"

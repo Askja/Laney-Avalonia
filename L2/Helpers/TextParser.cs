@@ -1,5 +1,6 @@
 ﻿using Avalonia.Collections;
 using ColorTextBlock.Avalonia;
+using ELOR.Laney.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -25,6 +26,22 @@ namespace ELOR.Laney.Helpers {
     }
 
     public class TextParser {
+        private enum InlineFormatKind { Bold, Italic, Code, Strike }
+
+        private readonly struct InlineFormatMatch {
+            public int Start { get; }
+            public int End { get; }
+            public string Marker { get; }
+            public InlineFormatKind Kind { get; }
+
+            public InlineFormatMatch(int start, int end, string marker, InlineFormatKind kind) {
+                Start = start;
+                End = end;
+                Marker = marker;
+                Kind = kind;
+            }
+        }
+
         #region Internal parsing methods
 
         private static Tuple<string, string> ParseBracketWord(Match match) {
@@ -99,6 +116,131 @@ namespace ELOR.Laney.Helpers {
             };
         }
 
+        private static void AddFormattedText(AvaloniaList<CInline> content, string text, long peerId) {
+            foreach (CInline inline in BuildFormattedInlines(text, peerId)) {
+                content.Add(inline);
+            }
+        }
+
+        private static List<CInline> BuildFormattedInlines(string text, long peerId) {
+            List<CInline> result = new List<CInline>();
+            ParseFormattedText(result, text, peerId);
+            return result;
+        }
+
+        private static void ParseFormattedText(List<CInline> output, string text, long peerId) {
+            if (String.IsNullOrEmpty(text)) return;
+
+            int index = 0;
+            while (index < text.Length) {
+                if (!TryFindNextFormat(text, index, out InlineFormatMatch match)) {
+                    AddPlainText(output, text.Substring(index), peerId);
+                    return;
+                }
+
+                if (match.Start > index) AddPlainText(output, text.Substring(index, match.Start - index), peerId);
+
+                string inner = text.Substring(match.Start + match.Marker.Length, match.End - match.Start - match.Marker.Length);
+                output.Add(BuildFormattedInline(match.Kind, inner, peerId));
+                index = match.End + match.Marker.Length;
+            }
+        }
+
+        private static CInline BuildFormattedInline(InlineFormatKind kind, string inner, long peerId) {
+            List<CInline> inlines = kind == InlineFormatKind.Code
+                ? new List<CInline> { BuildCRunForRTBStyle(inner) }
+                : BuildFormattedInlines(inner, peerId);
+
+            return kind switch {
+                InlineFormatKind.Bold => new CBold(inlines),
+                InlineFormatKind.Italic => new CItalic(inlines),
+                InlineFormatKind.Code => new CCode(inlines),
+                InlineFormatKind.Strike => new CStrikethrough(inlines),
+                _ => BuildCRunForRTBStyle(inner)
+            };
+        }
+
+        private static void AddPlainText(List<CInline> output, string text, long peerId) {
+            if (String.IsNullOrEmpty(text)) return;
+            if (!EmojiSpriteStore.HasSprites(peerId)) {
+                output.Add(BuildCRunForRTBStyle(text));
+                return;
+            }
+
+            int index = 0;
+            int textStart = 0;
+            while (index < text.Length) {
+                if (!EmojiSpriteStore.TryMatch(text, index, peerId, out EmojiSpriteMatch match)) {
+                    index++;
+                    continue;
+                }
+
+                if (index > textStart) output.Add(BuildCRunForRTBStyle(text.Substring(textStart, index - textStart)));
+                output.Add(BuildEmojiSpriteInline(match));
+                index += match.Length;
+                textStart = index;
+            }
+
+            if (textStart < text.Length) output.Add(BuildCRunForRTBStyle(text.Substring(textStart)));
+        }
+
+        private static CInline BuildEmojiSpriteInline(EmojiSpriteMatch match) {
+            return new CImage(EmojiSpriteStore.LoadImageAsync(match.FilePath), EmojiSpriteStore.PlaceholderImage) {
+                LayoutWidth = 18,
+                LayoutHeight = 18,
+                SaveAspectRatio = true,
+                FittingWhenProtrude = false,
+                TextVerticalAlignment = TextVerticalAlignment.Center
+            };
+        }
+
+        private static bool TryFindNextFormat(string text, int startIndex, out InlineFormatMatch match) {
+            match = default;
+            ReadOnlySpan<(string Marker, InlineFormatKind Kind)> formats = [
+                ("**", InlineFormatKind.Bold),
+                ("__", InlineFormatKind.Italic),
+                ("`", InlineFormatKind.Code),
+                ("~~", InlineFormatKind.Strike)
+            ];
+
+            bool found = false;
+            foreach (var format in formats) {
+                int start = text.IndexOf(format.Marker, startIndex, StringComparison.Ordinal);
+                if (start < 0) continue;
+
+                int contentStart = start + format.Marker.Length;
+                int end = text.IndexOf(format.Marker, contentStart, StringComparison.Ordinal);
+                if (end <= contentStart) continue;
+
+                if (!found || start < match.Start || start == match.Start && format.Marker.Length > match.Marker.Length) {
+                    match = new InlineFormatMatch(start, end, format.Marker, format.Kind);
+                    found = true;
+                }
+            }
+
+            return found;
+        }
+
+        private static string StripFormatting(string text) {
+            if (String.IsNullOrEmpty(text)) return text;
+            StringBuilder sb = StringBuilderCache.Acquire(text.Length);
+            int index = 0;
+
+            while (index < text.Length) {
+                if (!TryFindNextFormat(text, index, out InlineFormatMatch match)) {
+                    sb.Append(text, index, text.Length - index);
+                    break;
+                }
+
+                if (match.Start > index) sb.Append(text, index, match.Start - index);
+                string inner = text.Substring(match.Start + match.Marker.Length, match.End - match.Start - match.Marker.Length);
+                sb.Append(match.Kind == InlineFormatKind.Code ? inner : StripFormatting(inner));
+                index = match.End + match.Marker.Length;
+            }
+
+            return StringBuilderCache.GetStringAndRelease(sb);
+        }
+
         private static CHyperlink BuildCHyperlinkForRTBStyle(string text, string link, CTextBlock rtb, Action<string> clickedCallback) {
             CHyperlink hl = new CHyperlink(new List<CInline> {
                 new CRun() {
@@ -111,13 +253,13 @@ namespace ELOR.Laney.Helpers {
             return hl;
         }
 
-        public static void SetText(string plain, CTextBlock rtb, Action<string> linksClickedCallback = null) {
+        public static void SetText(string plain, CTextBlock rtb, Action<string> linksClickedCallback = null, long peerId = 0) {
             rtb.Content = new AvaloniaList<CInline>();
             if (string.IsNullOrEmpty(plain)) return;
 
             foreach (var token in GetRaw(plain)) {
                 if (string.IsNullOrEmpty(token.Item1)) {
-                    rtb.Content.Add(BuildCRunForRTBStyle(token.Item2));
+                    AddFormattedText(rtb.Content, token.Item2, peerId);
                 } else {
                     CHyperlink h = BuildCHyperlinkForRTBStyle(token.Item2, token.Item1, rtb, linksClickedCallback);
                     rtb.Content.Add(h);
@@ -132,9 +274,19 @@ namespace ELOR.Laney.Helpers {
             StringBuilder sb = StringBuilderCache.Acquire(plain.Length);
 
             foreach (var token in CollectionsMarshal.AsSpan(GetRaw(plain))) {
-                sb.Append(token.Item2);
+                sb.Append(StripFormatting(token.Item2));
             }
             return StringBuilderCache.GetStringAndRelease(sb);
+        }
+
+        public static IReadOnlyList<string> GetLinks(string plain) {
+            if (String.IsNullOrWhiteSpace(plain)) return Array.Empty<string>();
+
+            return GetRaw(plain)
+                .Where(token => !String.IsNullOrWhiteSpace(token.Item1))
+                .Select(token => token.Item1)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
         }
 
         public static long GetMentionId(string plain) {

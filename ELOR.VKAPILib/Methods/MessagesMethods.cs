@@ -776,16 +776,17 @@ namespace ELOR.VKAPILib.Methods {
         /// <remarks>This method is undocumented!</remarks>
         /// <summary>Send event to bot.</summary>
         /// <param name="peerId">Destination ID.</param>
-        /// <param name="paload">Payload from clicked bot-button.</param>
+        /// <param name="payload">Payload from clicked bot-button.</param>
         /// <param name="messageId">Message ID of bot-keyboard owner (if keyboard is inline).</param>
         /// <param name="authorId">Bot-keyboard's author ID (if it is conversation keyboard).</param>
-        public async Task<string> SendMessageEventAsync(long peerId, string payload, int messageId = 0, long authorId = 0) {
-            Dictionary<string, string> parameters = new Dictionary<string, string> {
-                { "peer_id", peerId.ToString() }
-            };
+        /// <param name="groupId">Group ID (for community messages with a user access token).</param>
+        public async Task<string> SendMessageEventAsync(long peerId, string payload, int messageId = 0, long authorId = 0, long groupId = 0) {
+            Dictionary<string, string> parameters = new Dictionary<string, string>();
+            if (groupId > 0) parameters.Add("group_id", groupId.ToString());
+            parameters.Add("peer_id", peerId.ToString());
             if (messageId > 0) parameters.Add("message_id", messageId.ToString());
             if (authorId != 0) parameters.Add("author_id", authorId.ToString());
-            parameters.Add("payload", payload.ToString());
+            parameters.Add("payload", payload ?? "{}");
             return await API.CallMethodAsync<string>("messages.sendMessageEvent", parameters);
         }
 

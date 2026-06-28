@@ -1,10 +1,17 @@
 using Avalonia.Controls;
 using Avalonia.Controls.PanAndZoom;
+using Avalonia.Input.Platform;
+using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
 using Avalonia.Styling;
 using ELOR.Laney.Core;
+using ELOR.Laney.Core.Network;
 using ELOR.Laney.Extensions;
+using ELOR.Laney.Helpers;
 using ELOR.VKAPILib.Objects;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -40,6 +47,10 @@ namespace ELOR.Laney.Views.Media {
 
         private void UpdateInfo() {
             Title = $"{Assets.i18n.Resources.wnd_gallery} — {GalleryItems.SelectedIndex + 1}/{GalleryItems.Items.Count}";
+            Uri mediaUri = GetCurrentMediaUri();
+            OpenOriginalButton.IsEnabled = mediaUri != null;
+            CopyLinkButton.IsEnabled = mediaUri != null;
+            SaveFileButton.IsEnabled = mediaUri != null;
 
             AttachmentBase attachment = GalleryItems.SelectedItem as AttachmentBase;
             if (attachment != null) {
@@ -61,6 +72,73 @@ namespace ELOR.Laney.Views.Media {
                     Description.Text = doc.Title;
                     Description.IsVisible = true;
                 }
+            }
+        }
+
+        private Uri GetCurrentMediaUri() {
+            if (GalleryItems.SelectedItem is Photo photo) return photo.MaximalSizedPhoto?.Uri;
+            if (GalleryItems.SelectedItem is Document doc && (doc.Type == DocumentType.Image || doc.Type == DocumentType.GIF)) return doc.Uri;
+            return null;
+        }
+
+        private string GetCurrentFileName(Uri mediaUri) {
+            string extension = Path.GetExtension(mediaUri.AbsolutePath);
+            if (String.IsNullOrWhiteSpace(extension)) extension = ".jpg";
+
+            string name = GalleryItems.SelectedItem switch {
+                Photo photo => $"photo{photo.OwnerId}_{photo.Id}{extension}",
+                Document doc when !String.IsNullOrWhiteSpace(doc.Title) => doc.Title,
+                Document doc => $"doc{doc.OwnerId}_{doc.Id}{extension}",
+                _ => $"laney-media{extension}"
+            };
+
+            foreach (char c in Path.GetInvalidFileNameChars()) name = name.Replace(c, '_');
+            if (String.IsNullOrWhiteSpace(Path.GetExtension(name))) name += extension;
+            return name;
+        }
+
+        private async void OpenOriginal_Click(object? sender, RoutedEventArgs e) {
+            try {
+                Uri mediaUri = GetCurrentMediaUri();
+                if (mediaUri == null) return;
+                await ELOR.Laney.Core.Launcher.LaunchUrl(mediaUri);
+            } catch (Exception ex) {
+                await ExceptionHelper.ShowErrorDialogAsync(this, ex, true);
+            }
+        }
+
+        private async void CopyLink_Click(object? sender, RoutedEventArgs e) {
+            try {
+                Uri mediaUri = GetCurrentMediaUri();
+                if (mediaUri == null || Clipboard == null) return;
+                await Clipboard.SetTextAsync(mediaUri.AbsoluteUri);
+            } catch (Exception ex) {
+                await ExceptionHelper.ShowErrorDialogAsync(this, ex, true);
+            }
+        }
+
+        private async void SaveFile_Click(object? sender, RoutedEventArgs e) {
+            try {
+                Uri mediaUri = GetCurrentMediaUri();
+                if (mediaUri == null || StorageProvider?.CanSave != true) return;
+
+                IStorageFile target = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions {
+                    SuggestedFileName = GetCurrentFileName(mediaUri),
+                    FileTypeChoices = new List<FilePickerFileType> { FilePickerFileTypes.All }
+                });
+                if (target == null) return;
+
+                SaveFileButton.IsEnabled = false;
+                using var response = await LNet.GetAsync(mediaUri);
+                response.EnsureSuccessStatusCode();
+
+                await using Stream source = await response.Content.ReadAsStreamAsync();
+                await using Stream destination = await target.OpenWriteAsync();
+                await source.CopyToAsync(destination);
+            } catch (Exception ex) {
+                await ExceptionHelper.ShowErrorDialogAsync(this, ex, true);
+            } finally {
+                SaveFileButton.IsEnabled = GetCurrentMediaUri() != null;
             }
         }
 
