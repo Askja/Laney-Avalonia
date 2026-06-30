@@ -32,12 +32,12 @@ namespace ELOR.Laney.ViewModels.SettingsCategories {
         };
 
         public ObservableCollection<TwoStringTuple> EmojiPackOptions { get; } = new ObservableCollection<TwoStringTuple> {
-            new TwoStringTuple(EmojiPackIds.System, "Системные"),
-            new TwoStringTuple(EmojiPackIds.Vk, "VK emoji"),
-            new TwoStringTuple(EmojiPackIds.TelegramLike, "Telegram/iOS font"),
-            new TwoStringTuple(EmojiPackIds.Noto, "Noto Color"),
+            new TwoStringTuple(EmojiPackIds.Vk, "ВКонтакте"),
+            new TwoStringTuple(EmojiPackIds.TelegramLike, "Telegram/Twemoji"),
+            new TwoStringTuple(EmojiPackIds.Noto, "Google Noto"),
             new TwoStringTuple(EmojiPackIds.Twemoji, "Twemoji"),
-            new TwoStringTuple(EmojiPackIds.Fallback, "Запасной набор"),
+            new TwoStringTuple(EmojiPackIds.System, "Системные"),
+            new TwoStringTuple(EmojiPackIds.Fallback, "Лёгкий запасной набор"),
             new TwoStringTuple(EmojiPackIds.Custom, "Кастомный manifest")
         };
 

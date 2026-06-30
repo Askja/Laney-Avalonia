@@ -341,9 +341,11 @@ namespace ELOR.Laney {
             "Avalonia.Labs.Qr",
             "ColorTextBlock.Avalonia by whistyun",
             "LibVLCSharp",
+            "Noto Emoji by Google",
             "PanAndZoom by Wiesław Šoltés",
             "Serilog",
             "Svg.Skia by Wiesław Šoltés",
+            "Twemoji graphics by Twitter and contributors",
             "Unicode.net",
             "ZstdSharp.Port"
         };

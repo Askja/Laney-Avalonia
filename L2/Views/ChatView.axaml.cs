@@ -34,6 +34,8 @@ namespace ELOR.Laney.Views {
         bool suppressHopNavUntilScrollSettled = false;
         bool frameMonitorRunning = false;
         long lastFrameTicks = 0;
+        long lastVisualTreeSampleTicks = 0;
+        int lastVisibleControlCount = 0;
         double lastFrameMs = 0;
         double averageFrameMs = 0;
         double maxFrameMs = 0;
@@ -235,7 +237,8 @@ namespace ELOR.Laney.Views {
             Uri backgroundImageUri = AppearanceManager.GetChatBackgroundImageUri(peerId);
             bool hasBackgroundImage = backgroundImageUri != null;
             ChatBackgroundImage.IsVisible = hasBackgroundImage;
-            ImageLoader.SetBackgroundBlurRadius(ChatBackgroundImage, hasBackgroundImage ? AppearanceManager.GetChatBackgroundBlurRadius(peerId) : 0);
+            int backgroundBlur = hasBackgroundImage ? Math.Min(AppearanceManager.GetChatBackgroundBlurRadius(peerId), Settings.LowMemoryMode ? 0 : 6) : 0;
+            ImageLoader.SetBackgroundBlurRadius(ChatBackgroundImage, backgroundBlur);
             ImageLoader.SetBackgroundSource(ChatBackgroundImage, backgroundImageUri);
             ChatBackgroundImage.Opacity = hasBackgroundImage ? AppearanceManager.GetChatBackgroundImageOpacity(peerId) : 0;
 
@@ -454,9 +457,14 @@ namespace ELOR.Laney.Views {
             dbgRam.Text = $"WS {Math.Round(process.WorkingSet64 / 1048576d, 0)} / P {Math.Round(process.PrivateMemorySize64 / 1048576d, 0)} Mb";
             dbgGc.Text = $"{GC.CollectionCount(0)}/{GC.CollectionCount(1)}/{GC.CollectionCount(2)}";
 
-            List<Control> visibleControls = new List<Control>();
-            MessagesList.FindVisualChildrenByType(visibleControls);
-            dbgUi.Text = visibleControls.Count.ToString();
+            long now = Stopwatch.GetTimestamp();
+            if (lastVisualTreeSampleTicks == 0 || (now - lastVisualTreeSampleTicks) * 1000.0 / Stopwatch.Frequency >= 1000) {
+                List<Control> visibleControls = new List<Control>();
+                MessagesList.FindVisualChildrenByType(visibleControls);
+                lastVisibleControlCount = visibleControls.Count;
+                lastVisualTreeSampleTicks = now;
+            }
+            dbgUi.Text = lastVisibleControlCount.ToString();
             dbgFrame.Text = $"{Math.Round(averageFrameMs, 1)}/{Math.Round(lastFrameMs, 1)}/{Math.Round(maxFrameMs, 1)} ms";
             dbgJank.Text = jankFrames.ToString();
         }
@@ -476,6 +484,8 @@ namespace ELOR.Laney.Views {
 
         private void ResetFrameStats() {
             lastFrameTicks = 0;
+            lastVisualTreeSampleTicks = 0;
+            lastVisibleControlCount = 0;
             lastFrameMs = 0;
             averageFrameMs = 0;
             maxFrameMs = 0;

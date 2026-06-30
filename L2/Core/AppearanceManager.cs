@@ -326,12 +326,15 @@ namespace ELOR.Laney.Core {
         }
 
         public static Thickness GetMessageBubbleBorderThickness(long peerId) {
-            return GetEffectiveBubbleStyle(peerId) == BubbleStyleIds.Outline ? new Thickness(1) : new Thickness(0);
+            return GetEffectiveBubbleStyle(peerId) == BubbleStyleIds.Outline ? new Thickness(1) : new Thickness(0.75);
         }
 
         public static IBrush GetMessageBubbleBorderBrush(long peerId) {
-            if (GetEffectiveBubbleStyle(peerId) != BubbleStyleIds.Outline) return Brushes.Transparent;
-            return App.GetResource<IBrush>("VKImageBorderBrush") ?? new SolidColorBrush(Color.Parse("#D0D7DE"));
+            if (GetEffectiveBubbleStyle(peerId) == BubbleStyleIds.Outline) {
+                return App.GetResource<IBrush>("VKImageBorderBrush") ?? new SolidColorBrush(Color.Parse("#D0D7DE"));
+            }
+
+            return new SolidColorBrush(Color.Parse(IsDarkTheme() ? "#42FFFFFF" : "#66B7C5D6"));
         }
 
         public static double GetMessageBubbleMaxWidth() {
@@ -399,7 +402,7 @@ namespace ELOR.Laney.Core {
         }
 
         private static SolidColorBrush CreateGlassBubbleBrush(Color color) {
-            return new SolidColorBrush(color, 0.94);
+            return new SolidColorBrush(color, IsDarkTheme() ? 0.98 : 0.96);
         }
 
         public static Uri GetChatBackgroundImageUri(long peerId) {

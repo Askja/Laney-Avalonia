@@ -8,19 +8,19 @@
       <SolidColorBrush x:Key="LaneySurfaceRaisedBrush" Color="#F7FFFFFF"/>
       <SolidColorBrush x:Key="LaneySurfaceOverlayBrush" Color="#FFFFFFFF"/>
       <SolidColorBrush x:Key="LaneyMutedSurfaceBrush" Color="#BFEAF0F7"/>
-      <SolidColorBrush x:Key="LaneyFieldBackgroundBrush" Color="#BFFFFFFF"/>
-      <SolidColorBrush x:Key="LaneyFieldHoverBrush" Color="#E8FFFFFF"/>
-      <SolidColorBrush x:Key="LaneyFieldBorderBrush" Color="#8FB7C5D6"/>
+      <SolidColorBrush x:Key="LaneyFieldBackgroundBrush" Color="#D8FFFFFF"/>
+      <SolidColorBrush x:Key="LaneyFieldHoverBrush" Color="#F0FFFFFF"/>
+      <SolidColorBrush x:Key="LaneyFieldBorderBrush" Color="#9CC4D2E2"/>
       <SolidColorBrush x:Key="LaneyChatListHoverBrush" Color="#66DCEEFF"/>
       <SolidColorBrush x:Key="LaneyChatListSelectedBrush" Color="#99CFE8FF"/>
       <SolidColorBrush x:Key="LaneySkeletonBrush" Color="#BFE3EAF2"/>
 
       <SolidColorBrush x:Key="LaneyBorderSubtleBrush" Color="#7FB8C5D2"/>
       <SolidColorBrush x:Key="LaneyBorderStrongBrush" Color="#A78EA0B4"/>
-      <SolidColorBrush x:Key="LaneyGlassPanelBrush" Color="#E3FFFFFF"/>
-      <SolidColorBrush x:Key="LaneyGlassRaisedBrush" Color="#EEFFFFFF"/>
-      <SolidColorBrush x:Key="LaneyGlassOverlayBrush" Color="#F8FFFFFF"/>
-      <SolidColorBrush x:Key="LaneyGlassBorderBrush" Color="#78A9BCD0"/>
+      <SolidColorBrush x:Key="LaneyGlassPanelBrush" Color="#DFFFFFFF"/>
+      <SolidColorBrush x:Key="LaneyGlassRaisedBrush" Color="#EAFFFFFF"/>
+      <SolidColorBrush x:Key="LaneyGlassOverlayBrush" Color="#F5FFFFFF"/>
+      <SolidColorBrush x:Key="LaneyGlassBorderBrush" Color="#86BCD0E2"/>
       <SolidColorBrush x:Key="LaneyGlassHighlightBrush" Color="#C8FFFFFF"/>
       <SolidColorBrush x:Key="LaneyGlassShadowBrush" Color="#0D1D2B3A"/>
 
@@ -44,25 +44,25 @@
     </ResourceDictionary>
 
     <ResourceDictionary x:Key="Dark">
-      <SolidColorBrush x:Key="LaneySurfaceRootBrush" Color="#FF080B10"/>
+      <SolidColorBrush x:Key="LaneySurfaceRootBrush" Color="#FF070B11"/>
       <SolidColorBrush x:Key="LaneySurfaceSidebarBrush" Color="#F20D121A"/>
       <SolidColorBrush x:Key="LaneySurfacePanelBrush" Color="#F4141B25"/>
       <SolidColorBrush x:Key="LaneySurfaceRaisedBrush" Color="#FA1A2430"/>
       <SolidColorBrush x:Key="LaneySurfaceOverlayBrush" Color="#FF202C3A"/>
       <SolidColorBrush x:Key="LaneyMutedSurfaceBrush" Color="#85314050"/>
-      <SolidColorBrush x:Key="LaneyFieldBackgroundBrush" Color="#E016202B"/>
-      <SolidColorBrush x:Key="LaneyFieldHoverBrush" Color="#F01E2A38"/>
-      <SolidColorBrush x:Key="LaneyFieldBorderBrush" Color="#55B5D8FF"/>
+      <SolidColorBrush x:Key="LaneyFieldBackgroundBrush" Color="#C8182230"/>
+      <SolidColorBrush x:Key="LaneyFieldHoverBrush" Color="#DC212D3D"/>
+      <SolidColorBrush x:Key="LaneyFieldBorderBrush" Color="#66BFE0FF"/>
       <SolidColorBrush x:Key="LaneyChatListHoverBrush" Color="#332B67A0"/>
       <SolidColorBrush x:Key="LaneyChatListSelectedBrush" Color="#703390EC"/>
       <SolidColorBrush x:Key="LaneySkeletonBrush" Color="#B02A3341"/>
 
       <SolidColorBrush x:Key="LaneyBorderSubtleBrush" Color="#29FFFFFF"/>
       <SolidColorBrush x:Key="LaneyBorderStrongBrush" Color="#44FFFFFF"/>
-      <SolidColorBrush x:Key="LaneyGlassPanelBrush" Color="#D00F1722"/>
-      <SolidColorBrush x:Key="LaneyGlassRaisedBrush" Color="#E51A2430"/>
-      <SolidColorBrush x:Key="LaneyGlassOverlayBrush" Color="#F2243142"/>
-      <SolidColorBrush x:Key="LaneyGlassBorderBrush" Color="#4DD9ECFF"/>
+      <SolidColorBrush x:Key="LaneyGlassPanelBrush" Color="#C80D1520"/>
+      <SolidColorBrush x:Key="LaneyGlassRaisedBrush" Color="#D9192431"/>
+      <SolidColorBrush x:Key="LaneyGlassOverlayBrush" Color="#EC253447"/>
+      <SolidColorBrush x:Key="LaneyGlassBorderBrush" Color="#5CCDE6FF"/>
       <SolidColorBrush x:Key="LaneyGlassHighlightBrush" Color="#2FFFFFFF"/>
       <SolidColorBrush x:Key="LaneyGlassShadowBrush" Color="#24000000"/>
 

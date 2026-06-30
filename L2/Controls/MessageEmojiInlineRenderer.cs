@@ -2,21 +2,27 @@ using Avalonia.Controls;
 using Avalonia.Controls.Documents;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Threading;
 using ELOR.Laney.Core;
+using Serilog;
 using System;
 using System.Globalization;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace ELOR.Laney.Controls {
     internal static class MessageEmojiInlineRenderer {
         private const int MaxRichTextLength = 720;
         private const int MaxCustomInlineImages = 1;
-        private const int MaxPackInlineImages = 4;
+        private const int MaxPackInlineImages = 2;
         private const int MaxCustomEmojiLetters = 32;
         private const int MaxPackEmojiLetters = 36;
         private const int MaxPackImageTextLength = 160;
         private const int MaxSystemEmojiLetters = 180;
         private const double EmojiSize = 20;
+        private static readonly SemaphoreSlim InlineEmojiLoadGate = new SemaphoreSlim(1, 1);
+        private static long inlineEmojiLoadSequence;
         private static readonly FontFamily SystemEmojiFontFamily = new FontFamily("Segoe UI Emoji, Apple Color Emoji, Noto Color Emoji, Twemoji Mozilla, EmojiOne Color");
         private static readonly FontFamily TelegramEmojiFontFamily = new FontFamily("Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, Twemoji Mozilla, EmojiOne Color");
 
@@ -71,15 +77,7 @@ namespace ELOR.Laney.Controls {
                 if (TryMatchEmoji(text, index, pack, peerId, out string emoji, out Uri imageUri)) {
                     if (richEmojis < MaxCustomInlineImages) {
                         FlushText(inlines, ref buffer);
-                        Image image = new Image {
-                            Width = EmojiSize,
-                            Height = EmojiSize,
-                            Stretch = Stretch.Uniform,
-                            VerticalAlignment = VerticalAlignment.Center,
-                            Margin = new Avalonia.Thickness(1, 0)
-                        };
-                        ImageLoader.SetSource(image, imageUri);
-                        inlines.Add(image);
+                        inlines.Add(CreateInlineEmojiImage(imageUri));
                         richEmojis++;
                     } else {
                         buffer.Append(emoji);
@@ -119,15 +117,7 @@ namespace ELOR.Laney.Controls {
                     Uri imageUri = EmojiAssetResolver.ResolveImageUri(textElement, pack, peerId);
                     if (imageUri != null) {
                         FlushText(inlines, ref buffer);
-                        Image image = new Image {
-                            Width = EmojiSize,
-                            Height = EmojiSize,
-                            Stretch = Stretch.Uniform,
-                            VerticalAlignment = VerticalAlignment.Center,
-                            Margin = new Avalonia.Thickness(1, 0)
-                        };
-                        ImageLoader.SetSource(image, imageUri);
-                        inlines.Add(image);
+                        inlines.Add(CreateInlineEmojiImage(imageUri));
                         richEmojis++;
                         index += textElement.Length;
                         continue;
@@ -187,7 +177,10 @@ namespace ELOR.Laney.Controls {
         }
 
         private static bool IsImageBackedPack(string pack) {
-            return pack == EmojiPackIds.Vk || pack == EmojiPackIds.Noto || pack == EmojiPackIds.Twemoji;
+            return pack == EmojiPackIds.Vk
+                || pack == EmojiPackIds.TelegramLike
+                || pack == EmojiPackIds.Noto
+                || pack == EmojiPackIds.Twemoji;
         }
 
         private static bool TryMatchEmoji(string text, int index, string pack, long peerId, out string emoji, out Uri imageUri) {
@@ -206,6 +199,46 @@ namespace ELOR.Laney.Controls {
 
             emoji = textElement;
             return true;
+        }
+
+        private static Image CreateInlineEmojiImage(Uri imageUri) {
+            Image image = new Image {
+                Width = EmojiSize,
+                Height = EmojiSize,
+                Stretch = Stretch.Uniform,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Avalonia.Thickness(1, 0),
+                Source = EmojiSpriteStore.PlaceholderImage
+            };
+
+            long sequence = Interlocked.Increment(ref inlineEmojiLoadSequence);
+            _ = LoadInlineEmojiImageAsync(new WeakReference<Image>(image), imageUri, sequence);
+            return image;
+        }
+
+        private static async Task LoadInlineEmojiImageAsync(WeakReference<Image> imageReference, Uri imageUri, long sequence) {
+            if (imageReference == null || imageUri == null) return;
+
+            try {
+                int delayMs = (int)(Math.Min(sequence % 16, 15) * 12);
+                if (delayMs > 0) await Task.Delay(delayMs).ConfigureAwait(false);
+                if (!imageReference.TryGetTarget(out Image image)) return;
+
+                await InlineEmojiLoadGate.WaitAsync().ConfigureAwait(false);
+                try {
+                    using IDisposable lease = await MediaMemoryGovernor.EnterMediaLoadAsync(CancellationToken.None).ConfigureAwait(false);
+                    var bitmap = await BitmapManager.GetBitmapAsync(imageUri, EmojiSize, EmojiSize, CancellationToken.None, BitmapCacheKind.Attachment).ConfigureAwait(false);
+                    if (bitmap == null) return;
+
+                    await Dispatcher.UIThread.InvokeAsync(() => {
+                        if (imageReference.TryGetTarget(out Image aliveImage)) aliveImage.Source = bitmap;
+                    }, DispatcherPriority.Background);
+                } finally {
+                    InlineEmojiLoadGate.Release();
+                }
+            } catch (Exception ex) {
+                Log.Warning(ex, "Cannot load inline emoji image {ImageUri}", imageUri);
+            }
         }
 
         private static void FlushText(InlineCollection inlines, ref StringBuilder buffer) {

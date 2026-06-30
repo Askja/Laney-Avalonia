@@ -233,11 +233,11 @@ namespace ELOR.Laney.Core {
         public static readonly string[] AllWithInherit = [Inherit, System, Vk, TelegramLike, Noto, Twemoji, Fallback, Custom];
 
         public static string Normalize(string packId, bool allowInherit = false) {
-            if (String.IsNullOrWhiteSpace(packId)) return allowInherit ? Inherit : System;
+            if (String.IsNullOrWhiteSpace(packId)) return allowInherit ? Inherit : Vk;
 
             string normalized = packId.Trim().ToLowerInvariant();
             string[] allowed = allowInherit ? AllWithInherit : All;
-            return allowed.Contains(normalized) ? normalized : allowInherit ? Inherit : System;
+            return allowed.Contains(normalized) ? normalized : allowInherit ? Inherit : Vk;
         }
     }
 
@@ -911,7 +911,7 @@ namespace ELOR.Laney.Core {
         }
 
         public static string EmojiPack {
-            get => EmojiPackIds.Normalize(Get(EMOJI_PACK, EmojiPackIds.System));
+            get => EmojiPackIds.Normalize(Get(EMOJI_PACK, EmojiPackIds.Vk));
             set => Set(EMOJI_PACK, EmojiPackIds.Normalize(value));
         }
 

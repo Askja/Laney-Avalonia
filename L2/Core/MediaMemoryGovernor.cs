@@ -85,9 +85,7 @@ namespace ELOR.Laney.Core {
 
         public static int GetMediaLoadConcurrency() {
             if (Settings.LowMemoryMode || Settings.LoadImagesSequential) return 1;
-            if (Settings.MediaMemoryBudgetMb <= 128) return 1;
-            if (Settings.MediaMemoryBudgetMb >= 512) return 2;
-            return 2;
+            return 1;
         }
 
         public static Task<IDisposable> EnterMediaLoadAsync() {

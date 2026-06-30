@@ -23,6 +23,7 @@ namespace ELOR.Laney.Core {
 
             return pack switch {
                 EmojiPackIds.Vk => BuildVkPngUri(emoji),
+                EmojiPackIds.TelegramLike => BuildTwemojiPngUri(emoji),
                 EmojiPackIds.Noto => BuildNotoPngUri(emoji),
                 EmojiPackIds.Twemoji => BuildTwemojiPngUri(emoji),
                 _ => null
@@ -32,6 +33,7 @@ namespace ELOR.Laney.Core {
         public static bool IsImageBackedPack(string packId) {
             string pack = EmojiPackIds.Normalize(packId);
             return pack == EmojiPackIds.Vk
+                || pack == EmojiPackIds.TelegramLike
                 || pack == EmojiPackIds.Noto
                 || pack == EmojiPackIds.Twemoji
                 || pack == EmojiPackIds.Custom;

@@ -163,7 +163,7 @@ namespace ELOR.Laney.Core {
             cancellationToken.ThrowIfCancellationRequested();
 
             if (source.Scheme == "avares") {
-                return await LoadAssetBitmapAsync(request, cancellationToken);
+                return await LoadAssetBitmapAsync(request, cancellationToken).ConfigureAwait(false);
             }
 
             if (TryGetCachedBitmap(request.Key, out Bitmap cachedBitmap)) {
@@ -178,7 +178,7 @@ namespace ELOR.Laney.Core {
             _ = loadTask.ContinueWith(_ => nowLoading.TryRemove(request.Key, out Lazy<Task<Bitmap>> ignored), TaskScheduler.Default);
 
             try {
-                return await loadTask.WaitAsync(cancellationToken);
+                return await loadTask.WaitAsync(cancellationToken).ConfigureAwait(false);
             } catch (OperationCanceledException) {
                 if (Settings.BitmapManagerLogs) {
                     Log.Information("GetBitmapAsync canceled. Source: {Source}, size: {Width}x{Height}", source.AbsoluteUri, request.DecodeWidth, request.DecodeHeight);
@@ -231,13 +231,17 @@ namespace ELOR.Laney.Core {
 
         private static async Task<Bitmap> LoadAndCacheBitmapAsync(ImageRequest request) {
             Bitmap bitmap = request.Uri.IsFile
-                ? await LoadFileBitmapAsync(request)
-                : await LoadNetworkBitmapAsync(request);
+                ? await LoadFileBitmapAsync(request).ConfigureAwait(false)
+                : await LoadNetworkBitmapAsync(request).ConfigureAwait(false);
             AddToCache(request.Key, bitmap, request.CacheKind);
             return bitmap;
         }
 
-        private static async Task<Bitmap> LoadFileBitmapAsync(ImageRequest request) {
+        private static Task<Bitmap> LoadFileBitmapAsync(ImageRequest request) {
+            return Task.Run(() => LoadFileBitmap(request));
+        }
+
+        private static Bitmap LoadFileBitmap(ImageRequest request) {
             string path = request.Uri.LocalPath;
             if (String.IsNullOrWhiteSpace(path) || !File.Exists(path)) throw new FileNotFoundException("Bitmap file not found.", path);
 
@@ -258,13 +262,13 @@ namespace ELOR.Laney.Core {
                 return backgroundBitmap;
             }
 
-            await using FileStream stream = new FileStream(
+            using FileStream stream = new FileStream(
                 path,
                 FileMode.Open,
                 FileAccess.Read,
                 FileShare.ReadWrite | FileShare.Delete,
                 81920,
-                FileOptions.Asynchronous | FileOptions.SequentialScan);
+                FileOptions.SequentialScan);
 
             Bitmap bitmap = DecodeBitmap(stream, request.DecodeWidth, request.DecodeHeight);
 
@@ -284,12 +288,12 @@ namespace ELOR.Laney.Core {
 
         private static async Task<Bitmap> LoadNetworkBitmapAsync(ImageRequest request) {
             using var response = Settings.LoadImagesSequential
-                ? await LNet.GetSequentialAsync(request.Uri)
-                : await LNet.GetAsync(request.Uri);
+                ? await LNet.GetSequentialAsync(request.Uri).ConfigureAwait(false)
+                : await LNet.GetAsync(request.Uri).ConfigureAwait(false);
 
             response.EnsureSuccessStatusCode();
 
-            byte[] bytes = await response.Content.ReadAsByteArrayAsync();
+            byte[] bytes = await response.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
             if (bytes.Length == 0) throw new Exception("Image length is 0!");
 
             using Stream stream = new MemoryStream(bytes, false);
@@ -315,7 +319,7 @@ namespace ELOR.Laney.Core {
             Bitmap bitmap = AssetsManager.GetBitmapFromUri(request.Uri);
             if (request.DecodeWidth <= 0 && request.DecodeHeight <= 0) return bitmap;
 
-            return await CreateScaledBitmapAsync(bitmap, request.DecodeWidth, request.DecodeHeight, cancellationToken);
+            return await CreateScaledBitmapAsync(bitmap, request.DecodeWidth, request.DecodeHeight, cancellationToken).ConfigureAwait(false);
         }
 
         private static Bitmap DecodeBitmap(Stream stream, int decodeWidth, int decodeHeight) {
@@ -420,7 +424,7 @@ namespace ELOR.Laney.Core {
                 () => bitmap.CreateScaledBitmap(
                     new PixelSize((int)resizedWidth, (int)resizedHeight),
                     BitmapInterpolationMode.MediumQuality),
-                cancellationToken);
+                cancellationToken).ConfigureAwait(false);
         }
 
         private static void AddToCache(string key, Bitmap bitmap, BitmapCacheKind cacheKind) {
