@@ -1450,6 +1450,13 @@ namespace ELOR.Laney.Views {
                     return;
                 }
 
+                Stopwatch readiness = Stopwatch.StartNew();
+                while ((chat.IsLoading || chat.DisplayedMessages == null || chat.DisplayedMessages.Count == 0) && readiness.Elapsed < TimeSpan.FromSeconds(12)) {
+                    await Task.Delay(80);
+                }
+
+                await Task.Delay(500);
+
                 ChatPerfScrollQaResult result = await ChatView.RunPerfScrollQaAsync(TimeSpan.FromSeconds(4));
                 bool fpsOk = result.AverageFps >= 58 && result.JankFrames <= 8;
                 Log.Information(
@@ -1519,7 +1526,7 @@ namespace ELOR.Laney.Views {
                 bool unreadNavigationOk = chat.UnreadMessagesCount >= 0 && chat.UnreadReactions?.Count >= 0 || chat.UnreadReactions == null;
 
                 Log.Information(
-                    "Perf live QA result: scrollTo={ScrollTo}; selection={Selection}; previous={Previous}; previousAnchor={PreviousAnchor}; next={Next}; unreadNavigation={Unread}; initial={InitialCount} first={FirstId} last={LastId} afterPrevious={AfterPreviousCount}/{AfterPreviousFirstId} afterNext={AfterNextCount}/{AfterNextLastId}; boundaryReady={BoundaryReady}; boundaryHasHolder={BoundaryHasHolder}; boundaryHolderReady={BoundaryHolderReady}; boundaryCanScroll={BoundaryCanScroll}; boundaryPrevFlag={BoundaryPrevFlag}; boundaryNextFlag={BoundaryNextFlag}; boundaryTrigger={BoundaryTrigger}; boundarySkip={BoundarySkip}; boundaryStarted={BoundaryStarted}; boundaryLoaded={BoundaryLoaded}; boundaryAnchorId={BoundaryAnchorId}; boundaryDrift={BoundaryDrift:F2}px; boundaryRestore={RestoreOldOffset:F1}/{RestoreOldHeight:F1}->{RestoreFinalOffset:F1}/{RestoreFinalHeight:F1}; boundaryOffset={BoundaryOffset:F1}/{BoundaryExtent:F1}",
+                    "Perf live QA result: scrollTo={ScrollTo}; selection={Selection}; previous={Previous}; previousAnchor={PreviousAnchor}; next={Next}; unreadNavigation={Unread}; initial={InitialCount} first={FirstId} last={LastId} afterPrevious={AfterPreviousCount}/{AfterPreviousFirstId} afterNext={AfterNextCount}/{AfterNextLastId}; boundaryReady={BoundaryReady}; boundaryHasHolder={BoundaryHasHolder}; boundaryHolderReady={BoundaryHolderReady}; boundaryCanScroll={BoundaryCanScroll}; boundaryPrevFlag={BoundaryPrevFlag}; boundaryNextFlag={BoundaryNextFlag}; boundaryTrigger={BoundaryTrigger}; boundarySkip={BoundarySkip}; boundaryStarted={BoundaryStarted}; boundaryLoaded={BoundaryLoaded}; boundaryAnchorId={BoundaryAnchorId}; boundaryUserDelta={BoundaryUserDelta:F1}; boundaryDrift={BoundaryDrift:F2}px; boundaryRestore={RestoreOldOffset:F1}/{RestoreOldHeight:F1}->{RestoreFinalOffset:F1}/{RestoreFinalHeight:F1}; boundaryOffset={BoundaryOffset:F1}/{BoundaryExtent:F1}",
                     scrollToOk,
                     selectionOk,
                     previousOk,
@@ -1544,6 +1551,7 @@ namespace ELOR.Laney.Views {
                     boundary.Started,
                     boundary.PreviousLoaded,
                     boundary.AnchorId,
+                    boundary.UserOffsetDelta,
                     boundary.AnchorDriftPx,
                     boundary.RestoreOldOffset,
                     boundary.RestoreOldHeight,

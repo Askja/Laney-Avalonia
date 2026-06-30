@@ -147,6 +147,7 @@ namespace ELOR.Laney.Core {
 
             if (bitmapsToDispose.Count > 0 || MediaMemoryGovernor.IsProcessMemoryPressureHigh()) {
                 GC.Collect(2, GCCollectionMode.Optimized, false, false);
+                MediaMemoryGovernor.TrimProcessWorkingSet();
             }
 
             return bitmapsToDispose.Count > 0;

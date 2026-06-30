@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -66,6 +67,19 @@ namespace ELOR.Laney.Core {
             process.Refresh();
             return process.PrivateMemorySize64 >= ProcessPrivateSoftLimitBytes
                 || process.WorkingSet64 >= ProcessWorkingSetSoftLimitBytes;
+        }
+
+        public static bool TrimProcessWorkingSet() {
+#if WIN
+            try {
+                using Process process = Process.GetCurrentProcess();
+                return SetProcessWorkingSetSize(process.Handle, new IntPtr(-1), new IntPtr(-1));
+            } catch {
+                return false;
+            }
+#else
+            return false;
+#endif
         }
 
         public static int GetWaveformCacheItemLimit() {
@@ -193,5 +207,10 @@ namespace ELOR.Laney.Core {
                 mediaLoadGate.Release();
             }
         }
+
+#if WIN
+        [DllImport("kernel32.dll")]
+        private static extern bool SetProcessWorkingSetSize(IntPtr process, IntPtr minimumWorkingSetSize, IntPtr maximumWorkingSetSize);
+#endif
     }
 }

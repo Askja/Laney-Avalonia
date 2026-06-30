@@ -601,6 +601,7 @@ namespace ELOR.Laney.Views {
                 ? result.TriggerSkipReason
                 : MessagesList.LastPreviousTriggerSkipReason;
             result.AnchorId = MessagesList.LastPreviousRestoreAnchorId;
+            result.UserOffsetDelta = MessagesList.LastPreviousLoadUserOffsetDelta;
             result.AnchorDriftPx = MessagesList.LastPreviousRestoreDrift;
             result.RestoreOldOffset = MessagesList.LastPreviousRestoreOldOffset;
             result.RestoreOldHeight = MessagesList.LastPreviousRestoreOldHeight;
@@ -875,6 +876,7 @@ namespace ELOR.Laney.Views {
         public int BeforeFirstId { get; set; }
         public int AfterFirstId { get; set; }
         public int AnchorId { get; set; }
+        public double UserOffsetDelta { get; set; }
         public double AnchorDriftPx { get; set; } = Double.NaN;
         public double RestoreOldOffset { get; set; } = Double.NaN;
         public double RestoreOldHeight { get; set; } = Double.NaN;
