@@ -132,7 +132,7 @@ namespace ELOR.Laney.Controls {
 
             Attachments.IsVisible = message.Attachments.Count > 0;
             if (message.Attachments.Count > 0) {
-                Attachments.Width = Width - Attachments.Margin.Left;
+                Attachments.Width = GetContentWidth() - Attachments.Margin.Left;
                 Attachments.Gift = message.Attachments?.SingleOrDefault(a => a.Gift != null)?.Gift;
                 Attachments.Owner = CacheManager.GetNameOnly(message.FromId);
                 Attachments.Attachments = message.Attachments;
@@ -150,7 +150,7 @@ namespace ELOR.Laney.Controls {
                 double fmwidth = fmcmargin.Left + fmcmargin.Right + fmcborder.Left + fmsmargin.Left;
                 foreach (var msg in message.ForwardedMessages.Take(MAX_DISPLAYED_FORWARDED_MESSAGES)) {
                     ForwardedMessagesStack.Children.Add(new PostUI {
-                        Width = Width - fmwidth,
+                        Width = GetContentWidth() - fmwidth,
                         Post = msg
                     });
                 }
@@ -199,7 +199,7 @@ namespace ELOR.Laney.Controls {
 
             Attachments.IsVisible = post.Attachments?.Count > 0;
             if (post.Attachments?.Count > 0) {
-                Attachments.Width = Width - Attachments.Margin.Left;
+                Attachments.Width = GetContentWidth() - Attachments.Margin.Left;
                 Attachments.Gift = post.Attachments?.SingleOrDefault(a => a.Gift != null)?.Gift;
                 Attachments.Owner = CacheManager.GetNameOnly(authorId);
                 Attachments.Attachments = post.Attachments;
@@ -239,6 +239,12 @@ namespace ELOR.Laney.Controls {
             var w = Math.Ceiling(Map.Width * App.Current.DPI);
             var h = Math.Ceiling(Map.Height * App.Current.DPI);
             Map.SetImageFill(new Uri($"https://static-maps.yandex.ru/1.x/?ll={glong},{glat}&size={w},{h}&z=12&lang=ru_RU&l=pmap&pt={glong},{glat},vkbkm"), Map.Width, Map.Height);
+        }
+
+        private double GetContentWidth() {
+            double width = !Double.IsNaN(Width) && Width > 0 ? Width : Bounds.Width;
+            if (width <= 0 && Parent is Control parent) width = parent.Bounds.Width;
+            return Math.Max(0, width);
         }
 
         private void OnLinkClicked(string link) {

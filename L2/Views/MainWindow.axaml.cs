@@ -282,6 +282,9 @@ namespace ELOR.Laney.Views {
                 new CommandPaletteAction(VKIconNames.Icon28SearchOutline, "Глобальный поиск", "Искать по чатам и сообщениям", "search find global чат сообщение", async () => {
                     if (!DemoMode.IsEnabled) await LeftNav.NavigationRouter.NavigateToAsync(new SearchView());
                 }),
+                new CommandPaletteAction(VKIconNames.Icon28ArticleOutline, "Новости VK", "Лента постов с фильтрами и локальным вырезанием промо", "news feed новости лента vk реклама фильтр", async () => {
+                    await LeftNav.NavigationRouter.NavigateToAsync(new NewsFeedView());
+                }),
                 new CommandPaletteAction(VKIconNames.Icon28SearchOutline, "Поиск в текущем чате", "Открыть поиск внутри выбранного диалога", "search current chat найти здесь", () => {
                     ChatView.OpenSearchInChat();
                     return Task.CompletedTask;
@@ -1414,6 +1417,7 @@ namespace ELOR.Laney.Views {
             new Action(async () => {
                 await LeftNav.NavigationRouter.NavigateToAsync(new ImView());
                 TryOpenPerfDemoChat();
+                TryOpenPerfNewsFeed();
                 TryOpenPerfSettings();
             })();
         }
@@ -1559,6 +1563,15 @@ namespace ELOR.Laney.Views {
                 Log.Information("Opening settings for perf/demo smoke.");
                 SettingsWindow settings = new SettingsWindow();
                 await settings.ShowDialog(this);
+            }, DispatcherPriority.Background);
+        }
+
+        private void TryOpenPerfNewsFeed() {
+            if (!DemoMode.IsEnabled || !App.HasCmdLineValue("perf-open-newsfeed")) return;
+
+            Dispatcher.UIThread.Post(async () => {
+                Log.Information("Opening news feed for perf/demo smoke.");
+                await LeftNav.NavigationRouter.NavigateToAsync(new NewsFeedView());
             }, DispatcherPriority.Background);
         }
 

@@ -63,6 +63,7 @@ namespace ELOR.VKAPILib {
     [JsonSerializable(typeof(StoreProductsList))]
     [JsonSerializable(typeof(Story))]
     [JsonSerializable(typeof(List<Story>))]
+    [JsonSerializable(typeof(WallPost))]
     [JsonSerializable(typeof(User))]
     [JsonSerializable(typeof(List<User>))]
     [JsonSerializable(typeof(VideoUploadResult))]

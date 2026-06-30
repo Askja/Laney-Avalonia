@@ -1,0 +1,118 @@
+<vkui:Page xmlns="https://github.com/avaloniaui"
+           xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+           xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+           xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+           xmlns:vkui="using:VKUI.Controls"
+           xmlns:controls="using:ELOR.Laney.Controls"
+           xmlns:mdl="using:ELOR.Laney.DataModels"
+           xmlns:vm="using:ELOR.Laney.ViewModels"
+           mc:Ignorable="d" d:DesignWidth="420" d:DesignHeight="720"
+           x:Class="ELOR.Laney.Views.NewsFeedView"
+           x:DataType="vm:NewsFeedViewModel"
+           Loaded="NewsFeedView_Loaded">
+  <Grid RowDefinitions="Auto Auto *" Background="{DynamicResource LaneyGlassPanelBrush}">
+    <Grid.Styles>
+      <Style Selector="Border.NewsCard">
+        <Setter Property="CornerRadius" Value="14"/>
+        <Setter Property="Padding" Value="12"/>
+        <Setter Property="Margin" Value="12,8"/>
+        <Setter Property="Background" Value="{DynamicResource LaneyGlassRaisedBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource LaneyGlassBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+      </Style>
+    </Grid.Styles>
+
+    <vkui:PanelHeader IsSeparatorVisible="False">
+      <vkui:PanelHeader.LeftButtons>
+        <Button x:Name="BackButton">
+          <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon28ArrowLeftOutline}"/>
+        </Button>
+      </vkui:PanelHeader.LeftButtons>
+      <vkui:PanelHeader.Content>
+        <TextBlock Classes="Headline" FontWeight="SemiBold" Text="Новости"/>
+      </vkui:PanelHeader.Content>
+      <vkui:PanelHeader.RightButtons>
+        <Button x:Name="RefreshButton" Click="RefreshButton_Click" ToolTip.Tip="Обновить ленту">
+          <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon20RecentOutline}"/>
+        </Button>
+      </vkui:PanelHeader.RightButtons>
+    </vkui:PanelHeader>
+
+    <Border Grid.Row="1" Padding="12,8,12,10" BorderBrush="{DynamicResource LaneyGlassBorderBrush}" BorderThickness="0,0,0,1">
+      <Grid RowDefinitions="Auto Auto" RowSpacing="8">
+        <Grid ColumnDefinitions="* Auto" ColumnSpacing="10">
+          <ComboBox Classes="Alternate" MinHeight="36" HorizontalAlignment="Stretch" ItemsSource="{Binding FilterOptions}" SelectedItem="{Binding CurrentFilter, Mode=TwoWay}">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="mdl:TwoStringTuple">
+                <TextBlock Text="{Binding Item2}"/>
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+          <CheckBox Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding HideAds, Mode=TwoWay}" Content="Без промо"/>
+        </Grid>
+        <Grid Grid.Row="1" ColumnDefinitions="Auto *">
+          <Border CornerRadius="8" Padding="8,3" Background="{DynamicResource VKAccentBrush}" IsVisible="{Binding HasBlockedAds}">
+            <TextBlock Classes="Caption1" FontWeight="SemiBold" Foreground="{DynamicResource VKButtonPrimaryForegroundBrush}" Text="{Binding BlockedAdsText}"/>
+          </Border>
+          <TextBlock Grid.Column="1" Classes="Caption1" HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="{DynamicResource LaneyTextMutedBrush}" Text="newsfeed.get · локальная чистка"/>
+        </Grid>
+      </Grid>
+    </Border>
+
+    <Grid Grid.Row="2">
+      <ScrollViewer x:Name="FeedScroll" IsVisible="{Binding HasPosts}">
+        <StackPanel>
+          <ItemsRepeater ItemsSource="{Binding Posts}">
+            <ItemsRepeater.ItemTemplate>
+              <DataTemplate x:DataType="vm:NewsFeedPostViewModel">
+                <Border Classes="NewsCard">
+                  <StackPanel Spacing="10">
+                    <Border HorizontalAlignment="Left" CornerRadius="8" Padding="8,3" Background="{DynamicResource VKDestructiveBrush}" IsVisible="{Binding IsAdBadgeVisible}">
+                      <TextBlock Classes="Caption1" FontWeight="SemiBold" Foreground="{DynamicResource VKButtonPrimaryForegroundBrush}" Text="{Binding AdReason}"/>
+                    </Border>
+                    <controls:PostUI Tag="{Binding Session}" Post="{Binding Post}" HorizontalAlignment="Stretch"/>
+                    <Button Classes="Tertiary" HorizontalAlignment="Left" MinHeight="30" Padding="10,4" Click="OpenPostButton_Click">
+                      <StackPanel Orientation="Horizontal" Spacing="6">
+                        <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon20MessageArrowRightOutline}"/>
+                        <TextBlock Text="Открыть в VK"/>
+                      </StackPanel>
+                    </Button>
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ItemsRepeater.ItemTemplate>
+          </ItemsRepeater>
+          <vkui:Spinner Width="28" Height="28" Margin="0,8,0,16" HorizontalAlignment="Center" IsVisible="{Binding IsLoading}"/>
+        </StackPanel>
+      </ScrollViewer>
+
+      <StackPanel Margin="12,10" Spacing="10" IsVisible="{Binding IsLoadingFirstPage}">
+        <Border Classes="NewsCard">
+          <StackPanel Spacing="10">
+            <Border Classes="Skeleton" Width="170" Height="14" CornerRadius="7" HorizontalAlignment="Left"/>
+            <Border Classes="Skeleton" Height="12" CornerRadius="6"/>
+            <Border Classes="Skeleton" Height="12" Width="260" CornerRadius="6" HorizontalAlignment="Left"/>
+            <Border Classes="Skeleton" Height="150" CornerRadius="12"/>
+          </StackPanel>
+        </Border>
+        <Border Classes="NewsCard">
+          <StackPanel Spacing="10">
+            <Border Classes="Skeleton" Width="140" Height="14" CornerRadius="7" HorizontalAlignment="Left"/>
+            <Border Classes="Skeleton" Height="12" CornerRadius="6"/>
+            <Border Classes="Skeleton" Height="12" Width="220" CornerRadius="6" HorizontalAlignment="Left"/>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+
+      <vkui:Placeholder Classes="Compact" VerticalAlignment="Center"
+                        IsVisible="{Binding Placeholder, FallbackValue=False, Converter={x:Static ObjectConverters.IsNotNull}}"
+                        Icon="{Binding Placeholder.Icon}"
+                        Header="{Binding Placeholder.Header}"
+                        Text="{Binding Placeholder.Text}">
+        <vkui:Placeholder.Action>
+          <Button Classes="Primary" Content="{Binding Placeholder.ActionButton}" Command="{Binding Placeholder.ActionButtonFunc}"/>
+        </vkui:Placeholder.Action>
+      </vkui:Placeholder>
+    </Grid>
+  </Grid>
+</vkui:Page>
