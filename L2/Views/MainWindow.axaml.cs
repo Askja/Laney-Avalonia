@@ -1311,9 +1311,12 @@ namespace ELOR.Laney.Views {
 
                 ChatPerfScrollQaResult result = await ChatView.RunPerfScrollQaAsync(TimeSpan.FromSeconds(4));
                 bool fpsOk = result.AverageFps >= 58 && result.JankFrames <= 8;
+                double memoryBudgetMb = GetPerfMemoryBudgetMb();
+                bool memoryBudgetOk = result.PeakPrivateMemoryMb <= memoryBudgetMb;
                 Log.Information(
-                    "Perf scroll QA result: fpsOk={FpsOk}; canLeaveBottom={CanLeaveBottom}; leaveBottom={LeaveBottomFinal:F1}/{LeaveBottomTarget:F1}; leaveBottomMax={LeaveBottomMax:F1}; leaveBottomDistance={LeaveBottomDistance:F1}; avgFps={AverageFps:F1}; avgFrame={AverageFrameMs:F2}ms; lastFrame={LastFrameMs:F2}ms; maxFrame={MaxFrameMs:F2}ms; jank={JankFrames}; visibleControls={VisibleControls}; samples={Samples}; privateMemory={PrivateMemoryMb:F2}MB",
+                    "Perf scroll QA result: fpsOk={FpsOk}; memoryBudgetOk={MemoryBudgetOk}; canLeaveBottom={CanLeaveBottom}; leaveBottom={LeaveBottomFinal:F1}/{LeaveBottomTarget:F1}; leaveBottomMax={LeaveBottomMax:F1}; leaveBottomDistance={LeaveBottomDistance:F1}; avgFps={AverageFps:F1}; avgFrame={AverageFrameMs:F2}ms; lastFrame={LastFrameMs:F2}ms; maxFrame={MaxFrameMs:F2}ms; jank={JankFrames}; visibleControls={VisibleControls}; samples={Samples}; privateMemory={PrivateMemoryMb:F2}MB; peakPrivateMemory={PeakPrivateMemoryMb:F2}MB; memoryBudget={MemoryBudgetMb:F0}MB",
                     fpsOk,
+                    memoryBudgetOk,
                     result.CanScrollAwayFromBottom,
                     result.ScrollAwayFromBottomFinal,
                     result.ScrollAwayFromBottomTarget,
@@ -1326,7 +1329,9 @@ namespace ELOR.Laney.Views {
                     result.JankFrames,
                     result.VisibleControls,
                     result.Samples,
-                    result.PrivateMemoryMb);
+                    result.PrivateMemoryMb,
+                    result.PeakPrivateMemoryMb,
+                    memoryBudgetMb);
             } catch (Exception ex) {
                 Log.Error(ex, "Perf scroll QA failed.");
             }
@@ -1351,7 +1356,8 @@ namespace ELOR.Laney.Views {
                 int firstId = chat.DisplayedMessages?.First?.ConversationMessageId ?? 0;
                 int lastId = chat.DisplayedMessages?.Last?.ConversationMessageId ?? 0;
 
-                ChatHistoryBoundaryQaResult boundary = await ChatView.RunHistoryBoundaryQaAsync(TimeSpan.FromSeconds(5));
+                ChatHistoryBoundaryStressQaResult boundaryStress = await ChatView.RunHistoryBoundaryStressQaAsync(GetPerfBoundaryIterations(), TimeSpan.FromSeconds(5));
+                ChatHistoryBoundaryQaResult boundary = boundaryStress.FirstResult ?? new ChatHistoryBoundaryQaResult();
                 int afterPreviousCount = chat.DisplayedMessages?.Count ?? 0;
                 int afterPreviousFirstId = chat.DisplayedMessages?.First?.ConversationMessageId ?? 0;
 
@@ -1378,18 +1384,21 @@ namespace ELOR.Laney.Views {
                 int afterNextLastId = chat.DisplayedMessages?.Last?.ConversationMessageId ?? 0;
 
                 bool scrollToOk = middleId > 0;
-                bool previousOk = boundary.PreviousLoaded;
+                bool previousOk = boundaryStress.Passed;
                 bool nextOk = afterNextCount >= afterPreviousCount && afterNextLastId >= lastId;
                 bool unreadNavigationOk = chat.UnreadMessagesCount >= 0 && chat.UnreadReactions?.Count >= 0 || chat.UnreadReactions == null;
+                double memoryBudgetMb = GetPerfMemoryBudgetMb();
+                bool memoryBudgetOk = boundaryStress.PeakPrivateMemoryMb <= memoryBudgetMb;
 
                 Log.Information(
-                    "Perf live QA result: scrollTo={ScrollTo}; selection={Selection}; previous={Previous}; previousAnchor={PreviousAnchor}; next={Next}; unreadNavigation={Unread}; initial={InitialCount} first={FirstId} last={LastId} afterPrevious={AfterPreviousCount}/{AfterPreviousFirstId} afterNext={AfterNextCount}/{AfterNextLastId}; boundaryReady={BoundaryReady}; boundaryHasHolder={BoundaryHasHolder}; boundaryHolderReady={BoundaryHolderReady}; boundaryCanScroll={BoundaryCanScroll}; boundaryPrevFlag={BoundaryPrevFlag}; boundaryNextFlag={BoundaryNextFlag}; boundaryTrigger={BoundaryTrigger}; boundarySkip={BoundarySkip}; boundaryStarted={BoundaryStarted}; boundaryLoaded={BoundaryLoaded}; boundaryAnchorId={BoundaryAnchorId}; boundaryUserDelta={BoundaryUserDelta:F1}; boundaryDrift={BoundaryDrift:F2}px; boundaryRestore={RestoreOldOffset:F1}/{RestoreOldHeight:F1}->{RestoreFinalOffset:F1}/{RestoreFinalHeight:F1}; boundaryOffset={BoundaryOffset:F1}/{BoundaryExtent:F1}",
+                    "Perf live QA result: scrollTo={ScrollTo}; selection={Selection}; previous={Previous}; previousAnchor={PreviousAnchor}; next={Next}; unreadNavigation={Unread}; memoryBudgetOk={MemoryBudgetOk}; initial={InitialCount} first={FirstId} last={LastId} afterPrevious={AfterPreviousCount}/{AfterPreviousFirstId} afterNext={AfterNextCount}/{AfterNextLastId}; boundaryStress={BoundaryStressPassed} iterations={BoundaryIterations}/{BoundaryRequested} loaded={BoundaryLoadedIterations} stable={BoundaryStableIterations} rejected={BoundaryRejectedIterations} maxDrift={BoundaryMaxDrift:F2}px maxCompensationError={BoundaryMaxCompensation:F2}px stop={BoundaryStopReason}; boundaryReady={BoundaryReady}; boundaryHasHolder={BoundaryHasHolder}; boundaryHolderReady={BoundaryHolderReady}; boundaryCanScroll={BoundaryCanScroll}; boundaryPrevFlag={BoundaryPrevFlag}; boundaryNextFlag={BoundaryNextFlag}; boundaryTrigger={BoundaryTrigger}; boundarySkip={BoundarySkip}; boundaryStarted={BoundaryStarted}; boundaryLoaded={BoundaryLoaded}; boundaryAnchorId={BoundaryAnchorId}; boundaryUserDelta={BoundaryUserDelta:F1}; boundaryDrift={BoundaryDrift:F2}px; boundaryRestore={RestoreOldOffset:F1}/{RestoreOldHeight:F1}->{RestoreFinalOffset:F1}/{RestoreFinalHeight:F1}; boundaryOffset={BoundaryOffset:F1}/{BoundaryExtent:F1}; privateMemory={PrivateMemoryMb:F2}MB peakPrivateMemory={PeakPrivateMemoryMb:F2}MB memoryBudget={MemoryBudgetMb:F0}MB",
                     scrollToOk,
                     selectionOk,
                     previousOk,
                     boundary.AnchorStable,
                     nextOk,
                     unreadNavigationOk,
+                    memoryBudgetOk,
                     initialCount,
                     firstId,
                     lastId,
@@ -1397,6 +1406,15 @@ namespace ELOR.Laney.Views {
                     afterPreviousFirstId,
                     afterNextCount,
                     afterNextLastId,
+                    boundaryStress.Passed,
+                    boundaryStress.IterationsRan,
+                    boundaryStress.IterationsRequested,
+                    boundaryStress.LoadedIterations,
+                    boundaryStress.StableIterations,
+                    boundaryStress.TriggerRejectedIterations,
+                    boundaryStress.MaxAnchorDriftPx,
+                    boundaryStress.MaxCompensationErrorPx,
+                    boundaryStress.StopReason,
                     boundary.Ready,
                     boundary.HasHolder,
                     boundary.HolderReady,
@@ -1415,10 +1433,23 @@ namespace ELOR.Laney.Views {
                     boundary.RestoreFinalOffset,
                     boundary.RestoreFinalHeight,
                     boundary.FinalOffset,
-                    boundary.FinalExtent);
+                    boundary.FinalExtent,
+                    boundaryStress.FinalPrivateMemoryMb,
+                    boundaryStress.PeakPrivateMemoryMb,
+                    memoryBudgetMb);
             } catch (Exception ex) {
                 Log.Error(ex, "Perf live QA failed.");
             }
+        }
+
+        private static int GetPerfBoundaryIterations() {
+            string value = App.GetCmdLineValue("perf-boundary-iterations");
+            return Int32.TryParse(value, out int parsed) ? Math.Clamp(parsed, 1, 8) : 3;
+        }
+
+        private static double GetPerfMemoryBudgetMb() {
+            string value = App.GetCmdLineValue("perf-memory-budget-mb");
+            return Double.TryParse(value, out double parsed) && parsed > 0 ? parsed : 350;
         }
 
         private void TryOpenPerfSettings() {

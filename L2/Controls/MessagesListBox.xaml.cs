@@ -516,11 +516,14 @@ namespace ELOR.Laney.Controls {
             }
 
             if (_restoreScrollAttempts == 0 || IsPreviousLoadStale()) {
+                string reason = _restoreScrollAttempts == 0 ? "restore_attempts_exhausted" : "restore_timeout";
+                if (TryFinishPreviousRestoreWithAnchor(anchor, reason)) return;
+
                 double fallbackHeight = Scroll.Extent.Height;
                 double fallbackDiff = Math.Max(0, fallbackHeight - oldHeight);
                 if (fallbackDiff > 0) Scroll.Offset = new Vector(Scroll.Offset.X, oldOffset + fallbackDiff);
-                LastPreviousTriggerSkipReason = _restoreScrollAttempts == 0 ? "restore_attempts_exhausted" : "restore_timeout";
-                FinishPreviousMessagesLoadRestore();
+                LastPreviousTriggerSkipReason = reason;
+                FinishPreviousMessagesLoadRestore(false);
                 return;
             }
             _restoreScrollAttempts--;
@@ -577,11 +580,8 @@ namespace ELOR.Laney.Controls {
             }
 
             if (_restoreScrollAttempts == 0 || IsPreviousLoadStale()) {
-                if (_restoreScrollAttempts == 0) {
-                    LastPreviousTriggerSkipReason = "stabilize_attempts_exhausted";
-                } else {
-                    LastPreviousTriggerSkipReason = "stabilize_timeout";
-                }
+                LastPreviousTriggerSkipReason = _restoreScrollAttempts == 0 ? "stabilize_attempts_exhausted" : "stabilize_timeout";
+                TryRestorePreviousAnchor(anchor);
                 FinishPreviousMessagesLoadRestore();
                 return;
             }
@@ -985,22 +985,45 @@ namespace ELOR.Laney.Controls {
             _lastScrollOffset = ScrollViewer?.Offset.Y ?? _lastScrollOffset;
             LastPreviousRestoreFinalOffset = ScrollViewer?.Offset.Y ?? Double.NaN;
             LastPreviousRestoreFinalHeight = ScrollViewer?.Extent.Height ?? Double.NaN;
-            UpdatePreviousRestoreDiagnostics();
-            RequestNextFrame(UpdatePreviousRestoreDiagnostics);
+            if (preserveRestoredAnchor) {
+                UpdatePreviousRestoreDiagnostics();
+                RequestNextFrame(UpdatePreviousRestoreDiagnostics);
+            } else {
+                UpdatePreviousRestoreDiagnosticsByHeightDiff();
+                RequestNextFrame(UpdatePreviousRestoreDiagnosticsByHeightDiff);
+            }
             RefreshLayoutAnchorGuard(preserveRestoredAnchor ? PreviousLayoutAnchorGuardMs : LayoutAnchorGuardMs, guardAnchor);
             if (preserveRestoredAnchor) SchedulePostLayoutPreviousRestore(_manualScrollGeneration, 6);
+            else SchedulePostLayoutHeightDiffRestore(_manualScrollGeneration, 45);
             SaveScrollPosition(true);
+        }
+
+        private bool TryFinishPreviousRestoreWithAnchor(ScrollAnchor anchor, string exhaustedReason) {
+            if (!anchor.IsValid || WasPreviousRestoreInterruptedByUser()) return false;
+            if (!TryRestorePreviousAnchor(anchor)) return false;
+
+            LastPreviousTriggerSkipReason = exhaustedReason == "restore_timeout" || exhaustedReason == "stabilize_timeout"
+                ? "final_anchor_restored_after_timeout"
+                : "final_anchor_restored_after_attempts";
+            FinishPreviousMessagesLoadRestore(true);
+            return true;
+        }
+
+        private bool TryRestorePreviousAnchor(ScrollAnchor anchor) {
+            if (!anchor.IsValid || ScrollViewer == null) return false;
+
+            _isRestoringLayoutAnchor = true;
+            try {
+                return TryRestoreAnchor(anchor);
+            } finally {
+                _isRestoringLayoutAnchor = false;
+            }
         }
 
         private void TryApplyFinalPreviousRestoreAnchor() {
             if (!_activePreviousRestoreAnchor.IsValid || ScrollViewer == null) return;
 
-            _isRestoringLayoutAnchor = true;
-            try {
-                TryRestoreAnchor(_activePreviousRestoreAnchor);
-            } finally {
-                _isRestoringLayoutAnchor = false;
-            }
+            TryRestorePreviousAnchor(_activePreviousRestoreAnchor);
         }
 
         private void SchedulePostLayoutPreviousRestore(long manualGeneration, byte attempts) {
@@ -1027,6 +1050,38 @@ namespace ELOR.Laney.Controls {
 
                 if (!Double.IsNaN(LastPreviousRestoreDrift) && Math.Abs(LastPreviousRestoreDrift) <= 3) return;
                 SchedulePostLayoutPreviousRestore(manualGeneration, (byte)(attempts - 1));
+            });
+        }
+
+        private void SchedulePostLayoutHeightDiffRestore(long manualGeneration, byte attempts) {
+            if (attempts == 0
+                || ScrollViewer == null
+                || Double.IsNaN(LastPreviousRestoreOldOffset)
+                || Double.IsNaN(LastPreviousRestoreOldHeight)) {
+                return;
+            }
+
+            RequestNextFrame(() => {
+                if (ScrollViewer == null
+                    || manualGeneration != _manualScrollGeneration
+                    || IsNearBottom(BottomStickTolerance)) {
+                    return;
+                }
+
+                _isRestoringLayoutAnchor = true;
+                try {
+                    double heightDiff = Math.Max(0, ScrollViewer.Extent.Height - LastPreviousRestoreOldHeight);
+                    EnsureApproximateOffset(LastPreviousRestoreOldOffset, heightDiff);
+                    _lastScrollOffset = ScrollViewer.Offset.Y;
+                    LastPreviousRestoreFinalOffset = ScrollViewer.Offset.Y;
+                    LastPreviousRestoreFinalHeight = ScrollViewer.Extent.Height;
+                } finally {
+                    _isRestoringLayoutAnchor = false;
+                }
+
+                UpdatePreviousRestoreDiagnosticsByHeightDiff();
+                SaveScrollPosition(true);
+                SchedulePostLayoutHeightDiffRestore(manualGeneration, (byte)(attempts - 1));
             });
         }
 
@@ -1068,12 +1123,14 @@ namespace ELOR.Laney.Controls {
                 return;
             }
 
+            if (TryFinishPreviousRestoreWithAnchor(_activePreviousRestoreAnchor, "restore_timeout")) return;
+
             double heightDiff = Math.Max(0, ScrollViewer.Extent.Height - LastPreviousRestoreOldHeight);
             if (!Double.IsNaN(LastPreviousRestoreOldOffset) && heightDiff > 0) {
                 EnsureApproximateOffset(LastPreviousRestoreOldOffset, heightDiff);
             }
 
-            FinishPreviousMessagesLoadRestore(!WasPreviousRestoreInterruptedByUser());
+            FinishPreviousMessagesLoadRestore(false);
         }
 
         private bool IsIncrementalLoadSuppressed() {
@@ -1248,11 +1305,12 @@ namespace ELOR.Laney.Controls {
         private void UpdatePreviousRestoreDiagnosticsByHeightDiff() {
             if (ScrollViewer == null
                 || Double.IsNaN(LastPreviousRestoreOldOffset)
-                || Double.IsNaN(LastPreviousRestoreOldHeight)
-                || Double.IsNaN(LastPreviousRestoreFinalHeight)) {
+                || Double.IsNaN(LastPreviousRestoreOldHeight)) {
                 return;
             }
 
+            LastPreviousRestoreFinalOffset = ScrollViewer.Offset.Y;
+            LastPreviousRestoreFinalHeight = ScrollViewer.Extent.Height;
             double heightDiff = Math.Max(0, LastPreviousRestoreFinalHeight - LastPreviousRestoreOldHeight);
             double expectedOffset = GetHeightDiffRestoredOffset(LastPreviousRestoreOldOffset, heightDiff);
             LastPreviousRestoreDrift = ScrollViewer.Offset.Y - expectedOffset;

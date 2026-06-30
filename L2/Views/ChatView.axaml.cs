@@ -30,6 +30,7 @@ namespace ELOR.Laney.Views {
         const double AutoScrollPinTolerance = 2;
         const double AutoScrollReleaseTolerance = 64;
         const double AutoScrollDirectionTolerance = 0.5;
+        internal const double HistoryBoundaryAnchorTolerance = 16;
 
         ScrollViewer MessagesListScrollViewer;
         DispatcherTimer markReadTimer;
@@ -563,6 +564,7 @@ namespace ELOR.Laney.Views {
             double originalOffset = MessagesListScrollViewer.Offset.Y;
             double direction = -1;
             int samples = 0;
+            double peakPrivateMemoryMb = GetPrivateMemoryMb();
 
             while (stopwatch.Elapsed < duration) {
                 double loopMaxOffset = Math.Max(0, MessagesListScrollViewer.Extent.Height - MessagesListScrollViewer.Viewport.Height);
@@ -575,14 +577,17 @@ namespace ELOR.Laney.Views {
 
                 MessagesListScrollViewer.Offset = new Vector(MessagesListScrollViewer.Offset.X, nextOffset);
                 samples++;
+                peakPrivateMemoryMb = Math.Max(peakPrivateMemoryMb, GetPrivateMemoryMb());
                 await Task.Delay(16);
             }
 
             await Task.Delay(120);
+            peakPrivateMemoryMb = Math.Max(peakPrivateMemoryMb, GetPrivateMemoryMb());
 
             List<Control> visibleControls = new List<Control>();
             MessagesList.FindVisualChildrenByType(visibleControls);
             double averageFps = averageFrameMs > 0 ? 1000d / averageFrameMs : 0;
+            double privateMemoryMb = GetPrivateMemoryMb();
             ChatPerfScrollQaResult result = new ChatPerfScrollQaResult {
                 Samples = samples,
                 AverageFrameMs = averageFrameMs,
@@ -591,7 +596,8 @@ namespace ELOR.Laney.Views {
                 AverageFps = averageFps,
                 JankFrames = jankFrames,
                 VisibleControls = visibleControls.Count,
-                PrivateMemoryMb = Math.Round(Process.GetCurrentProcess().PrivateMemorySize64 / 1048576d, 2)
+                PrivateMemoryMb = privateMemoryMb,
+                PeakPrivateMemoryMb = Math.Max(peakPrivateMemoryMb, privateMemoryMb)
             };
 
             double boundedOriginalOffset = Math.Min(originalOffset, Math.Max(0, MessagesListScrollViewer.Extent.Height - MessagesListScrollViewer.Viewport.Height));
@@ -630,6 +636,47 @@ namespace ELOR.Laney.Views {
 
             if (!wasRunning && !DebugOverlay.IsVisible) StopFrameMonitor();
             return result;
+        }
+
+        public async Task<ChatHistoryBoundaryStressQaResult> RunHistoryBoundaryStressQaAsync(int iterations, TimeSpan timeout) {
+            ChatHistoryBoundaryStressQaResult stress = new ChatHistoryBoundaryStressQaResult {
+                IterationsRequested = Math.Max(1, iterations),
+                InitialPrivateMemoryMb = GetPrivateMemoryMb()
+            };
+            stress.PeakPrivateMemoryMb = stress.InitialPrivateMemoryMb;
+
+            for (int i = 0; i < stress.IterationsRequested; i++) {
+                ChatHistoryBoundaryQaResult result = await RunHistoryBoundaryQaAsync(timeout);
+                stress.Results.Add(result);
+                stress.IterationsRan++;
+                stress.PeakPrivateMemoryMb = Math.Max(stress.PeakPrivateMemoryMb, GetPrivateMemoryMb());
+
+                if (result.TriggerAccepted) {
+                    stress.TriggerAcceptedIterations++;
+                } else {
+                    stress.TriggerRejectedIterations++;
+                }
+
+                if (result.PreviousLoaded) stress.LoadedIterations++;
+                if (result.AnchorStable) stress.StableIterations++;
+                if (!Double.IsNaN(result.AnchorDriftPx)) stress.MaxAnchorDriftPx = Math.Max(stress.MaxAnchorDriftPx, Math.Abs(result.AnchorDriftPx));
+
+                if (!result.AnchorStable) {
+                    double compensationError = CalculateBoundaryCompensationError(result);
+                    if (!Double.IsNaN(compensationError)) stress.MaxCompensationErrorPx = Math.Max(stress.MaxCompensationErrorPx, compensationError);
+                }
+
+                if (!result.TriggerAccepted || !result.PreviousLoaded) {
+                    stress.StopReason = String.IsNullOrWhiteSpace(result.TriggerSkipReason) ? "previous_page_not_loaded" : result.TriggerSkipReason;
+                    break;
+                }
+
+                await Task.Delay(180);
+            }
+
+            stress.FinalPrivateMemoryMb = GetPrivateMemoryMb();
+            stress.PeakPrivateMemoryMb = Math.Max(stress.PeakPrivateMemoryMb, stress.FinalPrivateMemoryMb);
+            return stress;
         }
 
         private double GetMaxScrollOffset() {
@@ -690,7 +737,7 @@ namespace ELOR.Laney.Views {
                 await Task.Delay(50);
             }
 
-            await Task.Delay(160);
+            await Task.Delay(360);
             result.Started = started;
             result.FinalCount = Chat.DisplayedMessages.Count;
             result.AfterFirstId = Chat.DisplayedMessages.First?.ConversationMessageId ?? 0;
@@ -705,7 +752,7 @@ namespace ELOR.Laney.Views {
             result.RestoreOldHeight = MessagesList.LastPreviousRestoreOldHeight;
             result.RestoreFinalOffset = MessagesList.LastPreviousRestoreFinalOffset;
             result.RestoreFinalHeight = MessagesList.LastPreviousRestoreFinalHeight;
-            result.AnchorStable = !Double.IsNaN(result.AnchorDriftPx) && Math.Abs(result.AnchorDriftPx) <= 6;
+            result.AnchorStable = !Double.IsNaN(result.AnchorDriftPx) && Math.Abs(result.AnchorDriftPx) <= HistoryBoundaryAnchorTolerance;
             result.FinalOffset = MessagesListScrollViewer.Offset.Y;
             result.FinalExtent = MessagesListScrollViewer.Extent.Height;
             return result;
@@ -721,6 +768,23 @@ namespace ELOR.Laney.Views {
             }
 
             return Math.Abs(MessagesListScrollViewer.Offset.Y - targetOffset) <= 4;
+        }
+
+        private static double GetPrivateMemoryMb() {
+            return Math.Round(Process.GetCurrentProcess().PrivateMemorySize64 / 1048576d, 2);
+        }
+
+        private static double CalculateBoundaryCompensationError(ChatHistoryBoundaryQaResult result) {
+            if (Double.IsNaN(result.RestoreOldOffset)
+                || Double.IsNaN(result.RestoreOldHeight)
+                || Double.IsNaN(result.RestoreFinalOffset)
+                || Double.IsNaN(result.RestoreFinalHeight)) {
+                return Double.NaN;
+            }
+
+            double expectedDelta = Math.Max(0, result.RestoreFinalHeight - result.RestoreOldHeight);
+            double actualDelta = result.RestoreFinalOffset - result.RestoreOldOffset;
+            return Math.Abs(actualDelta - expectedDelta);
         }
 
         private void ScheduleFrameSample() {
@@ -955,11 +1019,35 @@ namespace ELOR.Laney.Views {
         public int JankFrames { get; set; }
         public int VisibleControls { get; set; }
         public double PrivateMemoryMb { get; set; }
+        public double PeakPrivateMemoryMb { get; set; }
         public bool CanScrollAwayFromBottom { get; set; }
         public double ScrollAwayFromBottomTarget { get; set; }
         public double ScrollAwayFromBottomFinal { get; set; }
         public double ScrollAwayFromBottomMax { get; set; }
         public double ScrollAwayFromBottomDistance { get; set; }
+    }
+
+    public sealed class ChatHistoryBoundaryStressQaResult {
+        public int IterationsRequested { get; set; }
+        public int IterationsRan { get; set; }
+        public int TriggerAcceptedIterations { get; set; }
+        public int TriggerRejectedIterations { get; set; }
+        public int LoadedIterations { get; set; }
+        public int StableIterations { get; set; }
+        public double MaxAnchorDriftPx { get; set; }
+        public double MaxCompensationErrorPx { get; set; }
+        public double InitialPrivateMemoryMb { get; set; }
+        public double FinalPrivateMemoryMb { get; set; }
+        public double PeakPrivateMemoryMb { get; set; }
+        public string StopReason { get; set; } = String.Empty;
+        public List<ChatHistoryBoundaryQaResult> Results { get; } = new List<ChatHistoryBoundaryQaResult>();
+        public ChatHistoryBoundaryQaResult FirstResult => Results.FirstOrDefault();
+        public bool Passed => IterationsRan == IterationsRequested
+            && LoadedIterations == IterationsRequested
+            && StableIterations == IterationsRequested
+            && TriggerRejectedIterations == 0
+            && MaxAnchorDriftPx <= ChatView.HistoryBoundaryAnchorTolerance
+            && MaxCompensationErrorPx <= 64;
     }
 
     public sealed class ChatHistoryBoundaryQaResult {
