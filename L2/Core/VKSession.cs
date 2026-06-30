@@ -301,7 +301,7 @@ namespace ELOR.Laney.Core {
             };
 
             var stories = new NativeMenuItem { Header = "Истории VK" };
-            stories.Click += async (a, b) => await Launcher.LaunchUrl("https://vk.com/stories");
+            stories.Click += (a, b) => OpenStoriesViewer();
 
             var invisible = new NativeMenuItem { Header = Settings.InvisibleMode ? "Невидимка: включена" : "Невидимка: выключена" };
             invisible.Click += (a, b) => {
@@ -440,7 +440,7 @@ namespace ELOR.Laney.Core {
                 CreateTrayIconControl(VKIconNames.Icon20StoryOutline),
                 "Истории VK",
                 "Открыть просмотр историй",
-                () => _ = Launcher.LaunchUrl("https://vk.com/stories")));
+                OpenStoriesViewer));
             items.Children.Add(CreateTrayMenuItem(
                 CreateTrayIconControl(Settings.InvisibleMode ? VKIconNames.Icon20ViewOutline : VKIconNames.Icon20NotificationSlashOutline),
                 Settings.InvisibleMode ? "Невидимка включена" : "Невидимка выключена",
@@ -615,7 +615,7 @@ namespace ELOR.Laney.Core {
             openLast.Click += (a, b) => OpenLastSessionWindow();
 
             NativeMenuItem stories = new NativeMenuItem { Header = "Истории VK" };
-            stories.Click += (a, b) => _ = Launcher.LaunchUrl("https://vk.com/stories");
+            stories.Click += (a, b) => OpenStoriesViewer();
 
             NativeMenuItem invisible = new NativeMenuItem {
                 Header = Settings.InvisibleMode ? "Невидимка: включена" : "Невидимка: выключена"
@@ -662,6 +662,17 @@ namespace ELOR.Laney.Core {
             long targetId = lastSessionId != 0 ? lastSessionId : Main?.Id ?? 0;
             if (targetId == 0) return;
             TryOpenSessionWindow(targetId);
+        }
+
+        private static void OpenStoriesViewer() {
+            long targetId = lastSessionId != 0 ? lastSessionId : Main?.Id ?? 0;
+            if (targetId == 0) return;
+
+            Dispatcher.UIThread.Post(async () => {
+                TryOpenSessionWindow(targetId);
+                VKSession session = Sessions.FirstOrDefault(s => s.Id == targetId);
+                if (session?.Window != null) await session.Window.ShowStoriesHubAsync();
+            });
         }
 
         private static void ToggleInvisibleMode() {

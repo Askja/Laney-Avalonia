@@ -1,0 +1,117 @@
+<vkw:DialogWindow xmlns="https://github.com/avaloniaui"
+                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                  xmlns:controls="using:ELOR.Laney.Controls"
+                  xmlns:vkw="using:VKUI.Windows"
+                  xmlns:vkui="using:VKUI.Controls"
+                  mc:Ignorable="d" d:DesignWidth="460" d:DesignHeight="760"
+                  x:Class="ELOR.Laney.Views.Modals.StoryViewerWindow"
+                  Width="460" Height="760" MinWidth="360" MinHeight="560"
+                  WindowStartupLocation="CenterOwner"
+                  Background="{DynamicResource VKModalCardBackgroundBrush}"
+                  Title="Истории VK">
+  <Grid x:Name="Root" RowDefinitions="Auto *">
+    <vkui:WindowTitleBar x:Name="TitleBar" CanShowTitle="False" CanMove="True"/>
+
+    <Grid Grid.Row="1" Margin="16,0,16,16" RowDefinitions="Auto * Auto" RowSpacing="12">
+      <Grid ColumnDefinitions="Auto * Auto" ColumnSpacing="10" Margin="2,6,2,0">
+        <vkui:Avatar x:Name="OwnerAvatar" Width="42" Height="42" Foreground="White"/>
+        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+          <TextBlock x:Name="OwnerName" Classes="Headline" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+          <TextBlock x:Name="StoryMeta" Classes="Caption1" Foreground="{DynamicResource VKTextSecondaryBrush}" TextTrimming="CharacterEllipsis"/>
+        </StackPanel>
+        <Border Grid.Column="2" Height="30" MinWidth="58" CornerRadius="15" Padding="12,0" VerticalAlignment="Center"
+                Background="{DynamicResource VKBackgroundSecondaryBrush}" BorderBrush="{DynamicResource VKSeparatorAlphaBrush}" BorderThickness="1">
+          <TextBlock x:Name="StoryCounter" Classes="Caption1" VerticalAlignment="Center" HorizontalAlignment="Center"
+                     Foreground="{DynamicResource VKTextPrimaryBrush}"/>
+        </Border>
+      </Grid>
+
+      <Border Grid.Row="1" CornerRadius="26" ClipToBounds="True"
+              Background="#101217" BorderBrush="{DynamicResource VKSeparatorAlphaBrush}" BorderThickness="1">
+        <Grid>
+          <Border x:Name="StoryMedia" Background="#171A20"/>
+
+          <Rectangle VerticalAlignment="Top" Height="160" IsHitTestVisible="False">
+            <Rectangle.Fill>
+              <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+                <GradientStop Color="#A0000000" Offset="0"/>
+                <GradientStop Color="#00000000" Offset="1"/>
+              </LinearGradientBrush>
+            </Rectangle.Fill>
+          </Rectangle>
+
+          <Rectangle VerticalAlignment="Bottom" Height="180" IsHitTestVisible="False">
+            <Rectangle.Fill>
+              <LinearGradientBrush StartPoint="0%,100%" EndPoint="0%,0%">
+                <GradientStop Color="#A0000000" Offset="0"/>
+                <GradientStop Color="#00000000" Offset="1"/>
+              </LinearGradientBrush>
+            </Rectangle.Fill>
+          </Rectangle>
+
+          <StackPanel x:Name="UnavailablePanel" IsVisible="False" Width="250" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
+            <vkui:VKIcon Width="56" Height="56" HorizontalAlignment="Center" Id="{x:Static vkui:VKIconNames.Icon56InfoOutline}" Foreground="#E8EAED"/>
+            <TextBlock x:Name="UnavailableTitle" Classes="Headline" FontWeight="SemiBold" Foreground="#F5F7FA"
+                       TextAlignment="Center" TextWrapping="Wrap"/>
+            <TextBlock x:Name="UnavailableText" Classes="Subhead" Foreground="#B8C0CC"
+                       TextAlignment="Center" TextWrapping="Wrap"/>
+          </StackPanel>
+
+          <Border x:Name="VideoBadge" IsVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="18"
+                  CornerRadius="16" Padding="10,6" Background="#AA000000">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <vkui:VKIcon Width="18" Height="18" Id="{x:Static vkui:VKIconNames.Icon24Play}" Foreground="White"/>
+              <TextBlock Classes="Caption1" FontWeight="SemiBold" Foreground="White" Text="Видео"/>
+            </StackPanel>
+          </Border>
+
+          <Button x:Name="OpenVideoButton" Classes="Primary" IsVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"
+                  Padding="18,10" Click="OpenVideoButton_Click">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <vkui:VKIcon Width="20" Height="20" Id="{x:Static vkui:VKIconNames.Icon24Play}"/>
+              <TextBlock Text="Смотреть видео"/>
+            </StackPanel>
+          </Button>
+
+          <Button x:Name="PreviousOverlayButton" Classes="Tertiary" Width="56" Height="56" HorizontalAlignment="Left" VerticalAlignment="Center"
+                  Margin="14,0,0,0" Click="PreviousButton_Click" ToolTip.Tip="Предыдущая история">
+            <vkui:VKIcon Width="24" Height="24" Id="{x:Static vkui:VKIconNames.Icon24SkipPrevious}" Foreground="White"/>
+          </Button>
+
+          <Button x:Name="NextOverlayButton" Classes="Tertiary" Width="56" Height="56" HorizontalAlignment="Right" VerticalAlignment="Center"
+                  Margin="0,0,14,0" Click="NextButton_Click" ToolTip.Tip="Следующая история">
+            <vkui:VKIcon Width="24" Height="24" Id="{x:Static vkui:VKIconNames.Icon24SkipNext}" Foreground="White"/>
+          </Button>
+        </Grid>
+      </Border>
+
+      <Grid Grid.Row="2" ColumnDefinitions="Auto * Auto" ColumnSpacing="10">
+        <Button x:Name="PreviousButton" Classes="Secondary" MinWidth="122" Click="PreviousButton_Click">
+          <StackPanel Orientation="Horizontal" Spacing="7">
+            <vkui:VKIcon Width="20" Height="20" Id="{x:Static vkui:VKIconNames.Icon24SkipPrevious}"/>
+            <TextBlock Text="Назад"/>
+          </StackPanel>
+        </Button>
+
+        <Button x:Name="StoryLinkButton" Grid.Column="1" Classes="Tertiary" IsVisible="False"
+                HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Click="StoryLinkButton_Click">
+          <Grid ColumnDefinitions="Auto *" ColumnSpacing="8">
+            <vkui:VKIcon Width="20" Height="20" Id="{x:Static vkui:VKIconNames.Icon20LinkCircleOutline}"
+                         Foreground="{DynamicResource VKIconSecondaryBrush}"/>
+            <TextBlock x:Name="StoryLinkText" Grid.Column="1" TextTrimming="CharacterEllipsis"
+                       Foreground="{DynamicResource VKTextPrimaryBrush}"/>
+          </Grid>
+        </Button>
+
+        <Button x:Name="NextButton" Grid.Column="2" Classes="Primary" MinWidth="122" Click="NextButton_Click">
+          <StackPanel Orientation="Horizontal" Spacing="7">
+            <TextBlock Text="Дальше"/>
+            <vkui:VKIcon Width="20" Height="20" Id="{x:Static vkui:VKIconNames.Icon24SkipNext}"/>
+          </StackPanel>
+        </Button>
+      </Grid>
+    </Grid>
+  </Grid>
+</vkw:DialogWindow>

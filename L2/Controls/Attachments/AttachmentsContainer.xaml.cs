@@ -562,16 +562,7 @@ namespace ELOR.Laney.Controls.Attachments {
             VKSession ownerSession = session ?? VKSession.GetByDataContext(Parent as Control);
             if (ownerSession == null || story == null) return;
 
-            StoryPreview preview = new StoryPreview(story) {
-                DataContext = ownerSession,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                Margin = new Thickness(0, 8)
-            };
-
-            VKUIDialog dialog = new VKUIDialog(Assets.i18n.Resources.story, null, [Assets.i18n.Resources.close], 1) {
-                DialogContent = preview
-            };
-            await dialog.ShowDialog<int>(ownerSession.ModalWindow);
+            await StoryViewerWindow.ShowAsync(ownerSession.ModalWindow, ownerSession, new[] { story }, story);
         }
 
         private IBrush GetSkeletonBrush() {

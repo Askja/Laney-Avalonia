@@ -11,6 +11,7 @@ using ELOR.Laney.ViewModels;
 using ELOR.Laney.Views.Modals;
 using Serilog;
 using System;
+using System.Linq;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 using VKUI.Controls;
@@ -35,6 +36,10 @@ namespace ELOR.Laney.Views {
             SearchButton.Click += async (a, b) => {
                 if (DemoMode.IsEnabled) return;
                 await NavigationRouter.NavigateToAsync(new SearchView());
+            };
+            NewsFeedButton.Click += async (a, b) => {
+                if (DemoMode.IsEnabled) return;
+                await NavigationRouter.NavigateToAsync(new NewsFeedView());
             };
 
             ChatsList.Loaded += ChatsList_Loaded;
@@ -144,17 +149,7 @@ namespace ELOR.Laney.Views {
             StoryRailItemViewModel item = control?.DataContext as StoryRailItemViewModel;
             if (item?.Story == null) return;
 
-            StoryPreview preview = new StoryPreview(item.Story) {
-                DataContext = Session,
-                Width = 360,
-                Height = 560
-            };
-
-            VKUIDialog dialog = new VKUIDialog("История VK", item.StateText, ["Закрыть"], 1) {
-                DialogContent = preview
-            };
-            await dialog.ShowDialog<int>(Session.ModalWindow);
-            if (!Settings.ShouldSuppressStoryViewed) item.MarkSeenLocally();
+            await StoryViewerWindow.ShowAsync(Session.ModalWindow, Session, Session.ImViewModel.Stories.ToList(), item);
         }
 
         private async void StoriesRefreshButton_Click(object sender, RoutedEventArgs e) {

@@ -292,7 +292,7 @@ namespace ELOR.Laney.Views {
                 new CommandPaletteAction(VKIconNames.Icon28CheckCircleOutline, "Извлечь задачи", "Найти кандидаты в todo по загруженным сообщениям", "todo task extract задачи дела автоизвлечение", ShowExtractedTasksAsync),
                 new CommandPaletteAction(VKIconNames.Icon28PictureOutline, "OCR загруженных картинок", "Локально распознать текст на фото из загруженных сообщений", "ocr image text распознать текст картинки фото", ShowLocalOcrAsync),
                 new CommandPaletteAction(VKIconNames.Icon28MusicOutline, "История прослушивания", "Последние треки, подкасты и голосовые с позицией", "audio music history слушал треки голосовые подкасты", ShowAudioPlaybackHistoryAsync),
-                new CommandPaletteAction(VKIconNames.Icon24Story, "Истории VK", "Story-вложения внутри Laney и быстрый переход к ленте VK Stories", "stories story история сторис вк", ShowStoriesHubAsync),
+                new CommandPaletteAction(VKIconNames.Icon24Story, "Истории VK", "Нативный просмотр stories.get прямо внутри Laney", "stories story история сторис вк", ShowStoriesHubAsync),
                 new CommandPaletteAction(VKIconNames.Icon28UserOutgoingOutline, "Автостатус", "Laney-only режим: занят, работаю, играю, сплю, не трогать", "status автостатус busy work sleep dnd", ShowAutoStatusDialogAsync),
                 new CommandPaletteAction(VKIconNames.Icon28WriteSquareOutline, "Фокус на сообщение", "Поставить курсор в composer", "composer input сообщение написать", () => {
                     ChatView.FocusComposer();
@@ -1133,141 +1133,26 @@ namespace ELOR.Laney.Views {
             }
         }
 
-        private async Task ShowStoriesHubAsync() {
+        public async Task ShowStoriesHubAsync() {
             IReadOnlyList<ELOR.VKAPILib.Objects.Story> stories = Array.Empty<ELOR.VKAPILib.Objects.Story>();
-            string text = "Story-вложения в сообщениях открываются прямо в Laney. Лента ниже грузится через stories.get и открывает локальный preview.";
 
             try {
                 stories = await LoadVKStoriesAsync();
-                if (Settings.ShouldSuppressStoryViewed) {
-                    text += " Невидимка включена: Laney не вызывает отдельные viewed-методы.";
+                if (stories.Count > 0) {
+                    await StoryViewerWindow.ShowAsync(this, Session, stories);
+                    return;
                 }
             } catch (Exception ex) {
                 Log.Warning(ex, "Cannot load VK stories.");
-                text = $"Не удалось загрузить stories.get: {ex.GetBaseException().Message}\nМожно открыть веб-ленту VK.";
+                await new VKUIDialog("Истории VK", $"Не удалось загрузить stories.get: {ex.GetBaseException().Message}", ["Закрыть"], 1).ShowDialog(this);
+                return;
             }
 
-            VKUIDialog dialog = new VKUIDialog(
-                "Истории VK",
-                text,
-                ["Открыть VK Stories", "Закрыть"],
-                2) {
-                DialogContent = stories.Count > 0 ? BuildStoriesList(stories) : null
-            };
-
-            int result = await dialog.ShowDialog<int>(this);
-            if (result == 1) await ELOR.Laney.Core.Launcher.LaunchUrl("https://vk.com/stories");
+            await new VKUIDialog("Истории VK", "stories.get не вернул активные истории. Когда VK отдаст свежие сторис, Laney откроет их прямо в приложении.", ["Закрыть"], 1).ShowDialog(this);
         }
 
         private async Task<IReadOnlyList<ELOR.VKAPILib.Objects.Story>> LoadVKStoriesAsync() {
             return await VKStoriesService.LoadStoriesAsync(Session, 40);
-        }
-
-        private Control BuildStoriesList(IReadOnlyList<ELOR.VKAPILib.Objects.Story> stories) {
-            StackPanel list = new StackPanel {
-                Spacing = 8,
-                MinWidth = 520
-            };
-
-            foreach (ELOR.VKAPILib.Objects.Story story in stories) {
-                list.Children.Add(BuildStoryButton(story));
-            }
-
-            return new ScrollViewer {
-                Content = list,
-                MaxHeight = 430
-            };
-        }
-
-        private Button BuildStoryButton(ELOR.VKAPILib.Objects.Story story) {
-            Border preview = new Border {
-                Width = 70,
-                Height = 96,
-                CornerRadius = new CornerRadius(10),
-                Background = App.GetResource<IBrush>("VKBackgroundSecondaryBrush")
-            };
-            Uri previewUri = GetStoryPreviewUri(story);
-            if (previewUri != null) ImageLoader.SetBackgroundSource(preview, previewUri);
-
-            TextBlock title = new TextBlock {
-                Text = BuildStoryTitle(story),
-                FontWeight = FontWeight.SemiBold,
-                TextWrapping = TextWrapping.Wrap
-            };
-            TextBlock subtitle = new TextBlock {
-                Text = BuildStorySubtitle(story),
-                Foreground = App.GetResource<IBrush>("VKTextSecondaryBrush"),
-                TextWrapping = TextWrapping.Wrap
-            };
-
-            Grid content = new Grid {
-                ColumnDefinitions = new ColumnDefinitions("Auto *"),
-                ColumnSpacing = 12,
-                Children = {
-                    preview,
-                    new StackPanel {
-                        Spacing = 3,
-                        VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
-                        Children = {
-                            title,
-                            subtitle
-                        }
-                    }
-                }
-            };
-            Grid.SetColumn(content.Children[1], 1);
-
-            Button button = new Button {
-                HorizontalContentAlignment = Avalonia.Layout.HorizontalAlignment.Stretch,
-                Padding = new Thickness(8),
-                Content = content
-            };
-            button.Classes.Add("Tertiary");
-            button.Click += async (a, b) => await ShowStoryPreviewAsync(story);
-            return button;
-        }
-
-        private async Task ShowStoryPreviewAsync(ELOR.VKAPILib.Objects.Story story) {
-            StoryPreview preview = new StoryPreview(story) {
-                DataContext = Session,
-                Width = 360,
-                Height = 560
-            };
-
-            VKUIDialog dialog = new VKUIDialog("История VK", null, ["Закрыть"], 1) {
-                DialogContent = preview
-            };
-            await dialog.ShowDialog<int>(this);
-            if (!Settings.ShouldSuppressStoryViewed && story != null) story.Seen = 1;
-        }
-
-        private static Uri GetStoryPreviewUri(ELOR.VKAPILib.Objects.Story story) {
-            try {
-                return story.Type switch {
-                    ELOR.VKAPILib.Objects.StoryType.Photo => story.Photo?.GetSizeAndUriForThumbnail(160, 220).Uri,
-                    ELOR.VKAPILib.Objects.StoryType.Video => story.Video?.FirstFrameForStory?.Uri,
-                    _ => null
-                };
-            } catch {
-                return null;
-            }
-        }
-
-        private static string BuildStoryTitle(ELOR.VKAPILib.Objects.Story story) {
-            if (story == null) return "История";
-            if (Settings.StreamerMode) return "История";
-
-            Tuple<string, string, Uri> owner = CacheManager.GetNameAndAvatar(story.OwnerId);
-            if (owner != null) return $"{owner.Item1} {owner.Item2}".Trim();
-
-            return story.OwnerId < 0 ? $"Сообщество {-story.OwnerId}" : $"Пользователь {story.OwnerId}";
-        }
-
-        private static string BuildStorySubtitle(ELOR.VKAPILib.Objects.Story story) {
-            string type = story.Type == ELOR.VKAPILib.Objects.StoryType.Video ? "видео" : "фото";
-            string seen = story.Seen == 1 ? "просмотрена" : "не просмотрена";
-            string visibility = story.IsExpired ? "истекла" : story.IsDeleted ? "удалена" : story.CanSee == 0 ? "недоступна" : "доступна";
-            return $"{type} · {seen} · {visibility} · story{story.OwnerId}_{story.Id}";
         }
 
         private static string FormatAudioPlaybackHistoryItem(AudioPlaybackHistoryItem item) {
