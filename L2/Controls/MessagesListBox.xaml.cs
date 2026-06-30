@@ -60,6 +60,7 @@ namespace ELOR.Laney.Controls {
         private const double LayoutAnchorGuardMs = 1800;
         private const double PreviousLayoutAnchorGuardMs = 5000;
         private const double BottomStickGuardMs = 1200;
+        private const double BottomStickManualSuppressMs = 1600;
         private double _lastScrollOffset = Double.NaN;
         private double _restoreScrollLastHeight = Double.NaN;
         private byte _restoreScrollStableFrames = 0;
@@ -70,6 +71,7 @@ namespace ELOR.Laney.Controls {
         private long _suppressIncrementalLoadUntilTicks = 0;
         private long _layoutAnchorGuardUntilTicks = 0;
         private long _bottomStickGuardUntilTicks = 0;
+        private long _bottomStickSuppressedUntilTicks = 0;
         private bool _isRestoringLayoutAnchor = false;
         private bool _isApplyingBottomStick = false;
         private bool _restoreAnchorRealizationRequested = false;
@@ -337,10 +339,10 @@ namespace ELOR.Laney.Controls {
 
             if (isOk) {
                 bool isUserScroll = offsetChanged && !extentChanged;
-                if (offsetChanged && isMovingUp) ClearBottomStickGuard();
+                if (offsetChanged && isMovingUp) SuppressBottomStick(BottomStickManualSuppressMs);
                 if (IsNearBottom(BottomPinnedTolerance) && (!isUserScroll || isMovingDown || !hasScrollDirection)) RefreshBottomStickGuard(BottomStickGuardMs);
 
-                if (extentChanged && TryApplyBottomStickGuard(offsetChanged)) {
+                if (e.ExtentDelta.Y > 1 && TryApplyBottomStickGuard(offsetChanged)) {
                     SaveScrollPosition(true);
                     return;
                 }
@@ -376,7 +378,7 @@ namespace ELOR.Laney.Controls {
         private void ScrollViewer_PointerWheelChanged(object sender, PointerWheelEventArgs e) {
             if (Math.Abs(e.Delta.Y) < 0.01) return;
 
-            ClearBottomStickGuard();
+            SuppressBottomStick(BottomStickManualSuppressMs);
             if (!IsNearBottom(BottomPinnedTolerance)) RefreshLayoutAnchorGuard(LayoutAnchorGuardMs);
         }
 
@@ -971,6 +973,7 @@ namespace ELOR.Laney.Controls {
         }
 
         private bool IsBottomStickGuardActive() {
+            if (IsBottomStickSuppressed()) return false;
             if (_bottomStickGuardUntilTicks == 0) return false;
 
             if (Stopwatch.GetTimestamp() <= _bottomStickGuardUntilTicks) return true;
@@ -981,6 +984,11 @@ namespace ELOR.Laney.Controls {
 
         private void RefreshBottomStickGuard(double milliseconds) {
             if (milliseconds <= 0 || ScrollViewer == null) {
+                ClearBottomStickGuard();
+                return;
+            }
+
+            if (IsBottomStickSuppressed()) {
                 ClearBottomStickGuard();
                 return;
             }
@@ -996,6 +1004,22 @@ namespace ELOR.Laney.Controls {
 
         private void ClearBottomStickGuard() {
             _bottomStickGuardUntilTicks = 0;
+        }
+
+        private bool IsBottomStickSuppressed() {
+            if (_bottomStickSuppressedUntilTicks == 0) return false;
+
+            if (Stopwatch.GetTimestamp() <= _bottomStickSuppressedUntilTicks) return true;
+
+            _bottomStickSuppressedUntilTicks = 0;
+            return false;
+        }
+
+        private void SuppressBottomStick(double milliseconds) {
+            ClearBottomStickGuard();
+            if (milliseconds <= 0) return;
+
+            _bottomStickSuppressedUntilTicks = GetFutureTimestamp(milliseconds);
         }
 
         private double GetMaxOffset() {

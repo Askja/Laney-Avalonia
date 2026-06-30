@@ -27,6 +27,10 @@ namespace ELOR.Laney.Views {
         ChatViewModel Chat { get; set; }
         Window OwnerWindow => TopLevel.GetTopLevel(this) as Window;
 
+        const double AutoScrollPinTolerance = 2;
+        const double AutoScrollReleaseTolerance = 64;
+        const double AutoScrollDirectionTolerance = 0.5;
+
         ScrollViewer MessagesListScrollViewer;
         DispatcherTimer markReadTimer;
         readonly System.Action<Avalonia.Styling.ThemeVariant> themeChangedAction;
@@ -39,6 +43,7 @@ namespace ELOR.Laney.Views {
         double lastFrameMs = 0;
         double averageFrameMs = 0;
         double maxFrameMs = 0;
+        double lastMessagesScrollOffset = Double.NaN;
         int jankFrames = 0;
 
         MessageViewModel FirstVisible { get => MessagesList?.GetFirstVisibleItem<MessageViewModel>(); }
@@ -199,6 +204,7 @@ namespace ELOR.Laney.Views {
                 Chat.ReceivedMessages.CollectionChanged -= ReceivedMessages_CollectionChanged;
             }
 
+            ResetAutoScrollState();
             Chat = DataContext as ChatViewModel;
             if (Chat != null) {
                 Chat.ReceivedMessages.CollectionChanged += ReceivedMessages_CollectionChanged;
@@ -302,6 +308,7 @@ namespace ELOR.Laney.Views {
                 int lastDisplayedId = lastDisplayed?.ConversationMessageId ?? 0;
                 if (lastReceivedId == lastDisplayedId && lastDisplayedId > 0) {
                     await MessagesList.ScrollToBottomStableAsync(lastDisplayed, 8);
+                    autoScrollToLastMessage = IsNearBottom(AutoScrollPinTolerance);
 
                     // После loading-состояния нужно ещё раз дожать вниз, когда высота bubble станет финальной.
                     if (Settings.ShowDebugCounters) Log.Information($"Need to scroll to last message again. Message id: {lastDisplayedId}");
@@ -325,7 +332,10 @@ namespace ELOR.Laney.Views {
                         // Принудительно скроллим вниз
                         //double h = MessagesListScrollViewer.Extent.Height - MessagesListScrollViewer.DesiredSize.Height;
                         //ForceScroll(h);
-                        await MessagesList.ScrollToBottomStableAsync(msg, 10);
+                        if (autoScrollToLastMessage) {
+                            await MessagesList.ScrollToBottomStableAsync(msg, 10);
+                            autoScrollToLastMessage = IsNearBottom(AutoScrollPinTolerance);
+                        }
 
                         Log.Information($"Scroll to message \"{msg.ConversationMessageId}\" done.");
                     }
@@ -348,7 +358,7 @@ namespace ELOR.Laney.Views {
         bool autoScrollToLastMessage = false;
         bool visibleMessagesCheckQueued = false;
         private void ScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e) {
-            autoScrollToLastMessage = MessagesList?.IsScrollOperationInProgress != true && IsNearBottom(8);
+            UpdateAutoScrollState(e);
             QueueFirstAndLastDisplayedMessagesCheck();
         }
 
@@ -364,6 +374,7 @@ namespace ELOR.Laney.Views {
                 if (Chat != null) await Chat.GoToLastMessageAsync();
                 MessageViewModel lastDisplayed = Chat?.DisplayedMessages?.LastOrDefault();
                 await MessagesList.ScrollToBottomStableAsync(lastDisplayed, 16);
+                autoScrollToLastMessage = IsNearBottom(AutoScrollPinTolerance);
             } catch (Exception ex) {
                 Log.Error(ex, "Failed to hop to chat bottom.");
             } finally {
@@ -427,13 +438,60 @@ namespace ELOR.Laney.Views {
             return canScroll;
         }
 
+        private void ResetAutoScrollState() {
+            autoScrollToLastMessage = false;
+            autoScrollToLastMessageQueued = false;
+            lastMessagesScrollOffset = Double.NaN;
+        }
+
+        private void UpdateAutoScrollState(ScrollChangedEventArgs e) {
+            if (MessagesListScrollViewer == null) return;
+
+            double currentOffset = MessagesListScrollViewer.Offset.Y;
+            double previousOffset = lastMessagesScrollOffset;
+            lastMessagesScrollOffset = currentOffset;
+
+            bool nearPinnedBottom = IsNearBottom(AutoScrollPinTolerance);
+            if (MessagesList?.IsScrollOperationInProgress == true) {
+                if (nearPinnedBottom) autoScrollToLastMessage = true;
+                else if (Math.Abs(e.OffsetDelta.Y) > AutoScrollDirectionTolerance && GetBottomRemaining() > AutoScrollReleaseTolerance) autoScrollToLastMessage = false;
+                return;
+            }
+
+            bool hasDirection = !Double.IsNaN(previousOffset);
+            bool offsetChanged = Math.Abs(e.OffsetDelta.Y) > AutoScrollDirectionTolerance;
+            bool extentChanged = Math.Abs(e.ExtentDelta.Y) > 1;
+            bool manualOffsetChange = offsetChanged && !extentChanged;
+            bool movingUp = hasDirection && currentOffset < previousOffset - AutoScrollDirectionTolerance;
+            bool movingDown = hasDirection && currentOffset > previousOffset + AutoScrollDirectionTolerance;
+
+            if (offsetChanged && movingUp && !nearPinnedBottom && GetBottomRemaining() > AutoScrollReleaseTolerance) {
+                autoScrollToLastMessage = false;
+                return;
+            }
+
+            if (nearPinnedBottom && (!manualOffsetChange || movingDown || !hasDirection)) {
+                autoScrollToLastMessage = true;
+                return;
+            }
+
+            if (manualOffsetChange && GetBottomRemaining() > AutoScrollReleaseTolerance) {
+                autoScrollToLastMessage = false;
+            }
+        }
+
         private bool IsNearBottom(double tolerance) {
             if (MessagesListScrollViewer == null) return false;
 
+            return GetBottomRemaining() <= tolerance;
+        }
+
+        private double GetBottomRemaining() {
+            if (MessagesListScrollViewer == null) return Double.PositiveInfinity;
+
             double viewportHeight = MessagesListScrollViewer.Viewport.Height;
-            if (viewportHeight <= 0) viewportHeight = MessagesListScrollViewer.DesiredSize.Height;
-            double remaining = MessagesListScrollViewer.Extent.Height - viewportHeight - MessagesListScrollViewer.Offset.Y;
-            return remaining <= tolerance;
+            if (viewportHeight <= 0) viewportHeight = MessagesListScrollViewer.Bounds.Height;
+            return MessagesListScrollViewer.Extent.Height - viewportHeight - MessagesListScrollViewer.Offset.Y;
         }
 
         private void UpdateDateUnderHeader(MessageViewModel msg) {
