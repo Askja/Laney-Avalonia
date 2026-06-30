@@ -14,15 +14,15 @@ namespace ELOR.Laney.ViewModels.SettingsCategories {
         public ObservableCollection<TwoStringTuple> ChatListLayoutOptions { get; } = new ObservableCollection<TwoStringTuple> {
             new TwoStringTuple(ChatListLayoutIds.Classic, "Классический"),
             new TwoStringTuple(ChatListLayoutIds.Compact, "Плотный"),
-            new TwoStringTuple(ChatListLayoutIds.Telegram, "Telegram-like"),
-            new TwoStringTuple(ChatListLayoutIds.MediaRich, "Media-rich"),
-            new TwoStringTuple(ChatListLayoutIds.SplitFolder, "Split-folder")
+            new TwoStringTuple(ChatListLayoutIds.Telegram, "В стиле Telegram"),
+            new TwoStringTuple(ChatListLayoutIds.MediaRich, "Медиа"),
+            new TwoStringTuple(ChatListLayoutIds.SplitFolder, "Папки и теги")
         };
         public ObservableCollection<TwoStringTuple> ChatListAvatarShapeOptions { get; } = new ObservableCollection<TwoStringTuple> {
             new TwoStringTuple(AvatarShapeIds.Circle, "Круг"),
             new TwoStringTuple(AvatarShapeIds.Squircle, "Сквиркл"),
             new TwoStringTuple(AvatarShapeIds.Rounded, "Скругленный квадрат"),
-            new TwoStringTuple(AvatarShapeIds.Square, "Sharp")
+            new TwoStringTuple(AvatarShapeIds.Square, "Без скругления")
         };
         public ObservableCollection<TwoStringTuple> ChatListAvatarSizeOptions { get; } = new ObservableCollection<TwoStringTuple> {
             new TwoStringTuple(AvatarSizeIds.Auto, "По плотности"),
@@ -53,22 +53,32 @@ namespace ELOR.Laney.ViewModels.SettingsCategories {
             new TwoStringTuple(BubbleWidthIds.Full, "На всю ленту")
         };
         public ObservableCollection<TwoStringTuple> MessageBubbleDensityOptions { get; } = new ObservableCollection<TwoStringTuple> {
-            new TwoStringTuple(BubbleDensityIds.Compact, "Compact"),
-            new TwoStringTuple(BubbleDensityIds.Normal, "Normal"),
-            new TwoStringTuple(BubbleDensityIds.Air, "Air")
+            new TwoStringTuple(BubbleDensityIds.Compact, "Компактно"),
+            new TwoStringTuple(BubbleDensityIds.Normal, "Обычно"),
+            new TwoStringTuple(BubbleDensityIds.Air, "Воздушно")
         };
         public ObservableCollection<TwoStringTuple> MessageBubbleStyleOptions { get; } = new ObservableCollection<TwoStringTuple> {
             new TwoStringTuple(BubbleStyleIds.Vk, "VK"),
             new TwoStringTuple(BubbleStyleIds.Telegram, "Telegram"),
-            new TwoStringTuple(BubbleStyleIds.Minimal, "Minimal"),
-            new TwoStringTuple(BubbleStyleIds.Outline, "Outline"),
-            new TwoStringTuple(BubbleStyleIds.Flat, "Flat")
+            new TwoStringTuple(BubbleStyleIds.Minimal, "Минимализм"),
+            new TwoStringTuple(BubbleStyleIds.Outline, "Контур"),
+            new TwoStringTuple(BubbleStyleIds.Flat, "Плоский")
         };
         public ObservableCollection<TwoStringTuple> MessageBubbleOpacityOptions { get; } = new ObservableCollection<TwoStringTuple> {
             new TwoStringTuple("100", "100%"),
             new TwoStringTuple("92", "92%"),
             new TwoStringTuple("84", "84%"),
             new TwoStringTuple("76", "76%")
+        };
+        public ObservableCollection<TwoStringTuple> MessageCheckmarkStyleOptions { get; } = new ObservableCollection<TwoStringTuple> {
+            new TwoStringTuple(MessageCheckmarkStyleIds.Vk, "VK"),
+            new TwoStringTuple(MessageCheckmarkStyleIds.Compact, "Компактные"),
+            new TwoStringTuple(MessageCheckmarkStyleIds.Minimal, "Минимальные"),
+            new TwoStringTuple(MessageCheckmarkStyleIds.Hidden, "Скрыть")
+        };
+        public ObservableCollection<TwoStringTuple> ChatOpenBehaviorOptions { get; } = new ObservableCollection<TwoStringTuple> {
+            new TwoStringTuple(ChatOpenBehaviorIds.Bottom, "В самый низ"),
+            new TwoStringTuple(ChatOpenBehaviorIds.FirstUnread, "К первому непрочитанному")
         };
 
         public bool SentViaEnter { get { return Settings.SentViaEnter; } set { Settings.SentViaEnter = value; OnPropertyChanged(); } }
@@ -86,10 +96,21 @@ namespace ELOR.Laney.ViewModels.SettingsCategories {
         public TwoStringTuple CurrentMessageBubbleDensity { get { return GetMessageBubbleDensity(); } set { ChangeMessageBubbleDensity(value); OnPropertyChanged(); } }
         public TwoStringTuple CurrentMessageBubbleStyle { get { return GetMessageBubbleStyle(); } set { ChangeMessageBubbleStyle(value); OnPropertyChanged(); } }
         public TwoStringTuple CurrentMessageBubbleOpacity { get { return GetMessageBubbleOpacity(); } set { ChangeMessageBubbleOpacity(value); OnPropertyChanged(); } }
+        public TwoStringTuple CurrentMessageCheckmarkStyle { get { return GetMessageCheckmarkStyle(); } set { ChangeMessageCheckmarkStyle(value); OnPropertyChanged(); } }
+        public TwoStringTuple CurrentChatOpenBehavior { get { return GetChatOpenBehavior(); } set { ChangeChatOpenBehavior(value); OnPropertyChanged(); } }
         public bool MessageBubbleAutoColor { get { return Settings.MessageBubbleAutoColor; } set { Settings.MessageBubbleAutoColor = value; MarkCustomProfile(); OnPropertyChanged(); } }
         public bool ChatItemMoreRows { get { return Settings.ChatItemMoreRows; } set { Settings.ChatItemMoreRows = value; MarkCustomProfile(); OnPropertyChanged(); } }
         public bool LocalOcrEnabled { get { return Settings.LocalOcrEnabled; } set { Settings.LocalOcrEnabled = value; MarkCustomProfile(); OnPropertyChanged(); } }
-        public string LocalOcrTesseractPath { get { return Settings.LocalOcrTesseractPath; } set { Settings.LocalOcrTesseractPath = value; MarkCustomProfile(); OnPropertyChanged(); } }
+        public string LocalOcrTesseractPath {
+            get { return Settings.LocalOcrTesseractPath; }
+            set {
+                Settings.LocalOcrTesseractPath = value;
+                MarkCustomProfile();
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(LocalOcrTesseractPathSummary));
+            }
+        }
+        public string LocalOcrTesseractPathSummary { get { return String.IsNullOrWhiteSpace(Settings.LocalOcrTesseractPath) ? "Не выбран" : Settings.LocalOcrTesseractPath; } }
         public string LocalOcrLanguage { get { return Settings.LocalOcrLanguage; } set { Settings.LocalOcrLanguage = value; MarkCustomProfile(); OnPropertyChanged(); } }
         public bool ComposerActionFormatting { get { return Settings.ComposerActionFormatting; } set { Settings.ComposerActionFormatting = value; MarkCustomProfile(); OnPropertyChanged(); } }
         public bool ComposerActionQuick { get { return Settings.ComposerActionQuick; } set { Settings.ComposerActionQuick = value; MarkCustomProfile(); OnPropertyChanged(); } }
@@ -236,6 +257,28 @@ namespace ELOR.Laney.ViewModels.SettingsCategories {
             Settings.MessageBubbleOpacity = opacity;
             MarkCustomProfile();
             OnPropertyChanged(nameof(CurrentMessageBubbleOpacity));
+        }
+
+        private TwoStringTuple GetMessageCheckmarkStyle() {
+            return MessageCheckmarkStyleOptions.Where(o => o.Item1 == Settings.MessageCheckmarkStyle).FirstOrDefault() ?? MessageCheckmarkStyleOptions[0];
+        }
+
+        private void ChangeMessageCheckmarkStyle(TwoStringTuple value) {
+            if (value == null) return;
+            Settings.MessageCheckmarkStyle = value.Item1;
+            MarkCustomProfile();
+            OnPropertyChanged(nameof(CurrentMessageCheckmarkStyle));
+        }
+
+        private TwoStringTuple GetChatOpenBehavior() {
+            return ChatOpenBehaviorOptions.Where(o => o.Item1 == Settings.ChatOpenBehavior).FirstOrDefault() ?? ChatOpenBehaviorOptions[0];
+        }
+
+        private void ChangeChatOpenBehavior(TwoStringTuple value) {
+            if (value == null) return;
+            Settings.ChatOpenBehavior = value.Item1;
+            MarkCustomProfile();
+            OnPropertyChanged(nameof(CurrentChatOpenBehavior));
         }
 
         private void MarkCustomProfile() {

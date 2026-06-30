@@ -4,8 +4,7 @@
         xmlns:obj="using:ELOR.VKAPILib.Objects"
         xmlns:i18n="using:ELOR.Laney.Assets.i18n"
         xmlns:controls="using:ELOR.Laney.Controls"
-        xmlns:atch="using:ELOR.Laney.Controls.Attachments"
-        xmlns:ctb="using:ColorTextBlock.Avalonia">
+        xmlns:atch="using:ELOR.Laney.Controls.Attachments">
 
   <ControlTheme x:Key="{x:Type controls:MessageBubble}" TargetType="controls:MessageBubble">
     <!-- Set Defaults -->
@@ -65,10 +64,10 @@
               <Setter Property="Foreground" Value="{DynamicResource MessageBubbleOutgoingTextSecondaryBrush}"/>
             </Style>
 
-            <Style Selector="Grid.Outgoing ctb|CTextBlock#MessageText">
+            <Style Selector="Grid.Outgoing SelectableTextBlock#SelectableMessageText">
               <Setter Property="Foreground" Value="{DynamicResource MessageBubbleOutgoingTextPrimaryBrush}"/>
             </Style>
-            <Style Selector="Grid.Outgoing SelectableTextBlock#SelectableMessageText">
+            <Style Selector="Grid.Outgoing TextBlock#RichMessageText">
               <Setter Property="Foreground" Value="{DynamicResource MessageBubbleOutgoingTextPrimaryBrush}"/>
             </Style>
 
@@ -142,16 +141,16 @@
             </Style>
 
             <!-- Message text -->
-            <Style Selector="ctb|CTextBlock.Empty">
-              <Setter Property="Foreground" Value="{DynamicResource VKTextSecondaryBrush}"/>
-            </Style>
             <Style Selector="SelectableTextBlock.Empty">
               <Setter Property="Foreground" Value="{DynamicResource VKTextSecondaryBrush}"/>
             </Style>
-            <Style Selector="Grid.Outgoing ctb|CTextBlock.Empty">
-              <Setter Property="Foreground" Value="{DynamicResource MessageBubbleOutgoingTextSecondaryBrush}"/>
+            <Style Selector="TextBlock#RichMessageText.Empty">
+              <Setter Property="Foreground" Value="{DynamicResource VKTextSecondaryBrush}"/>
             </Style>
             <Style Selector="Grid.Outgoing SelectableTextBlock.Empty">
+              <Setter Property="Foreground" Value="{DynamicResource MessageBubbleOutgoingTextSecondaryBrush}"/>
+            </Style>
+            <Style Selector="Grid.Outgoing TextBlock#RichMessageText.Empty">
               <Setter Property="Foreground" Value="{DynamicResource MessageBubbleOutgoingTextSecondaryBrush}"/>
             </Style>
           </Grid.Styles>
@@ -161,9 +160,9 @@
                        Background="{Binding Message.DisplaySenderId, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource agc}}"
                        controls:ImageLoader.Image="{Binding Message.DisplaySenderAvatar, RelativeSource={RelativeSource TemplatedParent}}"/>
           </Button>
-          <Grid x:Name="BubbleRoot" RowDefinitions="* Auto Auto" Grid.Column="1" MinHeight="36" MinWidth="48" MaxWidth="{DynamicResource LaneyMessageBubbleMaxWidth}" HorizontalAlignment="Left" ToolTip.Tip="{Binding Message.UIType, RelativeSource={RelativeSource TemplatedParent}}">
+          <Grid x:Name="BubbleRoot" RowDefinitions="* Auto Auto" Grid.Column="1" MinHeight="36" MinWidth="48" MaxWidth="{DynamicResource LaneyMessageBubbleMaxWidth}" HorizontalAlignment="Left" ClipToBounds="True">
             <Border x:Name="BubbleBackground" Grid.RowSpan="3" Opacity="{DynamicResource LaneyMessageBubbleBackgroundOpacity}" CornerRadius="{DynamicResource LaneyMessageBubbleCornerRadius}"/>
-            <StackPanel x:Name="MessageContent">
+            <StackPanel x:Name="MessageContent" ClipToBounds="True">
               <TextBlock x:Name="SenderName" Classes="Caption1" Margin="12,7,12,0" FontWeight="Medium" Foreground="{DynamicResource VKImTextNameBrush}" Text="{Binding Message.DisplaySenderName, RelativeSource={RelativeSource TemplatedParent}}"/>
               <Button x:Name="ReplyMessageButton" Classes="Tertiary" Margin="12,6,12,4" Padding="0" CornerRadius="0" IsVisible="{Binding Message.ReplyMessage, RelativeSource={RelativeSource TemplatedParent}, Converter={x:Static ObjectConverters.IsNotNull}}">
                 <DockPanel>
@@ -173,8 +172,8 @@
               </Button>
               <atch:GiftUI x:Name="Gift" Margin="4,4,4,0"/>
               <Grid x:Name="MessageTextHost" Margin="{DynamicResource LaneyMessageTextHostMargin}">
-                <ctb:CTextBlock x:Name="MessageText" FontSize="{DynamicResource LaneyMessageTextFontSize}" LineHeight="{DynamicResource LaneyMessageTextLineHeight}" TextWrapping="Wrap" Foreground="{DynamicResource VKTextPrimaryBrush}" IsVisible="False"/>
                 <SelectableTextBlock x:Name="SelectableMessageText" FontSize="{DynamicResource LaneyMessageTextFontSize}" LineHeight="{DynamicResource LaneyMessageTextLineHeight}" TextWrapping="Wrap" Foreground="{DynamicResource VKTextPrimaryBrush}"/>
+                <TextBlock x:Name="RichMessageText" IsVisible="False" FontSize="{DynamicResource LaneyMessageTextFontSize}" LineHeight="{DynamicResource LaneyMessageTextLineHeight}" TextWrapping="Wrap" Foreground="{DynamicResource VKTextPrimaryBrush}"/>
               </Grid>
               <atch:AttachmentsContainer x:Name="MessageAttachments" IsVisible="{Binding Message.Attachments.Count, RelativeSource={RelativeSource TemplatedParent}}"/>
               <Rectangle x:Name="Map" Margin="4,0,4,4" IsVisible="{Binding Message.Location, RelativeSource={RelativeSource TemplatedParent}, Converter={x:Static ObjectConverters.IsNotNull}}" RadiusX="14" RadiusY="14"/>
@@ -182,7 +181,7 @@
                 <StackPanel x:Name="ForwardedMessagesStack" Spacing="12"/>
               </Border>
             </StackPanel>
-            <Border x:Name="IndicatorContainer" Height="20" CornerRadius="10" HorizontalAlignment="Right" VerticalAlignment="Bottom" Classes="DefaultIndicator">
+            <Border x:Name="IndicatorContainer" Grid.Row="1" Height="20" CornerRadius="10" HorizontalAlignment="Right" VerticalAlignment="Bottom" Classes="DefaultIndicator">
               <StackPanel x:Name="IndicatorStack" Orientation="Horizontal" Margin="6,3">
                 <vkui:VKIcon x:Name="ImportantIndicator" Id="Icon12Favorite" Width="12" Height="12" Margin="0,0,4,0" IsVisible="{Binding Message.IsImportant, RelativeSource={RelativeSource TemplatedParent}}"/>
                 <TextBlock x:Name="EditedIndicator" Classes="Caption3" Text="{x:Static i18n:Resources.edited_indicator}" Margin="0,0,4,0" IsVisible="{Binding Message.EditTime, RelativeSource={RelativeSource TemplatedParent}, Converter={x:Static ObjectConverters.IsNotNull}}"/>

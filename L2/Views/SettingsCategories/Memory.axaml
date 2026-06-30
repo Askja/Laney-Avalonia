@@ -11,7 +11,7 @@
       <Border Classes="Group" VerticalAlignment="Top">
         <StackPanel>
           <Grid Classes="GroupHeader" ColumnDefinitions="* Auto Auto" ColumnSpacing="8">
-            <TextBlock Text="Performance budget"/>
+            <TextBlock Text="Бюджет производительности"/>
             <TextBlock Grid.Column="1" Classes="Caption1" VerticalAlignment="Center" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="{Binding LastUpdatedText}"/>
             <Button Grid.Column="2" Classes="Tertiary" Width="36" Height="32" Padding="0" Command="{Binding RefreshPerformanceBudgetCommand}" ToolTip.Tip="Обновить метрики">
               <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon20RecentOutline}"/>
@@ -22,17 +22,17 @@
               <TextBlock Classes="Subhead" FontWeight="SemiBold" Text="{Binding WorkingSetText}"/>
             </vkui:Cell.After>
           </vkui:Cell>
-          <vkui:Cell Header="Managed heap" Subtitle="{Binding ManagedHeapBudgetText}">
+          <vkui:Cell Header="Управляемая куча" Subtitle="{Binding ManagedHeapBudgetText}">
             <vkui:Cell.After>
               <TextBlock Classes="Caption1" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="{Binding GcBudgetText}"/>
             </vkui:Cell.After>
           </vkui:Cell>
-          <vkui:Cell Header="Media governor" Subtitle="{Binding MediaBudgetText}">
+          <vkui:Cell Header="Лимиты медиа" Subtitle="{Binding MediaBudgetText}">
             <vkui:Cell.After>
               <TextBlock Classes="Subhead" FontWeight="SemiBold" Text="{Binding MediaBudgetPressureText}"/>
             </vkui:Cell.After>
           </vkui:Cell>
-          <vkui:Cell Header="Bitmap cache" Subtitle="{Binding BitmapCacheBudgetText}">
+          <vkui:Cell Header="Кэш изображений" Subtitle="{Binding BitmapCacheBudgetText}">
             <vkui:Cell.After>
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <TextBlock Classes="Subhead" FontWeight="SemiBold" VerticalAlignment="Center" Text="{Binding BitmapCachePressureText}"/>
@@ -43,22 +43,22 @@
             </vkui:Cell.After>
           </vkui:Cell>
           <TextBlock Classes="Caption1" Margin="12,0,12,8" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="{Binding BitmapCacheBreakdownText}"/>
-          <vkui:Cell Header="Waveform cache" Subtitle="{Binding WaveformBudgetText}">
+          <vkui:Cell Header="Кэш waveform" Subtitle="{Binding WaveformBudgetText}">
             <vkui:Cell.After>
-              <TextBlock Classes="Caption1" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="voice"/>
+              <TextBlock Classes="Caption1" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="голос"/>
             </vkui:Cell.After>
           </vkui:Cell>
-          <vkui:Cell Header="Animations / prefetch" Subtitle="{Binding LocalAnimationBudgetText}">
+          <vkui:Cell Header="Анимации и prefetch" Subtitle="{Binding LocalAnimationBudgetText}">
             <vkui:Cell.After>
               <TextBlock Classes="Caption1" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="{Binding PrefetchBudgetText}"/>
             </vkui:Cell.After>
           </vkui:Cell>
-          <vkui:Cell Header="Network queues" Subtitle="{Binding NetworkBudgetText}">
+          <vkui:Cell Header="Сетевые очереди" Subtitle="{Binding NetworkBudgetText}">
             <vkui:Cell.After>
               <TextBlock Classes="Subhead" FontWeight="SemiBold" Text="{Binding NetworkBudgetBadge}"/>
             </vkui:Cell.After>
           </vkui:Cell>
-          <vkui:Cell Header="History statistics index" Subtitle="{Binding HistoryIndexStateText}">
+          <vkui:Cell Header="Индекс статистики истории" Subtitle="{Binding HistoryIndexStateText}">
             <vkui:Cell.After>
               <TextBlock Classes="Subhead" FontWeight="SemiBold" Text="{Binding HistoryIndexBadge}"/>
             </vkui:Cell.After>
@@ -66,7 +66,7 @@
           <TextBlock Classes="Caption1" Margin="12,0,12,2" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="{Binding HistoryIndexProgressText}"/>
           <TextBlock Classes="Caption1" Margin="12,0,12,2" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="{Binding HistoryIndexCountersText}"/>
           <TextBlock Classes="Caption1" Margin="12,0,12,8" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="{Binding HistoryIndexPolicyText}"/>
-          <vkui:Cell Header="Decode / animation policy" Subtitle="{Binding DecodeAnimationBudgetText}">
+          <vkui:Cell Header="Декодирование и анимации" Subtitle="{Binding DecodeAnimationBudgetText}">
             <vkui:Cell.After>
               <TextBlock Classes="Caption1" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="{Binding ModeBudgetText}"/>
             </vkui:Cell.After>
@@ -79,12 +79,12 @@
           <Grid Classes="GroupHeader">
             <TextBlock Text="Режимы экономии"/>
           </Grid>
-          <vkui:Cell Header="Low motion" Subtitle="Отключает анимацию стикеров и тяжелые декоративные движения.">
+          <vkui:Cell Header="Меньше анимаций" Subtitle="Отключает анимацию стикеров и тяжелые декоративные движения.">
             <vkui:Cell.After>
               <ToggleSwitch IsChecked="{Binding LowMotionMode, Mode=TwoWay}"/>
             </vkui:Cell.After>
           </vkui:Cell>
-          <vkui:Cell Header="Low memory" Subtitle="Снижает RAM лимит кеша и укорачивает TTL тяжелых картинок.">
+          <vkui:Cell Header="Экономия памяти" Subtitle="Снижает RAM лимит кеша и укорачивает TTL тяжелых картинок.">
             <vkui:Cell.After>
               <ToggleSwitch IsChecked="{Binding LowMemoryMode, Mode=TwoWay}"/>
             </vkui:Cell.After>
@@ -102,14 +102,14 @@
               <ToggleSwitch IsChecked="{Binding LoadImagesSequential, Mode=TwoWay}"/>
             </vkui:Cell.After>
           </vkui:Cell>
-          <vkui:Cell Header="Media budget, MB" Subtitle="Общий лимит картинок, анимаций, waveform и будущего prefetch; диапазон 64-1024.">
+          <vkui:Cell Header="Лимит медиа, МБ" Subtitle="Общий лимит картинок, анимаций, waveform и будущего prefetch; диапазон 64-1024.">
             <vkui:Cell.After>
               <TextBox Width="96" Text="{Binding MediaMemoryBudgetMbText, Mode=TwoWay}" PlaceholderText="256"/>
             </vkui:Cell.After>
           </vkui:Cell>
-          <vkui:Cell Header="RAM лимит кеша, MB" Subtitle="Картинки и аватары; диапазон 16-512.">
+          <vkui:Cell Header="RAM лимит кеша, MB" Subtitle="Картинки и аватары; диапазон 16-256.">
             <vkui:Cell.After>
-              <TextBox Width="96" Text="{Binding ImageCacheRamLimitMbText, Mode=TwoWay}" PlaceholderText="192"/>
+              <TextBox Width="96" Text="{Binding ImageCacheRamLimitMbText, Mode=TwoWay}" PlaceholderText="128"/>
             </vkui:Cell.After>
           </vkui:Cell>
         </StackPanel>

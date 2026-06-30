@@ -19,7 +19,7 @@
               <ToggleSwitch IsChecked="{Binding AudioPlayerLoop, Mode=TwoWay}"/>
             </vkui:Cell.After>
           </vkui:Cell>
-          <vkui:Cell Header="DSP / EQ" Subtitle="LibVLC equalizer: off, voice clarity, night mode, bass boost.">
+          <vkui:Cell Header="DSP / эквалайзер" Subtitle="Эквалайзер LibVLC: выключен, голос, ночь или бас.">
             <vkui:Cell.After>
               <ComboBox Classes="Alternate" ItemsSource="{Binding AudioDspModes}" SelectedItem="{Binding CurrentAudioDspMode, Mode=TwoWay}">
                 <ComboBox.ItemTemplate>
@@ -95,7 +95,12 @@
           </vkui:Cell>
           <vkui:Cell Header="Модель Whisper" Subtitle="Путь к ggml-*.bin или пусто для LocalData/whisper.">
             <vkui:Cell.After>
-              <TextBox Width="260" Text="{Binding LocalVoiceTranscriptionModelPath, Mode=TwoWay}" PlaceholderText="C:\models\ggml-base.bin"/>
+              <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <TextBlock Width="260" Classes="Subhead" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="{Binding LocalVoiceTranscriptionModelPathSummary}" TextTrimming="CharacterEllipsis"/>
+                <Button Classes="Secondary" Click="SelectWhisperModel_Click">
+                  <TextBlock Text="Выбрать"/>
+                </Button>
+              </StackPanel>
             </vkui:Cell.After>
           </vkui:Cell>
           <vkui:Cell Header="Язык" Subtitle="auto, ru, en.">

@@ -76,7 +76,7 @@
                     <vkui:VKIcon Foreground="White" Id="{x:Static vkui:VKIconNames.Icon32ErrorCircleOutline}"/>
                   </Button>
 
-                  <Border HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-4,0" CornerRadius="12" BoxShadow="0 2 4 #14000000">
+                  <Border HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-4,0" CornerRadius="12">
                     <Button Background="{DynamicResource VKIconSecondaryBrush}" Padding="0" Width="24" Height="24" MinHeight="24" CornerRadius="12" BorderThickness="2" BorderBrush="{DynamicResource VKBackgroundContentBrush}" Click="RemoveAttachment">
                       <vkui:VKIcon Foreground="White" Id="{x:Static vkui:VKIconNames.Icon16Cancel}"/>
                     </Button>
@@ -196,10 +196,8 @@
       </ScrollViewer>
     </Border>
 
-    <Border x:Name="PinnedQuickReplyArea" Margin="12,4,12,0" Padding="10,7" CornerRadius="10"
+    <Border x:Name="PinnedQuickReplyArea" Classes="GlassRaised" Margin="12,4,12,0" Padding="10,7" CornerRadius="12"
             IsVisible="{Binding HasPinnedQuickReply}"
-            Background="{DynamicResource VKModalCardBackgroundBrush}"
-            BorderBrush="{DynamicResource VKSeparatorAlphaBrush}"
             BorderThickness="1">
       <Grid ColumnDefinitions="Auto * Auto Auto" VerticalAlignment="Center">
         <vkui:VKIcon Grid.Column="0" Width="20" Height="20" Margin="0,0,8,0"
@@ -220,21 +218,19 @@
       </Grid>
     </Border>
 
-    <Border x:Name="InputPanel" Margin="8,4,8,8" CornerRadius="{DynamicResource LaneyRadius16}"
-            Background="{DynamicResource LaneySurfaceRaised}" BorderBrush="{DynamicResource LaneyBorderSubtle}" BorderThickness="1">
-      <Grid x:Name="InputArea" Margin="4" MinHeight="36" ColumnDefinitions="Auto * Auto">
-        <Button x:Name="AttachmentButton" Classes="Tertiary ComposerButton" VerticalAlignment="Bottom" Click="ShowAttachmentPickerContextMenu">
+    <Border x:Name="InputPanel" Classes="GlassInput" Margin="10,5,10,8" CornerRadius="18">
+      <Grid x:Name="InputArea" Margin="6,3" MinHeight="38" ColumnDefinitions="Auto * Auto">
+        <Button x:Name="AttachmentButton" Classes="Tertiary ComposerButton" VerticalAlignment="Center" Click="ShowAttachmentPickerContextMenu">
           <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon24AddCircleOutline}"/>
         </Button>
 
-        <!-- Костыль с margin-ом нужен, т. к. при 15/20 текст располагается выше. (должно быть "0,8") -->
-        <TextBox x:Name="MessageText" Grid.Column="1" Classes="Transparent" VerticalAlignment="Center" Margin="0,9,0,7" TextWrapping="Wrap" MaxLength="2048" MaxHeight="100"
+        <TextBox x:Name="MessageText" Grid.Column="1" Classes="Transparent" VerticalAlignment="Center" Margin="2,3,0,3" TextWrapping="Wrap" MaxLength="2048" MaxHeight="120"
 			     LostFocus="MessageText_LostFocus" PropertyChanged="MessageText_PropertyChanged" KeyDown="MessageText_KeyDown" KeyUp="MessageText_KeyUp"
 			     SelectionStart="{Binding TextSelectionStart, Mode=TwoWay}" SelectionEnd="{Binding TextSelectionEnd, Mode=TwoWay}"
 			     PlaceholderText="{x:Static i18n:Resources.message}" Text="{Binding Text, Mode=TwoWay}"
 			     DataContextChanged="MessageText_DataContextChanged" Loaded="MessageText_Loaded"/>
 
-        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Bottom">
+        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
           <Button x:Name="FormattingButton" Classes="Tertiary ComposerButton" Click="ShowFormattingFlyout">
             <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon24TextLiveOutline}"/>
           </Button>

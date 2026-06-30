@@ -3,10 +3,12 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml.Templates;
+using ELOR.Laney.Controls.Attachments;
 using ELOR.Laney.Core;
 using ELOR.Laney.Extensions;
 using ELOR.Laney.Helpers;
 using ELOR.Laney.ViewModels;
+using ELOR.Laney.Views.Modals;
 using Serilog;
 using System;
 using System.Reactive.Linq;
@@ -51,6 +53,7 @@ namespace ELOR.Laney.Views {
                 case Settings.CHAT_LIST_AVATAR_SIZE:
                 case Settings.CHAT_LIST_AVATAR_SHAPE:
                 case Settings.CHAT_LIST_FONT_SIZE:
+                case Settings.MESSAGE_CHECKMARK_STYLE:
                     RebindChatsListItemsSource();
                     break;
                 case Settings.STREAMER_MODE:
@@ -93,6 +96,8 @@ namespace ELOR.Laney.Views {
 
             if (DemoMode.IsEnabled) return;
 
+            new System.Action(async () => await Session.ImViewModel.LoadStoriesAsync())();
+
             new System.Action(async () => {
                 bool isRegistered = false;
                 while (!isRegistered) {
@@ -132,6 +137,23 @@ namespace ELOR.Laney.Views {
             if (chat == null) return;
 
             ContextMenuHelper.ShowForChat(chat, g);
+        }
+
+        private async void StoryRailItem_Click(object sender, RoutedEventArgs e) {
+            Control control = sender as Control;
+            StoryRailItemViewModel item = control?.DataContext as StoryRailItemViewModel;
+            if (item?.Story == null) return;
+
+            StoryPreview preview = new StoryPreview(item.Story) {
+                DataContext = Session,
+                Width = 360,
+                Height = 560
+            };
+
+            VKUIDialog dialog = new VKUIDialog("История VK", item.StateText, ["Закрыть"], 1) {
+                DialogContent = preview
+            };
+            await dialog.ShowDialog<int>(Session.ModalWindow);
         }
 
         // Необходимо для того, чтобы при ПКМ не пробрасывалось

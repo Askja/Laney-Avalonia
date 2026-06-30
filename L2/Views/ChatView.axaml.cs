@@ -31,6 +31,7 @@ namespace ELOR.Laney.Views {
         DispatcherTimer markReadTimer;
         readonly System.Action<Avalonia.Styling.ThemeVariant> themeChangedAction;
         bool autoScrollToLastMessageQueued = false;
+        bool suppressHopNavUntilScrollSettled = false;
         bool frameMonitorRunning = false;
         long lastFrameTicks = 0;
         double lastFrameMs = 0;
@@ -38,8 +39,8 @@ namespace ELOR.Laney.Views {
         double maxFrameMs = 0;
         int jankFrames = 0;
 
-        MessageViewModel FirstVisible { get => MessagesListScrollViewer?.GetDataContextAt<MessageViewModel>(new Point(64, 0)); }
-        MessageViewModel LastVisible { get => MessagesListScrollViewer?.GetDataContextAt<MessageViewModel>(new Point(64, MessagesListScrollViewer.DesiredSize.Height - 5)); }
+        MessageViewModel FirstVisible { get => MessagesList?.GetFirstVisibleItem<MessageViewModel>(); }
+        MessageViewModel LastVisible { get => MessagesList?.GetLastVisibleItem<MessageViewModel>(); }
 
         public ChatView() {
             InitializeComponent();
@@ -69,7 +70,7 @@ namespace ELOR.Laney.Views {
 
             BackButton.Click += (a, b) => BackButtonClick?.Invoke(this, null);
             DataContextChanged += ChatView_DataContextChanged;
-            LoadingSpinner.PropertyChanged += LoadingSpinner_PropertyChanged;
+            LoadingSkeleton.PropertyChanged += LoadingSkeleton_PropertyChanged;
 
             DebugOverlay.IsVisible = Settings.ShowDebugCounters;
             Settings.SettingChanged += Settings_SettingChanged;
@@ -102,6 +103,8 @@ namespace ELOR.Laney.Views {
                     break;
                 case Settings.THEME:
                 case Settings.CHAT_BACKGROUND:
+                case Settings.CHAT_BACKGROUND_IMAGE:
+                case Settings.APP_FONT_FAMILY:
                 case Settings.MESSAGE_FONT_SIZE:
                 case Settings.MESSAGE_BUBBLE_WIDTH:
                 case Settings.MESSAGE_BUBBLE_DENSITY:
@@ -222,12 +225,27 @@ namespace ELOR.Laney.Views {
 
         private void ApplyChatAppearance() {
             long peerId = Chat?.PeerId ?? 0;
-            Root.Background = AppearanceManager.GetChatBackgroundBrush(Chat);
-            ImageLoader.SetBackgroundBlurRadius(ChatBackgroundImage, AppearanceManager.GetChatBackgroundBlurRadius(peerId));
-            ImageLoader.SetBackgroundSource(ChatBackgroundImage, AppearanceManager.GetChatBackgroundImageUri(peerId));
-            ChatBackgroundImage.Opacity = AppearanceManager.GetChatBackgroundImageOpacity(peerId);
-            ChatBackgroundDim.Opacity = AppearanceManager.GetChatBackgroundDimOpacity(peerId);
-            ChatBackgroundBrightness.Opacity = AppearanceManager.GetChatBackgroundBrightnessOpacity(peerId);
+            bool isDarkPalette = ResolveChatPaletteDark();
+            ApplyChatPaletteResources(isDarkPalette);
+
+            Avalonia.Media.IBrush chatBackground = AppearanceManager.GetChatBackgroundBrush(Chat, isDarkPalette);
+            Root.Resources[AppearanceManager.ChatBackgroundResourceKey] = chatBackground;
+            ChatBackgroundColor.Background = chatBackground;
+            MessagesList.Background = Avalonia.Media.Brushes.Transparent;
+            Uri backgroundImageUri = AppearanceManager.GetChatBackgroundImageUri(peerId);
+            bool hasBackgroundImage = backgroundImageUri != null;
+            ChatBackgroundImage.IsVisible = hasBackgroundImage;
+            ImageLoader.SetBackgroundBlurRadius(ChatBackgroundImage, hasBackgroundImage ? AppearanceManager.GetChatBackgroundBlurRadius(peerId) : 0);
+            ImageLoader.SetBackgroundSource(ChatBackgroundImage, backgroundImageUri);
+            ChatBackgroundImage.Opacity = hasBackgroundImage ? AppearanceManager.GetChatBackgroundImageOpacity(peerId) : 0;
+
+            double dimOpacity = AppearanceManager.GetChatBackgroundDimOpacity(peerId);
+            ChatBackgroundDim.Opacity = dimOpacity;
+            ChatBackgroundDim.IsVisible = dimOpacity > 0;
+
+            double brightnessOpacity = AppearanceManager.GetChatBackgroundBrightnessOpacity(peerId);
+            ChatBackgroundBrightness.Opacity = brightnessOpacity;
+            ChatBackgroundBrightness.IsVisible = brightnessOpacity > 0;
             AppearanceManager.ApplyChatAccentResources(Root.Resources, peerId);
             Root.Resources[AppearanceManager.MessageOuterMarginResourceKey] = AppearanceManager.GetMessageOuterMargin(peerId);
             Root.Resources[AppearanceManager.MessageTextHostMarginResourceKey] = AppearanceManager.GetMessageTextHostMargin(peerId);
@@ -238,10 +256,26 @@ namespace ELOR.Laney.Views {
             Root.Resources[AppearanceManager.MessageBubbleBorderThicknessResourceKey] = AppearanceManager.GetMessageBubbleBorderThickness(peerId);
             Root.Resources[AppearanceManager.MessageBubbleBorderBrushResourceKey] = AppearanceManager.GetMessageBubbleBorderBrush(peerId);
             Root.Resources[AppearanceManager.MessageBubbleBackgroundOpacityResourceKey] = AppearanceManager.GetMessageBubbleBackgroundOpacity();
-            Root.Resources[AppearanceManager.MessageBubbleOutgoingBrushResourceKey] = AppearanceManager.GetOutgoingBubbleBrush(Chat);
+            Avalonia.Media.IBrush outgoingBubbleBrush = AppearanceManager.GetOutgoingBubbleBrush(Chat, isDarkPalette);
+            Root.Resources[AppearanceManager.MessageBubbleOutgoingBrushResourceKey] = outgoingBubbleBrush;
+            Root.Resources["MessageBubbleOutgoingTextPrimaryBrush"] = AppearanceManager.GetReadableTextBrush(outgoingBubbleBrush);
+            Root.Resources["MessageBubbleOutgoingTextSecondaryBrush"] = AppearanceManager.GetReadableTextBrush(outgoingBubbleBrush, true);
+        }
+
+        private bool ResolveChatPaletteDark() {
+            if (AppearanceManager.TryIsDarkBrush(BottomPanel?.Background, out bool isDark)) return isDark;
+            if (AppearanceManager.TryIsDarkBrush(Root?.Background, out isDark)) return isDark;
+            return AppearanceManager.IsDarkTheme();
+        }
+
+        private void ApplyChatPaletteResources(bool isDarkPalette) {
+            Root.Resources["LaneySkeletonBrush"] = AppearanceManager.GetSkeletonBrush(isDarkPalette);
+            Root.Resources["MessageBubbleDefaultIncomingBrush"] = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse(isDarkPalette ? "#D92A2D31" : "#EFFFFFFF"));
+            Root.Resources["NestedMessageBackgroundBrush"] = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse(isDarkPalette ? "#A0223143" : "#BFE8F2FF"));
         }
 
         private void ReceivedMessages_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e) {
+            if (MessagesList?.IsScrollOperationInProgress == true) return;
             if (e.Action != NotifyCollectionChangedAction.Add || !autoScrollToLastMessage || Chat?.DisplayedMessages == null || Chat.DisplayedMessages.Count == 0) return;
             QueueScrollToLastMessage(sender as ObservableCollection<MessageViewModel>);
         }
@@ -257,13 +291,14 @@ namespace ELOR.Laney.Views {
                 await Task.Delay(16);
                 VKSession session = VKSession.GetByDataContext(this);
                 if (session?.Window?.IsActive != true) return;
+                if (MessagesList?.IsScrollOperationInProgress == true) return;
                 if (!autoScrollToLastMessage || received == null || Chat?.DisplayedMessages == null || Chat.DisplayedMessages.Count == 0) return;
 
                 int lastReceivedId = received.LastOrDefault()?.ConversationMessageId ?? 0;
                 MessageViewModel lastDisplayed = Chat.DisplayedMessages.Last;
                 int lastDisplayedId = lastDisplayed?.ConversationMessageId ?? 0;
                 if (lastReceivedId == lastDisplayedId && lastDisplayedId > 0) {
-                    MessagesList.ScrollIntoView(lastDisplayed);
+                    await MessagesList.ScrollToBottomStableAsync(lastDisplayed, 8);
 
                     // После loading-состояния нужно ещё раз дожать вниз, когда высота bubble станет финальной.
                     if (Settings.ShowDebugCounters) Log.Information($"Need to scroll to last message again. Message id: {lastDisplayedId}");
@@ -287,7 +322,7 @@ namespace ELOR.Laney.Views {
                         // Принудительно скроллим вниз
                         //double h = MessagesListScrollViewer.Extent.Height - MessagesListScrollViewer.DesiredSize.Height;
                         //ForceScroll(h);
-                        MessagesListScrollViewer.ScrollToEnd();
+                        await MessagesList.ScrollToBottomStableAsync(msg, 10);
 
                         Log.Information($"Scroll to message \"{msg.ConversationMessageId}\" done.");
                     }
@@ -308,26 +343,66 @@ namespace ELOR.Laney.Views {
         //}
 
         bool autoScrollToLastMessage = false;
+        bool visibleMessagesCheckQueued = false;
         private void ScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e) {
-            CheckFirstAndLastDisplayedMessages();
+            autoScrollToLastMessage = MessagesList?.IsScrollOperationInProgress != true && IsNearBottom(96);
+            QueueFirstAndLastDisplayedMessagesCheck();
         }
 
         private void MessagesListScrollViewer_PropertyChanged(object sender, AvaloniaPropertyChangedEventArgs e) {
-            if (e.Property == ScrollViewer.ExtentProperty) CheckFirstAndLastDisplayedMessages();
+            if (e.Property == ScrollViewer.ExtentProperty) QueueFirstAndLastDisplayedMessagesCheck();
+        }
+
+        private async void HopNavButton_Click(object sender, RoutedEventArgs e) {
+            suppressHopNavUntilScrollSettled = true;
+            HopNavContainer.IsVisible = false;
+
+            try {
+                if (Chat != null) await Chat.GoToLastMessageAsync();
+                MessageViewModel lastDisplayed = Chat?.DisplayedMessages?.LastOrDefault();
+                await MessagesList.ScrollToBottomStableAsync(lastDisplayed, 16);
+            } catch (Exception ex) {
+                Log.Error(ex, "Failed to hop to chat bottom.");
+            } finally {
+                suppressHopNavUntilScrollSettled = false;
+                CheckFirstAndLastDisplayedMessages();
+            }
+        }
+
+        private void QueueFirstAndLastDisplayedMessagesCheck() {
+            if (visibleMessagesCheckQueued) return;
+            visibleMessagesCheckQueued = true;
+
+            TopLevel topLevel = TopLevel.GetTopLevel(this);
+            if (topLevel == null) {
+                visibleMessagesCheckQueued = false;
+                CheckFirstAndLastDisplayedMessages();
+                return;
+            }
+
+            topLevel.RequestAnimationFrame((_) => {
+                visibleMessagesCheckQueued = false;
+                CheckFirstAndLastDisplayedMessages();
+            });
         }
 
         private void CheckFirstAndLastDisplayedMessages() {
             MessageViewModel fv = FirstVisible;
-            MessageViewModel lv = LastVisible;
             if (Settings.ShowDebugCounters) {
+                MessageViewModel lv = LastVisible;
                 tmsgId.Text = fv?.ConversationMessageId.ToString() ?? "N/A";
                 bmsgId.Text = lv?.ConversationMessageId.ToString() ?? "N/A";
                 UpdateDebugOverlay();
             }
 
             UpdateDateUnderHeader(fv);
+            if (suppressHopNavUntilScrollSettled || MessagesList?.IsScrollOperationInProgress == true) {
+                HopNavContainer.IsVisible = false;
+                return;
+            }
+
             if (Chat?.DisplayedMessages?.Count > 0) {
-                HopNavContainer.IsVisible = !autoScrollToLastMessage;
+                HopNavContainer.IsVisible = CanHopToBottom();
             } else {
                 HopNavContainer.IsVisible = false;
             }
@@ -337,6 +412,25 @@ namespace ELOR.Laney.Views {
                 Log.Error(ex, "Failed to check messages list's ScrollViewer!");
                 HopNavContainer.IsVisible = false;
             }
+        }
+
+        private bool CanHopToBottom() {
+            if (Chat == null || MessagesListScrollViewer == null) return false;
+            bool canScroll = !IsNearBottom(2);
+            bool hasUndisplayedTail = Chat.LastMessage != null
+                && Chat.DisplayedMessages?.LastOrDefault()?.ConversationMessageId != Chat.LastMessage.ConversationMessageId;
+
+            if (Chat.UnreadMessagesCount > 0) return canScroll || hasUndisplayedTail;
+            return canScroll;
+        }
+
+        private bool IsNearBottom(double tolerance) {
+            if (MessagesListScrollViewer == null) return false;
+
+            double viewportHeight = MessagesListScrollViewer.Viewport.Height;
+            if (viewportHeight <= 0) viewportHeight = MessagesListScrollViewer.DesiredSize.Height;
+            double remaining = MessagesListScrollViewer.Extent.Height - viewportHeight - MessagesListScrollViewer.Offset.Y;
+            return remaining <= tolerance;
         }
 
         private void UpdateDateUnderHeader(MessageViewModel msg) {
@@ -356,8 +450,8 @@ namespace ELOR.Laney.Views {
             dbgScrO.Text = $"{Math.Round(MessagesListScrollViewer.Offset.Y)}/{Math.Round(MessagesListScrollViewer.Extent.Height)}";
             dbgScrAuto.Text = autoScrollToLastMessage ? "on" : "off";
 
-            long ram = Process.GetCurrentProcess().PrivateMemorySize64;
-            dbgRam.Text = $"{Math.Round((double)ram / 1048576, 1)} Mb";
+            Process process = Process.GetCurrentProcess();
+            dbgRam.Text = $"WS {Math.Round(process.WorkingSet64 / 1048576d, 0)} / P {Math.Round(process.PrivateMemorySize64 / 1048576d, 0)} Mb";
             dbgGc.Text = $"{GC.CollectionCount(0)}/{GC.CollectionCount(1)}/{GC.CollectionCount(2)}";
 
             List<Control> visibleControls = new List<Control>();
@@ -438,6 +532,88 @@ namespace ELOR.Laney.Views {
             return result;
         }
 
+        public async Task<ChatHistoryBoundaryQaResult> RunHistoryBoundaryQaAsync(TimeSpan timeout) {
+            ChatHistoryBoundaryQaResult result = new ChatHistoryBoundaryQaResult();
+            if (MessagesListScrollViewer == null || Chat?.DisplayedMessages == null || Chat.DisplayedMessages.Count == 0) return result;
+
+            Stopwatch readiness = Stopwatch.StartNew();
+            while ((Chat.IsLoading || MessagesList.IsScrollOperationInProgress) && readiness.Elapsed < timeout) {
+                await Task.Delay(50);
+            }
+
+            result.Ready = !Chat.IsLoading && !MessagesList.IsScrollOperationInProgress;
+            result.HolderReady = MessagesList.IsHolderReady;
+            result.HasHolder = MessagesList.HasCurrentHolder;
+            result.CanChangeScroll = MessagesList.CanChangeScroll;
+            result.WasPreviousLoadFlagSet = MessagesList.IsPreviousMessagesLoadTriggered;
+            result.WasNextLoadFlagSet = MessagesList.IsNextMessagesLoadTriggered;
+            result.InitialCount = Chat.DisplayedMessages.Count;
+            result.BeforeFirstId = Chat.DisplayedMessages.First?.ConversationMessageId ?? 0;
+
+            double viewportHeight = MessagesListScrollViewer.Viewport.Height;
+            if (viewportHeight <= 0) viewportHeight = MessagesListScrollViewer.Bounds.Height;
+            double maxOffset = Math.Max(0, MessagesListScrollViewer.Extent.Height - viewportHeight);
+            if (maxOffset <= viewportHeight) return result;
+
+            double stagingOffset = Math.Clamp(Math.Max(160, viewportHeight * 1.25), 0, maxOffset);
+            MessagesList.SuppressIncrementalLoadingFor(1000);
+            await SetMessagesScrollOffsetForQaAsync(stagingOffset, TimeSpan.FromMilliseconds(700));
+
+            MessagesList.SuppressIncrementalLoadingFor(1000);
+            await SetMessagesScrollOffsetForQaAsync(0, TimeSpan.FromMilliseconds(900));
+            result.TriggerAccepted = MessagesList.TriggerPreviousPageLoadForCurrentViewport();
+            result.TriggerSkipReason = MessagesList.LastPreviousTriggerSkipReason;
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            bool started = false;
+
+            while (stopwatch.Elapsed < timeout) {
+                if (Chat.IsPreviousMessagesLoading) started = true;
+                int currentFirstId = Chat.DisplayedMessages.First?.ConversationMessageId ?? 0;
+                if (currentFirstId > 0 && result.BeforeFirstId > 0 && currentFirstId < result.BeforeFirstId) {
+                    started = true;
+                    break;
+                }
+                if (started && !Chat.IsPreviousMessagesLoading) break;
+                await Task.Delay(50);
+            }
+
+            Stopwatch restoreWait = Stopwatch.StartNew();
+            while (MessagesList.IsScrollOperationInProgress && restoreWait.Elapsed < timeout) {
+                await Task.Delay(50);
+            }
+
+            await Task.Delay(160);
+            result.Started = started;
+            result.FinalCount = Chat.DisplayedMessages.Count;
+            result.AfterFirstId = Chat.DisplayedMessages.First?.ConversationMessageId ?? 0;
+            result.PreviousLoaded = result.AfterFirstId > 0 && result.BeforeFirstId > 0 && result.AfterFirstId < result.BeforeFirstId;
+            result.TriggerSkipReason = String.IsNullOrWhiteSpace(MessagesList.LastPreviousTriggerSkipReason)
+                ? result.TriggerSkipReason
+                : MessagesList.LastPreviousTriggerSkipReason;
+            result.AnchorId = MessagesList.LastPreviousRestoreAnchorId;
+            result.AnchorDriftPx = MessagesList.LastPreviousRestoreDrift;
+            result.RestoreOldOffset = MessagesList.LastPreviousRestoreOldOffset;
+            result.RestoreOldHeight = MessagesList.LastPreviousRestoreOldHeight;
+            result.RestoreFinalOffset = MessagesList.LastPreviousRestoreFinalOffset;
+            result.RestoreFinalHeight = MessagesList.LastPreviousRestoreFinalHeight;
+            result.AnchorStable = !Double.IsNaN(result.AnchorDriftPx) && Math.Abs(result.AnchorDriftPx) <= 6;
+            result.FinalOffset = MessagesListScrollViewer.Offset.Y;
+            result.FinalExtent = MessagesListScrollViewer.Extent.Height;
+            return result;
+        }
+
+        private async Task<bool> SetMessagesScrollOffsetForQaAsync(double targetOffset, TimeSpan timeout) {
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            while (stopwatch.Elapsed < timeout) {
+                MessagesListScrollViewer.Offset = new Vector(MessagesListScrollViewer.Offset.X, targetOffset);
+                await Task.Delay(32);
+
+                if (Math.Abs(MessagesListScrollViewer.Offset.Y - targetOffset) <= 2) return true;
+            }
+
+            return Math.Abs(MessagesListScrollViewer.Offset.Y - targetOffset) <= 4;
+        }
+
         private void ScheduleFrameSample() {
             if (!frameMonitorRunning) return;
 
@@ -461,11 +637,11 @@ namespace ELOR.Laney.Views {
             ScheduleFrameSample();
         }
 
-        private void LoadingSpinner_PropertyChanged(object sender, AvaloniaPropertyChangedEventArgs e) {
-            if (e.Property == VKUI.Controls.Spinner.IsVisibleProperty) {
-                TopDateContainer.IsVisible = !LoadingSpinner.IsVisible;
-                HopNavContainer.IsVisible = !LoadingSpinner.IsVisible;
-                if (!LoadingSpinner.IsVisible) CheckFirstAndLastDisplayedMessages();
+        private void LoadingSkeleton_PropertyChanged(object sender, AvaloniaPropertyChangedEventArgs e) {
+            if (e.Property == StackPanel.IsVisibleProperty) {
+                TopDateContainer.IsVisible = !LoadingSkeleton.IsVisible;
+                HopNavContainer.IsVisible = !LoadingSkeleton.IsVisible;
+                if (!LoadingSkeleton.IsVisible) CheckFirstAndLastDisplayedMessages();
             }
         }
 
@@ -510,6 +686,7 @@ namespace ELOR.Laney.Views {
         // TODO: execute (mark message and reactions as read in one request).
         private void MarkReadTimer_Tick(object sender, EventArgs e) {
             if (Chat == null) return;
+            if (Settings.DisableMarkingMessagesAsRead) return;
             new System.Action(async () => {
                 await TryMarkAsReadAsync(LastVisible);
                 if (Chat?.UnreadReactions != null) await TryMarkReactionsAsReadAsync();
@@ -519,6 +696,7 @@ namespace ELOR.Laney.Views {
         bool isMarking = false;
         private async Task TryMarkAsReadAsync(MessageViewModel msg) {
             if (DemoMode.IsEnabled) return;
+            if (Settings.DisableMarkingMessagesAsRead) return;
             if (isMarking || msg == null || msg.IsOutgoing || msg.State != MessageVMState.Unread) return;
             isMarking = true;
 
@@ -536,6 +714,7 @@ namespace ELOR.Laney.Views {
         bool isMarking2 = false;
         private async Task TryMarkReactionsAsReadAsync() {
             if (DemoMode.IsEnabled) return;
+            if (Settings.DisableMarkingMessagesAsRead) return;
             if (isMarking2 || FirstVisible == null || LastVisible == null) return;
             var fid = FirstVisible.ConversationMessageId;
             var lid = LastVisible.ConversationMessageId;
@@ -667,5 +846,31 @@ namespace ELOR.Laney.Views {
         public int JankFrames { get; set; }
         public int VisibleControls { get; set; }
         public double PrivateMemoryMb { get; set; }
+    }
+
+    public sealed class ChatHistoryBoundaryQaResult {
+        public bool Ready { get; set; }
+        public bool HasHolder { get; set; }
+        public bool HolderReady { get; set; }
+        public bool CanChangeScroll { get; set; }
+        public bool WasPreviousLoadFlagSet { get; set; }
+        public bool WasNextLoadFlagSet { get; set; }
+        public bool TriggerAccepted { get; set; }
+        public string TriggerSkipReason { get; set; } = String.Empty;
+        public bool Started { get; set; }
+        public bool PreviousLoaded { get; set; }
+        public bool AnchorStable { get; set; }
+        public int InitialCount { get; set; }
+        public int FinalCount { get; set; }
+        public int BeforeFirstId { get; set; }
+        public int AfterFirstId { get; set; }
+        public int AnchorId { get; set; }
+        public double AnchorDriftPx { get; set; } = Double.NaN;
+        public double RestoreOldOffset { get; set; } = Double.NaN;
+        public double RestoreOldHeight { get; set; } = Double.NaN;
+        public double RestoreFinalOffset { get; set; } = Double.NaN;
+        public double RestoreFinalHeight { get; set; } = Double.NaN;
+        public double FinalOffset { get; set; }
+        public double FinalExtent { get; set; }
     }
 }

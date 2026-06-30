@@ -165,6 +165,12 @@
   <data name="no" xml:space="preserve">
     <value>No</value>
   </data>
+  <data name="ok" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
   <data name="retry" xml:space="preserve">
     <value>Try again</value>
   </data>
@@ -1107,6 +1113,44 @@
   <data name="settings_search_empty_text" xml:space="preserve">
     <value>Try another word. Settings are not telepaths.</value>
   </data>
+  <data name="settings_autostart_section" xml:space="preserve"><value>Autostart</value></data>
+  <data name="settings_autostart_enabled" xml:space="preserve"><value>Start Laney with the system</value></data>
+  <data name="settings_autostart_enabled_desc" xml:space="preserve"><value>Adds the client to the current user's system autostart</value></data>
+  <data name="settings_autostart_minimized" xml:space="preserve"><value>Start minimized</value></data>
+  <data name="settings_autostart_minimized_desc" xml:space="preserve"><value>Opens the window minimized instead of jumping into your face</value></data>
+  <data name="settings_autostart_status" xml:space="preserve"><value>System status</value></data>
+  <data name="settings_notifications_style_section" xml:space="preserve"><value>Notification style</value></data>
+  <data name="settings_notifications_delivery" xml:space="preserve"><value>Delivery mode</value></data>
+  <data name="settings_notifications_delivery_desc" xml:space="preserve"><value>Laney custom notifications, system notifications, or both at once</value></data>
+  <data name="settings_notifications_delivery_custom" xml:space="preserve"><value>Laney custom</value></data>
+  <data name="settings_notifications_delivery_system" xml:space="preserve"><value>System</value></data>
+  <data name="settings_notifications_delivery_both" xml:space="preserve"><value>Custom + system</value></data>
+  <data name="settings_notifications_position" xml:space="preserve"><value>Screen position</value></data>
+  <data name="settings_notifications_position_desc" xml:space="preserve"><value>Corner where the custom notification stack appears</value></data>
+  <data name="settings_notifications_position_bottom_right" xml:space="preserve"><value>Bottom right</value></data>
+  <data name="settings_notifications_position_bottom_left" xml:space="preserve"><value>Bottom left</value></data>
+  <data name="settings_notifications_position_top_right" xml:space="preserve"><value>Top right</value></data>
+  <data name="settings_notifications_position_top_left" xml:space="preserve"><value>Top left</value></data>
+  <data name="settings_notifications_stack_limit" xml:space="preserve"><value>Stack size</value></data>
+  <data name="settings_notifications_stack_limit_desc" xml:space="preserve"><value>How many custom notifications can stay on screen at once</value></data>
+  <data name="settings_notifications_timeout" xml:space="preserve"><value>Timeout, seconds</value></data>
+  <data name="settings_notifications_timeout_desc" xml:space="preserve"><value>How many seconds before a custom notification disappears</value></data>
+  <data name="settings_notifications_fast_actions" xml:space="preserve"><value>Fast actions</value></data>
+  <data name="settings_notifications_fast_actions_desc" xml:space="preserve"><value>Open, mark read, and mute buttons inside the notification</value></data>
+  <data name="settings_notifications_show_avatars" xml:space="preserve"><value>Show avatars</value></data>
+  <data name="settings_notifications_show_avatars_desc" xml:space="preserve"><value>Sender avatar in the custom notification</value></data>
+  <data name="settings_notifications_show_images" xml:space="preserve"><value>Show images</value></data>
+  <data name="settings_notifications_show_images_desc" xml:space="preserve"><value>Attachment previews in the custom notification</value></data>
+  <data name="settings_api_section" xml:space="preserve"><value>VK API</value></data>
+  <data name="settings_api_domain" xml:space="preserve"><value>API domain</value></data>
+  <data name="settings_api_domain_desc" xml:space="preserve"><value>VK API host without a path, for example api.vk.me</value></data>
+  <data name="settings_api_version" xml:space="preserve"><value>API version</value></data>
+  <data name="settings_api_version_desc" xml:space="preserve"><value>Version sent in the v parameter</value></data>
+  <data name="settings_api_reset" xml:space="preserve"><value>Reset VK API</value></data>
+  <data name="settings_api_reset_desc" xml:space="preserve"><value>Restore the API domain and version bundled with the client</value></data>
+  <data name="notification_action_open" xml:space="preserve"><value>Open</value></data>
+  <data name="notification_action_mark_read" xml:space="preserve"><value>Read</value></data>
+  <data name="notification_action_mute_1h" xml:space="preserve"><value>Quiet 1h</value></data>
   <data name="cm_local_quiet" xml:space="preserve"><value>Local quiet</value></data>
   <data name="cm_local_quiet_subtitle" xml:space="preserve"><value>Mute toast and sound locally for a while; VK is not changed</value></data>
   <data name="cm_until" xml:space="preserve"><value>Until {0}</value></data>
@@ -1134,6 +1178,52 @@
   <data name="cm_open_floating_window_subtitle" xml:space="preserve"><value>Always-on-top compact chat</value></data>
   <data name="cm_jump_to_date" xml:space="preserve"><value>Jump to date</value></data>
   <data name="cm_jump_to_date_subtitle" xml:space="preserve"><value>Find the closest message without full backfill</value></data>
+  <data name="cm_debug_simulate_deleted" xml:space="preserve"><value>Simulate chat deletion</value></data>
+  <data name="cm_jump_date_placeholder" xml:space="preserve"><value>2026-06-27 or 27.06.2026</value></data>
+  <data name="cm_jump_to_date_dialog_text" xml:space="preserve"><value>Laney will find the closest message to the start of the selected day. If the date is not loaded, it uses a cheap history search instead of downloading the whole chat.</value></data>
+  <data name="cm_jump_failed_title" xml:space="preserve"><value>Jump failed</value></data>
+  <data name="cm_bulk_period_all_selected" xml:space="preserve"><value>All selected</value></data>
+  <data name="cm_bulk_period_today" xml:space="preserve"><value>Today</value></data>
+  <data name="cm_bulk_period_7_days" xml:space="preserve"><value>7 days</value></data>
+  <data name="cm_bulk_period_30_days" xml:space="preserve"><value>30 days</value></data>
+  <data name="cm_bulk_attachment_any" xml:space="preserve"><value>Any type</value></data>
+  <data name="cm_bulk_attachment_media" xml:space="preserve"><value>Photo/video</value></data>
+  <data name="cm_bulk_attachment_documents" xml:space="preserve"><value>Documents</value></data>
+  <data name="cm_bulk_attachment_links" xml:space="preserve"><value>Links</value></data>
+  <data name="cm_bulk_attachment_voice" xml:space="preserve"><value>Voice</value></data>
+  <data name="cm_bulk_attachment_graffiti" xml:space="preserve"><value>Graffiti</value></data>
+  <data name="cm_bulk_attachment_stickers" xml:space="preserve"><value>Stickers</value></data>
+  <data name="cm_bulk_attachment_text" xml:space="preserve"><value>Text only</value></data>
+  <data name="cm_bulk_sender_any" xml:space="preserve"><value>Any sender</value></data>
+  <data name="cm_bulk_sender_mine" xml:space="preserve"><value>Only mine</value></data>
+  <data name="cm_bulk_sender_others" xml:space="preserve"><value>Only others</value></data>
+  <data name="cm_download_profile_all" xml:space="preserve"><value>All attachments</value></data>
+  <data name="cm_download_profile_photos" xml:space="preserve"><value>Photo archive</value></data>
+  <data name="cm_download_profile_documents" xml:space="preserve"><value>Documents</value></data>
+  <data name="cm_download_profile_voice" xml:space="preserve"><value>Voice</value></data>
+  <data name="cm_download_profile_video" xml:space="preserve"><value>Video</value></data>
+  <data name="cm_download_profile_audio" xml:space="preserve"><value>Audio</value></data>
+  <data name="cm_download_profile_stickers" xml:space="preserve"><value>Stickers/graffiti</value></data>
+  <data name="cm_download_speed_unlimited" xml:space="preserve"><value>Unlimited</value></data>
+  <data name="cm_download_filter_placeholder" xml:space="preserve"><value>name, extension, type, or URL; can be empty</value></data>
+  <data name="cm_download_sender_placeholder" xml:space="preserve"><value>sender id; can be empty</value></data>
+  <data name="cm_download_from_placeholder" xml:space="preserve"><value>from date: 2026-06-01 or 01.06.2026</value></data>
+  <data name="cm_download_to_placeholder" xml:space="preserve"><value>to date: 2026-06-27 or 27.06.2026</value></data>
+  <data name="cm_download_size_placeholder" xml:space="preserve"><value>max size MB; can be empty</value></data>
+  <data name="cm_download_dedup" xml:space="preserve"><value>Dedupe by URL and SHA-256</value></data>
+  <data name="cm_download_sidecar" xml:space="preserve"><value>Write sidecar JSON next to files</value></data>
+  <data name="cm_download_resume" xml:space="preserve"><value>Resume: skip files already downloaded into this folder</value></data>
+  <data name="cm_download_backfill" xml:space="preserve"><value>Full-history backfill through VK API</value></data>
+  <data name="cm_download_pause" xml:space="preserve"><value>Pause after one API page</value></data>
+  <data name="cm_download_field_profile" xml:space="preserve"><value>Profile</value></data>
+  <data name="cm_download_field_filter" xml:space="preserve"><value>Filter</value></data>
+  <data name="cm_download_field_sender" xml:space="preserve"><value>Sender</value></data>
+  <data name="cm_download_field_from" xml:space="preserve"><value>Date from</value></data>
+  <data name="cm_download_field_to" xml:space="preserve"><value>Date to</value></data>
+  <data name="cm_download_field_size" xml:space="preserve"><value>Size</value></data>
+  <data name="cm_download_field_speed" xml:space="preserve"><value>Speed</value></data>
+  <data name="cm_download_dialog_text" xml:space="preserve"><value>By default, Laney exports the locally loaded slice. Full-history runs through VK API with a resumable queue.</value></data>
+  <data name="cm_download_choose_folder" xml:space="preserve"><value>Choose folder</value></data>
   <data name="cm_section_debug" xml:space="preserve"><value>Debug</value></data>
   <data name="cm_section_status_notifications" xml:space="preserve"><value>Status and notifications</value></data>
   <data name="cm_section_appearance_security" xml:space="preserve"><value>Appearance and security</value></data>

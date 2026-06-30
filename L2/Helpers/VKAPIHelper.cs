@@ -150,7 +150,7 @@ namespace ELOR.Laney.Helpers {
             foreach (var row in CollectionsMarshal.AsSpan(buttons)) {
                 Grid buttonsRow = new Grid {
                     ColumnDefinitions = new ColumnDefinitions(),
-                    Margin = new Thickness(-4, isFirstRow ? 0 : 8, -4, 0)
+                    Margin = new Thickness(0, isFirstRow ? 0 : 6, 0, 0)
                 };
                 for (byte i = 0; i < row.Count; i++) {
                     buttonsRow.ColumnDefinitions.Add(new ColumnDefinition() { Width = GridLength.Star });
@@ -193,38 +193,46 @@ namespace ELOR.Laney.Helpers {
 
         private static Button BuildButton(BotButton button) {
             Button buttonUI = new Button {
-                Margin = new Thickness(4, 0, 4, 0),
-                Padding = new Thickness(0, 0, 0, 0),
-                HorizontalContentAlignment = HorizontalAlignment.Stretch
+                Margin = new Thickness(3, 0),
+                Padding = new Thickness(8, 0),
+                CornerRadius = new CornerRadius(12),
+                MinHeight = 34,
+                HorizontalContentAlignment = HorizontalAlignment.Stretch,
+                VerticalContentAlignment = VerticalAlignment.Center
             };
             buttonUI.Classes.Add("Medium");
 
-            StackPanel contentIn = new StackPanel {
-                Orientation = Orientation.Horizontal,
-                HorizontalAlignment = HorizontalAlignment.Center
+            Grid content = new Grid {
+                MinHeight = 34,
+                ColumnDefinitions = new ColumnDefinitions("20,*,20")
             };
 
             VKIcon icon = new VKIcon {
-                Margin = new Thickness(0, 8, 0, 8),
+                Width = 18,
+                Height = 18,
+                VerticalAlignment = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Center,
                 IsVisible = false,
             };
 
             TextBlock label = new TextBlock {
-                FontSize = 15,
-                LineHeight = 15,
+                FontSize = 13,
+                LineHeight = 17,
                 VerticalAlignment = VerticalAlignment.Center,
                 FontWeight = FontWeight.Medium,
                 TextAlignment = TextAlignment.Center,
-                Margin = new Thickness(4, 10, 4, 10)
+                TextWrapping = TextWrapping.Wrap,
+                TextTrimming = TextTrimming.CharacterEllipsis,
+                MaxLines = 2,
+                Margin = new Thickness(2, 4)
             };
             if (button.Color != BotButtonColor.Default || button.Action.Type == BotButtonType.VKPay)
                 label.Classes.Add("ButtonIn");
 
-            contentIn.Children.Add(icon);
-            contentIn.Children.Add(label);
-
-            Grid content = new Grid { Height = 36 };
-            content.Children.Add(contentIn);
+            Grid.SetColumn(icon, 0);
+            Grid.SetColumn(label, 1);
+            content.Children.Add(icon);
+            content.Children.Add(label);
             buttonUI.Content = content;
 
             if (button.Action.Type == BotButtonType.VKPay) {
@@ -270,14 +278,14 @@ namespace ELOR.Laney.Helpers {
 
             if (button.Action.Type == BotButtonType.OpenLink) {
                 var arrowIcon = new VKIcon {
-                    Width = 12,
-                    Height = 12,
-                    Margin = new Thickness(3),
-                    HorizontalAlignment = HorizontalAlignment.Right,
-                    VerticalAlignment = VerticalAlignment.Top,
+                    Width = 14,
+                    Height = 14,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center,
                     Id = VKIconNames.Icon12ArrowUpRight
                 };
                 arrowIcon.RegisterThemeResource(VKIcon.ForegroundProperty, "VKButtonSecondaryForegroundBrush");
+                Grid.SetColumn(arrowIcon, 2);
                 content.Children.Add(arrowIcon);
             }
             return buttonUI;

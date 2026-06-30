@@ -4,15 +4,40 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:i18n="using:ELOR.Laney.Assets.i18n"
              xmlns:vkui="using:VKUI.Controls"
+             xmlns:controls="using:ELOR.Laney.Controls"
              xmlns:vm="using:ELOR.Laney.ViewModels.SettingsCategories"
              xmlns:core="using:ELOR.Laney.Core"
+             xmlns:mdl="using:ELOR.Laney.DataModels"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="ELOR.Laney.Views.SettingsCategories.Appearance" x:DataType="vm:AppearanceViewModel">
+  <UserControl.Styles>
+    <Style Selector="Button.FontCard, Button.IconCard">
+      <Setter Property="Background" Value="{DynamicResource LaneyMutedSurfaceBrush}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource LaneyBorderSubtleBrush}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="CornerRadius" Value="8"/>
+      <Setter Property="Padding" Value="10"/>
+      <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+      <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+    </Style>
+    <Style Selector="Button.FontCard:pointerover, Button.IconCard:pointerover">
+      <Setter Property="Background" Value="{DynamicResource VKBackgroundHoverBrush}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource VKIconTertiaryAlphaBrush}"/>
+    </Style>
+    <Style Selector="Button.FontCard.Selected, Button.IconCard.Selected">
+      <Setter Property="Background" Value="{DynamicResource LaneyAccentSoftBrush}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource LaneyAccentBrush}"/>
+    </Style>
+  </UserControl.Styles>
+
   <ScrollViewer>
     <StackPanel>
       <Border Classes="Group" VerticalAlignment="Top">
         <StackPanel>
           <vkui:Cell Margin="0" Header="{x:Static i18n:Resources.st_theme}">
+            <vkui:Cell.Before>
+              <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon28PaletteOutline}"/>
+            </vkui:Cell.Before>
             <vkui:Cell.After>
               <ComboBox Classes="Alternate" ItemsSource="{Binding AppThemes}" SelectedItem="{Binding CurrentAppTheme, Mode=TwoWay}">
                 <ComboBox.ItemTemplate>
@@ -21,6 +46,77 @@
                   </DataTemplate>
                 </ComboBox.ItemTemplate>
               </ComboBox>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Шрифт интерфейса" Subtitle="Меняет общий шрифт клиента без перезапуска.">
+            <vkui:Cell.Before>
+              <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon24TextLiveOutline}"/>
+            </vkui:Cell.Before>
+          </vkui:Cell>
+          <Border Margin="54,0,14,12" Padding="14" CornerRadius="10" Background="{DynamicResource LaneyMutedSurfaceBrush}">
+            <StackPanel Spacing="8">
+              <TextBlock Classes="Headline" Text="{Binding CurrentAppFontFamily.Title}" FontFamily="{Binding CurrentAppFontFamily.Family}"/>
+              <TextBlock Classes="Subhead" Text="{Binding CurrentAppFontFamily.Sample}" FontFamily="{Binding CurrentAppFontFamily.Family}" Foreground="{DynamicResource VKTextSecondaryBrush}" TextWrapping="Wrap"/>
+            </StackPanel>
+          </Border>
+          <ScrollViewer x:Name="FontCarouselScroll"
+                        Margin="54,0,14,12"
+                        HorizontalScrollBarVisibility="Auto"
+                        VerticalScrollBarVisibility="Disabled"
+                        PointerWheelChanged="FontCarouselScroll_PointerWheelChanged">
+            <ItemsControl ItemsSource="{Binding AppFontFamilyOptions}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel Orientation="Horizontal" Spacing="8"/>
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:AppFontFamilyOption">
+                  <Button Classes="FontCard" Classes.Selected="{Binding IsSelected}" MinWidth="140" Click="AppFontFamily_Click">
+                    <Grid RowDefinitions="Auto Auto" ColumnDefinitions="* Auto">
+                      <TextBlock FontFamily="{Binding Family}" Classes="Subhead" FontWeight="SemiBold" Text="{Binding Title}" TextTrimming="CharacterEllipsis"/>
+                      <vkui:VKIcon Grid.Column="1" Width="20" Height="20" Foreground="{DynamicResource LaneyAccentBrush}" Id="{x:Static vkui:VKIconNames.Icon20CheckCircleOn}" IsVisible="{Binding IsSelected}"/>
+                      <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Margin="0,5,0,0" FontFamily="{Binding Family}" Classes="Caption1" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="{Binding Sample}" MaxLines="1" TextTrimming="CharacterEllipsis"/>
+                    </Grid>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+          <vkui:Cell Header="Иконка приложения" Subtitle="Вариант для окна и tray: VK-набор Icons8 или локальные Oshi no Ko иконки.">
+            <vkui:Cell.Before>
+              <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon28PictureOutline}"/>
+            </vkui:Cell.Before>
+          </vkui:Cell>
+          <ItemsControl Margin="54,0,14,12" ItemsSource="{Binding AppIconVariantCards}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <WrapPanel ItemWidth="164" ItemHeight="152" Orientation="Horizontal"/>
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:AppIconVariantOption">
+                <Button Classes="IconCard" Classes.Selected="{Binding IsSelected}" Width="156" Height="144" Margin="0,0,8,8" Click="AppIconVariant_Click">
+                    <Grid RowDefinitions="60 Auto *">
+                    <Border Width="56" Height="56" HorizontalAlignment="Center" CornerRadius="14" ClipToBounds="True" Background="{DynamicResource LaneySurfaceRaisedBrush}">
+                      <Image Stretch="UniformToFill" Source="{Binding PreviewBitmap}"/>
+                    </Border>
+                    <Border Width="24" Height="24" CornerRadius="12" HorizontalAlignment="Right" VerticalAlignment="Top" Background="{DynamicResource LaneyAccentBrush}" IsVisible="{Binding IsSelected}">
+                      <vkui:VKIcon Width="20" Height="20" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" Id="{x:Static vkui:VKIconNames.Icon20Check}"/>
+                    </Border>
+                    <TextBlock Grid.Row="1" Margin="0,8,0,0" Classes="Subhead" FontWeight="SemiBold" Text="{Binding Title}" TextAlignment="Center" MaxLines="1" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Grid.Row="2" Margin="0,3,0,0" Classes="Caption1" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="{Binding Subtitle}" TextAlignment="Center" MaxLines="2" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"/>
+                  </Grid>
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <vkui:Cell Header="Панель учеток слева" Subtitle="Показывает все аккаунты и группы отдельными иконками для быстрого переключения.">
+            <vkui:Cell.Before>
+              <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon28UserOutgoingOutline}"/>
+            </vkui:Cell.Before>
+            <vkui:Cell.After>
+              <ToggleSwitch IsChecked="{Binding ShowAccountRail, Mode=TwoWay}"/>
             </vkui:Cell.After>
           </vkui:Cell>
         </StackPanel>
@@ -32,6 +128,9 @@
             <TextBlock Text="Цвета"/>
           </Grid>
           <vkui:Cell Header="Акцент" Subtitle="Перекрашивает кнопки, ссылки, счетчики и выделение.">
+            <vkui:Cell.Before>
+              <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon24BrushOutline}"/>
+            </vkui:Cell.Before>
             <vkui:Cell.After>
               <StackPanel Orientation="Horizontal">
                 <Border Classes="LaneyOnlyBadge" Margin="0,0,8,0">
@@ -51,6 +150,9 @@
             </vkui:Cell.After>
           </vkui:Cell>
           <vkui:Cell Header="Акцент аккаунта" Subtitle="Переопределяет глобальный цвет только для текущего окна аккаунта." IsVisible="{Binding HasAccountAccent}">
+            <vkui:Cell.Before>
+              <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon20UserOutline}"/>
+            </vkui:Cell.Before>
             <vkui:Cell.After>
               <StackPanel Orientation="Horizontal">
                 <Border Classes="LaneyOnlyBadge" Margin="0,0,8,0">
@@ -69,7 +171,10 @@
               </StackPanel>
             </vkui:Cell.After>
           </vkui:Cell>
-          <vkui:Cell Header="Фон сообщений" Subtitle="Глобальный фон области чата; отдельные чаты можно переопределить из контекстного меню.">
+          <vkui:Cell Header="Фон сообщений" Subtitle="Авто подстраивается под тему приложения и VK-оформление чата; отдельные чаты можно переопределить.">
+            <vkui:Cell.Before>
+              <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon20PictureOutline}"/>
+            </vkui:Cell.Before>
             <vkui:Cell.After>
               <StackPanel Orientation="Horizontal">
                 <Border Classes="LaneyOnlyBadge" Margin="0,0,8,0">
@@ -85,6 +190,24 @@
                     </DataTemplate>
                   </ComboBox.ItemTemplate>
                 </ComboBox>
+              </StackPanel>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Картинка чатов" Subtitle="{Binding ChatBackgroundImageSummary}">
+            <vkui:Cell.Before>
+              <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon20PictureOutline}"/>
+            </vkui:Cell.Before>
+            <vkui:Cell.After>
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button Classes="Secondary" Click="SelectChatBackgroundImage_Click">
+                  <StackPanel Orientation="Horizontal" Spacing="6">
+                    <vkui:VKIcon Width="20" Height="20" Id="{x:Static vkui:VKIconNames.Icon20PictureOutline}"/>
+                    <TextBlock Text="Выбрать"/>
+                  </StackPanel>
+                </Button>
+                <Button Classes="Tertiary" Click="ClearChatBackgroundImage_Click">
+                  <vkui:VKIcon Width="20" Height="20" Id="{x:Static vkui:VKIconNames.Icon20DeleteOutline}"/>
+                </Button>
               </StackPanel>
             </vkui:Cell.After>
           </vkui:Cell>

@@ -12,7 +12,7 @@
       <Border Classes="Group" VerticalAlignment="Top">
         <StackPanel>
           <Grid Classes="GroupHeader">
-            <TextBlock Text="Attachment vault"/>
+            <TextBlock Text="Хранилище вложений"/>
           </Grid>
           <vkui:Cell Header="Скачанные вложения" Subtitle="{Binding Summary}">
             <vkui:Cell.After>

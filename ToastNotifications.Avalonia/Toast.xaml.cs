@@ -5,6 +5,7 @@ using Avalonia.Controls.Shapes;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
+using System.Collections.Generic;
 
 namespace ToastNotifications.Avalonia {
     public class Toast : TemplatedControl {
@@ -69,6 +70,16 @@ namespace ToastNotifications.Avalonia {
         public event EventHandler<RoutedEventArgs> CloseButtonClick;
         public event EventHandler<string> SendButtonClick;
         public event EventHandler<object> Click;
+        public event EventHandler<ToastNotificationAction> ActionButtonClick;
+
+        private IReadOnlyList<ToastNotificationAction> _actions = Array.Empty<ToastNotificationAction>();
+        public IReadOnlyList<ToastNotificationAction> Actions {
+            get => _actions;
+            set {
+                _actions = value ?? Array.Empty<ToastNotificationAction>();
+                RebuildActions();
+            }
+        }
 
         #region Template
 
@@ -79,6 +90,7 @@ namespace ToastNotifications.Avalonia {
         Button CloseButton;
         Button SendButton;
         TextBox TextArea;
+        StackPanel ActionsPanel;
         Grid WriteBar;
 
         protected override void OnApplyTemplate(TemplateAppliedEventArgs e) {
@@ -90,6 +102,7 @@ namespace ToastNotifications.Avalonia {
             CloseButton = e.NameScope.Find<Button>(nameof(CloseButton));
             SendButton = e.NameScope.Find<Button>(nameof(SendButton));
             TextArea = e.NameScope.Find<TextBox>(nameof(TextArea));
+            ActionsPanel = e.NameScope.Find<StackPanel>(nameof(ActionsPanel));
             WriteBar = e.NameScope.Find<Grid>(nameof(WriteBar));
 
             Root.PointerPressed += (a, b) => {
@@ -107,6 +120,7 @@ namespace ToastNotifications.Avalonia {
             CheckAppLogo();
             CheckAvatar();
             CheckImage();
+            RebuildActions();
         }
 
         protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change) {
@@ -150,6 +164,27 @@ namespace ToastNotifications.Avalonia {
             }
             ImageArea.Source = Image;
             ImageArea.IsVisible = true;
+        }
+
+        private void RebuildActions() {
+            if (ActionsPanel == null) return;
+
+            ActionsPanel.Children.Clear();
+            ActionsPanel.IsVisible = Actions.Count > 0;
+            foreach (ToastNotificationAction action in Actions) {
+                Button button = new Button {
+                    Content = action.Title,
+                    MinHeight = 30,
+                    Padding = new Thickness(10, 4)
+                };
+                button.Classes.Add("Tertiary");
+                button.PointerPressed += (a, b) => b.Handled = true;
+                button.Click += (a, b) => {
+                    b.Handled = true;
+                    ActionButtonClick?.Invoke(this, action);
+                };
+                ActionsPanel.Children.Add(button);
+            }
         }
     }
 }

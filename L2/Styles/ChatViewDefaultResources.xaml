@@ -5,8 +5,8 @@
     <!-- Some colors taken from vkui-tokens and web.vk.me css, and missing from Palette.xaml -->
     
     <ResourceDictionary x:Key="Default">
-      <SolidColorBrush x:Key="MessageBubbleDefaultIncomingBrush" Color="{StaticResource VKWhiteColor}"/>
-      <SolidColorBrush x:Key="MessageBubbleDefaultOutgoingBrush" Color="{StaticResource VKWhiteBlue20Color}"/>
+      <SolidColorBrush x:Key="MessageBubbleDefaultIncomingBrush" Color="#EFFFFFFF"/>
+      <SolidColorBrush x:Key="MessageBubbleDefaultOutgoingBrush" Color="#D9DDEEFF"/>
       <SolidColorBrush x:Key="MessageBubbleOutgoingTextPrimaryBrush" Color="#17233A"/>
       <SolidColorBrush x:Key="MessageBubbleOutgoingTextSecondaryBrush" Color="#3E5F7E"/>
       <SolidColorBrush x:Key="NestedMessageBackgroundBrush" Color="{StaticResource VKAzure300Color}" Opacity="0.08"/>
@@ -14,8 +14,8 @@
     </ResourceDictionary>
 
     <ResourceDictionary x:Key="Dark">
-      <SolidColorBrush x:Key="MessageBubbleDefaultIncomingBrush" Color="{StaticResource VKGray800Color}"/>
-      <SolidColorBrush x:Key="MessageBubbleDefaultOutgoingBrush" Color="#1e2f42"/>
+      <SolidColorBrush x:Key="MessageBubbleDefaultIncomingBrush" Color="#D92A2D31"/>
+      <SolidColorBrush x:Key="MessageBubbleDefaultOutgoingBrush" Color="#E61E2F42"/>
       <SolidColorBrush x:Key="MessageBubbleOutgoingTextPrimaryBrush" Color="#F4F8FF"/>
       <SolidColorBrush x:Key="MessageBubbleOutgoingTextSecondaryBrush" Color="#B8C7D9"/>
       <SolidColorBrush x:Key="NestedMessageBackgroundBrush" Color="{StaticResource VKSky300Color}" Opacity="0.08"/>

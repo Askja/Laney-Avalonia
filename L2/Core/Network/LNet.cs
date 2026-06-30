@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using ELOR.Laney.Core.Logging;
+using ELOR.VKAPILib;
 
 namespace ELOR.Laney.Core.Network {
     public readonly struct LNetQueueSnapshot {
@@ -45,13 +46,16 @@ namespace ELOR.Laney.Core.Network {
         }
 
         private static HttpClient GetConfiguredHttpClient() {
-            return new HttpClient(new HttpClientHandler() {
-                AllowAutoRedirect = true,
-                MaxConnectionsPerServer = 50,
-                AutomaticDecompression = DecompressionMethods.All
-            }, false) {
+            return new HttpClient(VKAPI.CreateHttpClientHandler(true, 50, DecompressionMethods.All), false) {
                 Timeout = TimeSpan.FromSeconds(30)
             };
+        }
+
+        public static void ResetHttpClients() {
+            _defaultClient?.Dispose();
+            _zstdClient?.Dispose();
+            _defaultClient = null;
+            _zstdClient = null;
         }
 
         public static async Task<HttpResponseMessage> GetAsync(Uri uri,

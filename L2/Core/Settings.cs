@@ -103,6 +103,56 @@ namespace ELOR.Laney.Core {
         public const string LegacyRound = "round";
     }
 
+    public static class MessageCheckmarkStyleIds {
+        public const string Vk = "vk";
+        public const string Compact = "compact";
+        public const string Minimal = "minimal";
+        public const string Hidden = "hidden";
+
+        public static readonly string[] All = [Vk, Compact, Minimal, Hidden];
+
+        public static string Normalize(string style) {
+            if (String.IsNullOrWhiteSpace(style)) return Vk;
+
+            string normalized = style.Trim().ToLowerInvariant();
+            return All.Contains(normalized) ? normalized : Vk;
+        }
+    }
+
+    public static class ChatOpenBehaviorIds {
+        public const string Bottom = "bottom";
+        public const string FirstUnread = "first_unread";
+
+        public static readonly string[] All = [Bottom, FirstUnread];
+
+        public static string Normalize(string behavior) {
+            if (String.IsNullOrWhiteSpace(behavior)) return Bottom;
+
+            string normalized = behavior.Trim().ToLowerInvariant();
+            return All.Contains(normalized) ? normalized : Bottom;
+        }
+    }
+
+    public static class AppIconVariantIds {
+        public const string Auto = "auto";
+        public const string VkClassic = "vk_classic";
+        public const string VkColor = "vk_color";
+        public const string VkBlue = "vk_blue";
+        public const string VkWhite = "vk_white";
+        public const string AnimeStar = "anime_star";
+        public const string AnimeAi = "anime_ai";
+        public const string AnimeAkane = "anime_akane";
+
+        public static readonly string[] All = [Auto, VkClassic, VkColor, VkBlue, VkWhite, AnimeStar, AnimeAi, AnimeAkane];
+
+        public static string Normalize(string icon) {
+            if (String.IsNullOrWhiteSpace(icon)) return Auto;
+
+            string normalized = icon.Trim().ToLowerInvariant();
+            return All.Contains(normalized) ? normalized : Auto;
+        }
+    }
+
     public static class AutoStatusModeIds {
         public const string Busy = "busy";
         public const string Work = "work";
@@ -117,6 +167,37 @@ namespace ELOR.Laney.Core {
 
             string normalized = mode.Trim().ToLowerInvariant();
             return All.Contains(normalized) ? normalized : Work;
+        }
+    }
+
+    public static class NotificationDeliveryModeIds {
+        public const string Custom = "custom";
+        public const string System = "system";
+        public const string Both = "both";
+
+        public static readonly string[] All = [Custom, System, Both];
+
+        public static string Normalize(string mode) {
+            if (String.IsNullOrWhiteSpace(mode)) return Custom;
+
+            string normalized = mode.Trim().ToLowerInvariant();
+            return All.Contains(normalized) ? normalized : Custom;
+        }
+    }
+
+    public static class NotificationPositionIds {
+        public const string BottomRight = "bottom_right";
+        public const string BottomLeft = "bottom_left";
+        public const string TopRight = "top_right";
+        public const string TopLeft = "top_left";
+
+        public static readonly string[] All = [BottomRight, BottomLeft, TopRight, TopLeft];
+
+        public static string Normalize(string position) {
+            if (String.IsNullOrWhiteSpace(position)) return BottomRight;
+
+            string normalized = position.Trim().ToLowerInvariant();
+            return All.Contains(normalized) ? normalized : BottomRight;
         }
     }
 
@@ -142,11 +223,12 @@ namespace ELOR.Laney.Core {
         public const string Inherit = "inherit";
         public const string System = "system";
         public const string TelegramLike = "telegram_like";
+        public const string Twemoji = "twemoji";
         public const string Fallback = "fallback";
         public const string Custom = "custom";
 
-        public static readonly string[] All = [System, TelegramLike, Fallback, Custom];
-        public static readonly string[] AllWithInherit = [Inherit, System, TelegramLike, Fallback, Custom];
+        public static readonly string[] All = [System, TelegramLike, Twemoji, Fallback, Custom];
+        public static readonly string[] AllWithInherit = [Inherit, System, TelegramLike, Twemoji, Fallback, Custom];
 
         public static string Normalize(string packId, bool allowInherit = false) {
             if (String.IsNullOrWhiteSpace(packId)) return allowInherit ? Inherit : System;
@@ -447,6 +529,8 @@ namespace ELOR.Laney.Core {
         public const string GROUPS_BACKGROUND_LONGPOLL_LIMIT = "groups_background_longpoll_limit";
         public const string LOCAL_ARCHIVED_PEERS = "local_archived_peers";
         public const string LOCAL_BACKUP_DIRECTORY = "local_backup_directory";
+        public const string AUTOSTART_ENABLED = "autostart_enabled";
+        public const string AUTOSTART_MINIMIZED = "autostart_minimized";
 
         public const string WIN_SIZE_W = "winw";
         public const string WIN_SIZE_H = "winh";
@@ -484,7 +568,10 @@ namespace ELOR.Laney.Core {
 
         public const string THEME = "theme";
         public const string ACCENT_COLOR = "accent_color";
+        public const string APP_FONT_FAMILY = "app_font_family";
+        public const string APP_ICON_VARIANT = "app_icon_variant";
         public const string CHAT_BACKGROUND = "chat_background";
+        public const string CHAT_BACKGROUND_IMAGE = "chat_background_image";
         public const string CHAT_ITEM_MORE_ROWS = "chat_item_more_rows";
         public const string CHAT_LIST_WIDTH = "chat_list_width";
         public const string CHAT_LIST_DENSITY = "chat_list_density";
@@ -499,6 +586,9 @@ namespace ELOR.Laney.Core {
         public const string MESSAGE_BUBBLE_STYLE = "message_bubble_style";
         public const string MESSAGE_BUBBLE_OPACITY = "message_bubble_opacity";
         public const string MESSAGE_BUBBLE_AUTO_COLOR = "message_bubble_auto_color";
+        public const string MESSAGE_CHECKMARK_STYLE = "message_checkmark_style";
+        public const string CHAT_OPEN_BEHAVIOR = "chat_open_behavior";
+        public const string SHOW_ACCOUNT_RAIL = "show_account_rail";
         public const string COMPOSER_ACTION_FORMATTING = "composer_action_formatting";
         public const string COMPOSER_ACTION_QUICK = "composer_action_quick";
         public const string COMPOSER_ACTION_GROUP_TEMPLATES = "composer_action_group_templates";
@@ -526,6 +616,13 @@ namespace ELOR.Laney.Core {
         public const string NOTIF_DONT_ANNOY_ME_ALLOW_MENTIONS = "notifications_dont_annoy_me_allow_mentions";
         public const string NOTIF_DONT_ANNOY_ME_ALLOW_IMPORTANT = "notifications_dont_annoy_me_allow_important";
         public const string NOTIF_DONT_ANNOY_ME_KEYWORDS = "notifications_dont_annoy_me_keywords";
+        public const string NOTIF_DELIVERY_MODE = "notifications_delivery_mode";
+        public const string NOTIF_CUSTOM_POSITION = "notifications_custom_position";
+        public const string NOTIF_CUSTOM_STACK_LIMIT = "notifications_custom_stack_limit";
+        public const string NOTIF_CUSTOM_TIMEOUT_SECONDS = "notifications_custom_timeout_seconds";
+        public const string NOTIF_CUSTOM_FAST_ACTIONS = "notifications_custom_fast_actions";
+        public const string NOTIF_CUSTOM_SHOW_AVATARS = "notifications_custom_show_avatars";
+        public const string NOTIF_CUSTOM_SHOW_IMAGES = "notifications_custom_show_images";
         public const string AUTO_STATUS_ENABLED = "auto_status_enabled";
         public const string AUTO_STATUS_MODE = "auto_status_mode";
         public const string AUTO_STATUS_SCHEDULE_ENABLED = "auto_status_schedule_enabled";
@@ -563,6 +660,17 @@ namespace ELOR.Laney.Core {
         public const string DEBUG_GALLERY = "dbg_gallery";
         public const string DEBUG_LOAD_IMAGES_SEQUENTIAL = "dbg_load_images_sequential";
         public const string DEBUG_API_MONITOR = "dbg_api_monitor";
+        public const string API_DOMAIN = "api_domain";
+        public const string API_VERSION = "api_version";
+        public const string PROXY_ENABLED = "proxy_enabled";
+        public const string PROXY_URI = "proxy_uri";
+        public const string PROXY_BYPASS_LOCAL = "proxy_bypass_local";
+        public const string INVISIBLE_MODE = "invisible_mode";
+        public const string INVISIBLE_DISABLE_SET_ONLINE = "invisible_disable_set_online";
+        public const string INVISIBLE_DISABLE_READ_RECEIPTS = "invisible_disable_read_receipts";
+        public const string INVISIBLE_DISABLE_VOICE_LISTENED = "invisible_disable_voice_listened";
+        public const string INVISIBLE_DISABLE_STORY_VIEWED = "invisible_disable_story_viewed";
+        public const string INVISIBLE_DISABLE_TYPING_STATUS = "invisible_disable_typing_status";
 
         public const string IMAGE_CACHE_DEFAULT_TTL_MINUTES = "image_cache_default_ttl_minutes";
         public const string IMAGE_CACHE_AVATAR_TTL_MINUTES = "image_cache_avatar_ttl_minutes";
@@ -632,6 +740,8 @@ namespace ELOR.Laney.Core {
             LOCAL_OCR_ENABLED,
             LOCAL_OCR_TESSERACT_PATH,
             LOCAL_OCR_LANGUAGE,
+            AUTOSTART_ENABLED,
+            AUTOSTART_MINIMIZED,
             INTERFACE_PROFILE,
             STREAMER_MODE,
             LOW_MOTION_MODE,
@@ -644,7 +754,10 @@ namespace ELOR.Laney.Core {
             AUTO_LOCK_CLEAR_CLIPBOARD,
             THEME,
             ACCENT_COLOR,
+            APP_FONT_FAMILY,
+            APP_ICON_VARIANT,
             CHAT_BACKGROUND,
+            CHAT_BACKGROUND_IMAGE,
             CHAT_ITEM_MORE_ROWS,
             CHAT_LIST_WIDTH,
             CHAT_LIST_DENSITY,
@@ -659,6 +772,9 @@ namespace ELOR.Laney.Core {
             MESSAGE_BUBBLE_STYLE,
             MESSAGE_BUBBLE_OPACITY,
             MESSAGE_BUBBLE_AUTO_COLOR,
+            MESSAGE_CHECKMARK_STYLE,
+            CHAT_OPEN_BEHAVIOR,
+            SHOW_ACCOUNT_RAIL,
             COMPOSER_ACTION_FORMATTING,
             COMPOSER_ACTION_QUICK,
             COMPOSER_ACTION_GROUP_TEMPLATES,
@@ -685,6 +801,13 @@ namespace ELOR.Laney.Core {
             NOTIF_DONT_ANNOY_ME_ALLOW_MENTIONS,
             NOTIF_DONT_ANNOY_ME_ALLOW_IMPORTANT,
             NOTIF_DONT_ANNOY_ME_KEYWORDS,
+            NOTIF_DELIVERY_MODE,
+            NOTIF_CUSTOM_POSITION,
+            NOTIF_CUSTOM_STACK_LIMIT,
+            NOTIF_CUSTOM_TIMEOUT_SECONDS,
+            NOTIF_CUSTOM_FAST_ACTIONS,
+            NOTIF_CUSTOM_SHOW_AVATARS,
+            NOTIF_CUSTOM_SHOW_IMAGES,
             AUTO_STATUS_ENABLED,
             AUTO_STATUS_MODE,
             AUTO_STATUS_SCHEDULE_ENABLED,
@@ -716,6 +839,17 @@ namespace ELOR.Laney.Core {
             DEBUG_GALLERY,
             DEBUG_LOAD_IMAGES_SEQUENTIAL,
             DEBUG_API_MONITOR,
+            API_DOMAIN,
+            API_VERSION,
+            PROXY_ENABLED,
+            PROXY_URI,
+            PROXY_BYPASS_LOCAL,
+            INVISIBLE_MODE,
+            INVISIBLE_DISABLE_SET_ONLINE,
+            INVISIBLE_DISABLE_READ_RECEIPTS,
+            INVISIBLE_DISABLE_VOICE_LISTENED,
+            INVISIBLE_DISABLE_STORY_VIEWED,
+            INVISIBLE_DISABLE_TYPING_STATUS,
             IMAGE_CACHE_DEFAULT_TTL_MINUTES,
             IMAGE_CACHE_AVATAR_TTL_MINUTES,
             IMAGE_CACHE_ATTACHMENT_TTL_MINUTES,
@@ -851,6 +985,16 @@ namespace ELOR.Laney.Core {
             set => Set(FIRST_RUN_ONBOARDING_DONE, value);
         }
 
+        public static bool AutostartEnabled {
+            get => Get(AUTOSTART_ENABLED, false);
+            set => Set(AUTOSTART_ENABLED, value);
+        }
+
+        public static bool AutostartMinimized {
+            get => Get(AUTOSTART_MINIMIZED, true);
+            set => Set(AUTOSTART_MINIMIZED, value);
+        }
+
         public static bool StreamerMode {
             get => Get(STREAMER_MODE, false);
             set => Set(STREAMER_MODE, value);
@@ -878,8 +1022,8 @@ namespace ELOR.Laney.Core {
                     SetBatch(new Dictionary<string, object> {
                         { LOW_MEMORY_MODE, true },
                         { DEBUG_LOAD_IMAGES_SEQUENTIAL, true },
-                        { MEDIA_MEMORY_BUDGET_MB, 96 },
-                        { IMAGE_CACHE_RAM_LIMIT_MB, 64 },
+                        { MEDIA_MEMORY_BUDGET_MB, 80 },
+                        { IMAGE_CACHE_RAM_LIMIT_MB, 32 },
                         { IMAGE_CACHE_DEFAULT_TTL_MINUTES, 60 },
                         { IMAGE_CACHE_AVATAR_TTL_MINUTES, 240 },
                         { IMAGE_CACHE_ATTACHMENT_TTL_MINUTES, 30 },
@@ -960,9 +1104,28 @@ namespace ELOR.Laney.Core {
             set => Set(ACCENT_COLOR, String.IsNullOrWhiteSpace(value) ? AppearanceManager.DefaultAccentId : value);
         }
 
+        public static string AppFontFamily {
+            get => NormalizeFontFamily(Get(APP_FONT_FAMILY, "Segoe UI"));
+            set => Set(APP_FONT_FAMILY, NormalizeFontFamily(value));
+        }
+
+        public static string AppIconVariant {
+            get => AppIconVariantIds.Normalize(Get(APP_ICON_VARIANT, AppIconVariantIds.Auto));
+            set => Set(APP_ICON_VARIANT, AppIconVariantIds.Normalize(value));
+        }
+
         public static string ChatBackground {
             get => Get(CHAT_BACKGROUND, AppearanceManager.DefaultChatBackgroundId);
             set => Set(CHAT_BACKGROUND, String.IsNullOrWhiteSpace(value) ? AppearanceManager.DefaultChatBackgroundId : value);
+        }
+
+        public static string ChatBackgroundImage {
+            get => Get(CHAT_BACKGROUND_IMAGE, String.Empty);
+            set => Set(CHAT_BACKGROUND_IMAGE, NormalizePathOrUri(value));
+        }
+
+        public static Uri ChatBackgroundImageUri {
+            get => GetImageUri(ChatBackgroundImage);
         }
 
         public static bool ChatItemMoreRows {
@@ -1033,6 +1196,21 @@ namespace ELOR.Laney.Core {
         public static bool MessageBubbleAutoColor {
             get => Get(MESSAGE_BUBBLE_AUTO_COLOR, false);
             set => Set(MESSAGE_BUBBLE_AUTO_COLOR, value);
+        }
+
+        public static string MessageCheckmarkStyle {
+            get => MessageCheckmarkStyleIds.Normalize(Get(MESSAGE_CHECKMARK_STYLE, MessageCheckmarkStyleIds.Vk));
+            set => Set(MESSAGE_CHECKMARK_STYLE, MessageCheckmarkStyleIds.Normalize(value));
+        }
+
+        public static string ChatOpenBehavior {
+            get => ChatOpenBehaviorIds.Normalize(Get(CHAT_OPEN_BEHAVIOR, ChatOpenBehaviorIds.Bottom));
+            set => Set(CHAT_OPEN_BEHAVIOR, ChatOpenBehaviorIds.Normalize(value));
+        }
+
+        public static bool ShowAccountRail {
+            get => Get(SHOW_ACCOUNT_RAIL, false);
+            set => Set(SHOW_ACCOUNT_RAIL, value);
         }
 
         public static bool ComposerActionFormatting {
@@ -1197,6 +1375,41 @@ namespace ELOR.Laney.Core {
         public static string DontAnnoyMeKeywords {
             get => Get(NOTIF_DONT_ANNOY_ME_KEYWORDS, String.Empty);
             set => Set(NOTIF_DONT_ANNOY_ME_KEYWORDS, value ?? String.Empty);
+        }
+
+        public static string NotificationDeliveryMode {
+            get => NotificationDeliveryModeIds.Normalize(Get(NOTIF_DELIVERY_MODE, NotificationDeliveryModeIds.Custom));
+            set => Set(NOTIF_DELIVERY_MODE, NotificationDeliveryModeIds.Normalize(value));
+        }
+
+        public static string CustomNotificationPosition {
+            get => NotificationPositionIds.Normalize(Get(NOTIF_CUSTOM_POSITION, NotificationPositionIds.BottomRight));
+            set => Set(NOTIF_CUSTOM_POSITION, NotificationPositionIds.Normalize(value));
+        }
+
+        public static int CustomNotificationStackLimit {
+            get => Math.Clamp(Get(NOTIF_CUSTOM_STACK_LIMIT, 4), 1, 10);
+            set => Set(NOTIF_CUSTOM_STACK_LIMIT, Math.Clamp(value, 1, 10));
+        }
+
+        public static int CustomNotificationTimeoutSeconds {
+            get => Math.Clamp(Get(NOTIF_CUSTOM_TIMEOUT_SECONDS, 8), 2, 60);
+            set => Set(NOTIF_CUSTOM_TIMEOUT_SECONDS, Math.Clamp(value, 2, 60));
+        }
+
+        public static bool CustomNotificationFastActions {
+            get => Get(NOTIF_CUSTOM_FAST_ACTIONS, true);
+            set => Set(NOTIF_CUSTOM_FAST_ACTIONS, value);
+        }
+
+        public static bool CustomNotificationShowAvatars {
+            get => Get(NOTIF_CUSTOM_SHOW_AVATARS, true);
+            set => Set(NOTIF_CUSTOM_SHOW_AVATARS, value);
+        }
+
+        public static bool CustomNotificationShowImages {
+            get => Get(NOTIF_CUSTOM_SHOW_IMAGES, true);
+            set => Set(NOTIF_CUSTOM_SHOW_IMAGES, value);
         }
 
         public static bool AutoStatusEnabled {
@@ -1446,7 +1659,7 @@ namespace ELOR.Laney.Core {
         }
 
         public static bool DisableMarkingMessagesAsRead {
-            get => Get(DEBUG_MARK_AS_READ_OFF, false);
+            get => Get(DEBUG_MARK_AS_READ_OFF, false) || ShouldSuppressReadReceipts;
             set => Set(DEBUG_MARK_AS_READ_OFF, value);
         }
 
@@ -1465,6 +1678,81 @@ namespace ELOR.Laney.Core {
             set => Set(DEBUG_API_MONITOR, value);
         }
 
+        public static string ApiDomain {
+            get => NormalizeApiDomain(Get(API_DOMAIN, ELOR.VKAPILib.VKAPI.DefaultDomain));
+            set => Set(API_DOMAIN, NormalizeApiDomain(value));
+        }
+
+        public static string ApiVersion {
+            get => NormalizeApiVersion(Get(API_VERSION, ELOR.VKAPILib.VKAPI.BundledVersion));
+            set => Set(API_VERSION, NormalizeApiVersion(value));
+        }
+
+        public static bool ProxyEnabled {
+            get => Get(PROXY_ENABLED, false);
+            set => Set(PROXY_ENABLED, value);
+        }
+
+        public static string ProxyUri {
+            get => NormalizeProxyUri(Get(PROXY_URI, String.Empty));
+            set => Set(PROXY_URI, NormalizeProxyUri(value));
+        }
+
+        public static bool ProxyBypassLocal {
+            get => Get(PROXY_BYPASS_LOCAL, true);
+            set => Set(PROXY_BYPASS_LOCAL, value);
+        }
+
+        public static bool InvisibleMode {
+            get => Get(INVISIBLE_MODE, false);
+            set => Set(INVISIBLE_MODE, value);
+        }
+
+        public static bool InvisibleDisableSetOnline {
+            get => Get(INVISIBLE_DISABLE_SET_ONLINE, true);
+            set => Set(INVISIBLE_DISABLE_SET_ONLINE, value);
+        }
+
+        public static bool InvisibleDisableReadReceipts {
+            get => Get(INVISIBLE_DISABLE_READ_RECEIPTS, true);
+            set => Set(INVISIBLE_DISABLE_READ_RECEIPTS, value);
+        }
+
+        public static bool InvisibleDisableVoiceListened {
+            get => Get(INVISIBLE_DISABLE_VOICE_LISTENED, true);
+            set => Set(INVISIBLE_DISABLE_VOICE_LISTENED, value);
+        }
+
+        public static bool InvisibleDisableStoryViewed {
+            get => Get(INVISIBLE_DISABLE_STORY_VIEWED, true);
+            set => Set(INVISIBLE_DISABLE_STORY_VIEWED, value);
+        }
+
+        public static bool InvisibleDisableTypingStatus {
+            get => Get(INVISIBLE_DISABLE_TYPING_STATUS, true);
+            set => Set(INVISIBLE_DISABLE_TYPING_STATUS, value);
+        }
+
+        public static bool ShouldSuppressSetOnline {
+            get => InvisibleMode && InvisibleDisableSetOnline;
+        }
+
+        public static bool ShouldSuppressReadReceipts {
+            get => InvisibleMode && InvisibleDisableReadReceipts;
+        }
+
+        public static bool ShouldSuppressVoiceListened {
+            get => InvisibleMode && InvisibleDisableVoiceListened;
+        }
+
+        public static bool ShouldSuppressStoryViewed {
+            get => InvisibleMode && InvisibleDisableStoryViewed;
+        }
+
+        public static bool ShouldSuppressTypingStatus {
+            get => InvisibleMode && InvisibleDisableTypingStatus;
+        }
+
         // Image cache
 
         public static int ImageCacheDefaultTtlMinutes {
@@ -1473,7 +1761,7 @@ namespace ELOR.Laney.Core {
         }
 
         public static int ImageCacheAvatarTtlMinutes {
-            get => Math.Max(0, Get(IMAGE_CACHE_AVATAR_TTL_MINUTES, 1440));
+            get => Math.Max(0, Get(IMAGE_CACHE_AVATAR_TTL_MINUTES, 10080));
             set => Set(IMAGE_CACHE_AVATAR_TTL_MINUTES, Math.Max(0, value));
         }
 
@@ -1488,12 +1776,12 @@ namespace ELOR.Laney.Core {
         }
 
         public static int ImageCacheRamLimitMb {
-            get => Math.Clamp(Get(IMAGE_CACHE_RAM_LIMIT_MB, 192), 16, 512);
-            set => Set(IMAGE_CACHE_RAM_LIMIT_MB, Math.Clamp(value, 16, 512));
+            get => Math.Clamp(Get(IMAGE_CACHE_RAM_LIMIT_MB, 32), 16, 256);
+            set => Set(IMAGE_CACHE_RAM_LIMIT_MB, Math.Clamp(value, 16, 256));
         }
 
         public static int MediaMemoryBudgetMb {
-            get => Math.Clamp(Get(MEDIA_MEMORY_BUDGET_MB, 256), 64, 1024);
+            get => Math.Clamp(Get(MEDIA_MEMORY_BUDGET_MB, 80), 64, 1024);
             set => Set(MEDIA_MEMORY_BUDGET_MB, Math.Clamp(value, 64, 1024));
         }
 
@@ -2014,7 +2302,11 @@ namespace ELOR.Laney.Core {
 
         public static void SetPeerLocalTheme(long peerId, string theme) {
             string key = $"{PEER_LOCAL_THEME_PREFIX}{peerId}";
-            Set(key, String.IsNullOrWhiteSpace(theme) || theme == AppearanceManager.InheritChatBackgroundId ? null : theme.Trim());
+            Set(key, String.IsNullOrWhiteSpace(theme)
+                || theme == AppearanceManager.InheritChatBackgroundId
+                || theme == AppearanceManager.DefaultChatBackgroundId
+                ? null
+                : theme.Trim());
         }
 
         public static string GetPeerLocalBackgroundImage(long peerId) {
@@ -2022,11 +2314,7 @@ namespace ELOR.Laney.Core {
         }
 
         public static Uri GetPeerLocalBackgroundImageUri(long peerId) {
-            string value = GetPeerLocalBackgroundImage(peerId);
-            if (String.IsNullOrWhiteSpace(value)) return null;
-            if (Uri.TryCreate(value, UriKind.Absolute, out Uri uri)) return uri;
-            if (Path.IsPathFullyQualified(value)) return new Uri(value);
-            return null;
+            return GetImageUri(GetPeerLocalBackgroundImage(peerId));
         }
 
         public static void SetPeerLocalBackgroundImage(long peerId, string image) {
@@ -2432,6 +2720,53 @@ namespace ELOR.Laney.Core {
             if (hour < 0) return 0;
             if (hour > 23) return 23;
             return hour;
+        }
+
+        private static string NormalizeApiDomain(string domain) {
+            if (String.IsNullOrWhiteSpace(domain)) return ELOR.VKAPILib.VKAPI.DefaultDomain;
+
+            string normalized = domain.Trim().Trim('/');
+            if (Uri.TryCreate(normalized, UriKind.Absolute, out Uri uri) && !String.IsNullOrWhiteSpace(uri.Host)) {
+                normalized = uri.Host;
+            }
+
+            return String.IsNullOrWhiteSpace(normalized) ? ELOR.VKAPILib.VKAPI.DefaultDomain : normalized;
+        }
+
+        private static string NormalizeApiVersion(string version) {
+            if (String.IsNullOrWhiteSpace(version)) return ELOR.VKAPILib.VKAPI.BundledVersion;
+
+            string normalized = version.Trim();
+            return normalized.Length > 16 ? normalized[..16] : normalized;
+        }
+
+        private static string NormalizeFontFamily(string fontFamily) {
+            if (String.IsNullOrWhiteSpace(fontFamily)) return "Segoe UI";
+
+            string normalized = fontFamily.Trim();
+            return normalized.Length > 96 ? normalized[..96] : normalized;
+        }
+
+        private static string NormalizePathOrUri(string value) {
+            if (String.IsNullOrWhiteSpace(value)) return null;
+
+            string normalized = Environment.ExpandEnvironmentVariables(value.Trim().Trim('"'));
+            return normalized.Length > 1024 ? normalized[..1024] : normalized;
+        }
+
+        private static Uri GetImageUri(string value) {
+            if (String.IsNullOrWhiteSpace(value)) return null;
+            if (Uri.TryCreate(value, UriKind.Absolute, out Uri uri)) return uri;
+            if (Path.IsPathFullyQualified(value)) return new Uri(value);
+            return null;
+        }
+
+        private static string NormalizeProxyUri(string value) {
+            if (String.IsNullOrWhiteSpace(value)) return String.Empty;
+
+            string normalized = value.Trim();
+            if (!normalized.Contains("://", StringComparison.Ordinal)) normalized = $"http://{normalized}";
+            return normalized.Length > 512 ? normalized[..512] : normalized;
         }
 
         private static string NormalizeAvatarSize(string size, string defaultValue) {

@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -37,6 +38,8 @@ namespace ELOR.Laney.Core {
 
     public static class MediaMemoryGovernor {
         private const long Mb = 1024L * 1024L;
+        private const long ProcessPrivateSoftLimitBytes = 210L * Mb;
+        private const long ProcessWorkingSetSoftLimitBytes = 260L * Mb;
         private const long EstimatedLocalStickerAnimationBytes = 8L * Mb;
         private static long waveformCacheBytes;
         private static int waveformCacheItems;
@@ -50,29 +53,41 @@ namespace ELOR.Laney.Core {
             long imageLimitBytes = Settings.ImageCacheRamLimitMb * Mb;
             long reservedBytes = GetWaveformBudgetBytes() + GetAnimationReserveBytes() + GetPrefetchReserveBytes();
             long budgetBytes = Math.Max(16L * Mb, TotalBudgetBytes - reservedBytes);
-            return Math.Clamp(Math.Min(imageLimitBytes, budgetBytes), 16L * Mb, 512L * Mb);
+            long hardCap = Settings.LowMemoryMode ? 48L * Mb : 96L * Mb;
+            return Math.Clamp(Math.Min(imageLimitBytes, budgetBytes), 16L * Mb, hardCap);
+        }
+
+        public static long GetEmergencyBitmapCacheBudgetBytes() {
+            return Settings.LowMemoryMode ? 20L * Mb : 32L * Mb;
+        }
+
+        public static bool IsProcessMemoryPressureHigh() {
+            Process process = Process.GetCurrentProcess();
+            process.Refresh();
+            return process.PrivateMemorySize64 >= ProcessPrivateSoftLimitBytes
+                || process.WorkingSet64 >= ProcessWorkingSetSoftLimitBytes;
         }
 
         public static int GetWaveformCacheItemLimit() {
             if (Settings.LowMemoryMode) return 128;
-            if (Settings.MediaMemoryBudgetMb <= 128) return 192;
-            if (Settings.MediaMemoryBudgetMb >= 512) return 768;
-            return 512;
+            if (Settings.MediaMemoryBudgetMb <= 128) return 160;
+            if (Settings.MediaMemoryBudgetMb >= 512) return 256;
+            return 256;
         }
 
         public static int GetLocalStickerAnimationLimit() {
             if (Settings.LowMotionMode || Settings.StickerAnimation == StickerAnimationMode.Never) return 0;
             if (Settings.LowMemoryMode) return 1;
-            if (Settings.MediaMemoryBudgetMb <= 128) return 2;
-            if (Settings.MediaMemoryBudgetMb >= 512) return 6;
-            return 4;
+            if (Settings.MediaMemoryBudgetMb <= 128) return 1;
+            if (Settings.MediaMemoryBudgetMb >= 512) return 3;
+            return 2;
         }
 
         public static int GetMediaLoadConcurrency() {
             if (Settings.LowMemoryMode || Settings.LoadImagesSequential) return 1;
-            if (Settings.MediaMemoryBudgetMb <= 128) return 2;
-            if (Settings.MediaMemoryBudgetMb >= 512) return 4;
-            return 3;
+            if (Settings.MediaMemoryBudgetMb <= 128) return 1;
+            if (Settings.MediaMemoryBudgetMb >= 512) return 2;
+            return 2;
         }
 
         public static Task<IDisposable> EnterMediaLoadAsync() {

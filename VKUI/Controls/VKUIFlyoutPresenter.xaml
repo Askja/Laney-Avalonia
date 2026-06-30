@@ -44,7 +44,7 @@
       <ControlTemplate>
         <StackPanel x:Name="DismissArea" Background="Transparent">
           <ContentPresenter x:Name="AboveContentRoot" HorizontalAlignment="Left" Content="{TemplateBinding Above}"/>
-          <Border x:Name="FlyoutPresenterRoot" HorizontalAlignment="Left" Cursor="Arrow" BorderThickness="1" BorderBrush="{DynamicResource VKModalCardBorderBrush}" Margin="6,4,6,10" VerticalAlignment="Center" CornerRadius="8" Background="{DynamicResource VKModalCardBackgroundBrush}" BoxShadow="{StaticResource VKElevation3}">
+          <Border x:Name="FlyoutPresenterRoot" HorizontalAlignment="Left" Cursor="Arrow" BorderThickness="1" BorderBrush="{DynamicResource LaneyGlassBorderBrush}" Margin="6,4,6,10" VerticalAlignment="Center" CornerRadius="12" Background="{DynamicResource LaneyGlassOverlayBrush}">
             <ScrollViewer x:Name="FlyoutScroll" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
               <ContentPresenter x:Name="FlyoutContent" Content="{TemplateBinding Content}"/>
             </ScrollViewer>
@@ -57,8 +57,7 @@
       <Setter Property="Margin" Value="6,4,6,10"/>
       <Setter Property="MinWidth" Value="240"/>
       <Setter Property="MaxWidth" Value="420"/>
-      <Setter Property="CornerRadius" Value="8"/>
-      <Setter Property="BoxShadow" Value="0 0 2 #18000000, 0 12 32 #26000000"/>
+      <Setter Property="CornerRadius" Value="12"/>
       <Setter Property="BorderThickness" Value="1"/>
     </Style>
 

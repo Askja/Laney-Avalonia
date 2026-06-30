@@ -13,7 +13,7 @@
         mc:Ignorable="d" d:DesignWidth="360" d:DesignHeight="576"
         Width="360" Height="540"
         x:Class="ELOR.Laney.Views.Modals.ReactedMembers"
-        Title="Reacted members">
+        Title="Реакции">
 
   <Grid RowDefinitions="Auto Auto *">
     <vkui:WindowTitleBar x:Name="TitleBar" CanShowTitle="False" CanMove="False"/>

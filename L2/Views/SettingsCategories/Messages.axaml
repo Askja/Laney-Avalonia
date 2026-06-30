@@ -40,24 +40,24 @@
       <Border Classes="Group" VerticalAlignment="Top">
         <StackPanel>
           <Grid Classes="GroupHeader">
-            <TextBlock Text="Composer"/>
+            <TextBlock Text="Поле ввода"/>
           </Grid>
-          <vkui:Cell Header="Форматирование" Subtitle="Кнопка B/I/code/strike рядом с полем ввода.">
+          <vkui:Cell Header="Форматирование" Subtitle="Кнопки B/I/code/strike рядом с полем ввода.">
             <vkui:Cell.After>
               <ToggleSwitch IsChecked="{Binding ComposerActionFormatting, Mode=TwoWay}"/>
             </vkui:Cell.After>
           </vkui:Cell>
-          <vkui:Cell Header="Быстрые действия" Subtitle="Шаблоны, todo, reminder, quick replies и /encrypt.">
+          <vkui:Cell Header="Быстрые действия" Subtitle="Шаблоны, задачи, напоминания, быстрые ответы и /encrypt.">
             <vkui:Cell.After>
               <ToggleSwitch IsChecked="{Binding ComposerActionQuick, Mode=TwoWay}"/>
             </vkui:Cell.After>
           </vkui:Cell>
-          <vkui:Cell Header="Шаблоны группы" Subtitle="Кнопка шаблонов для group-session.">
+          <vkui:Cell Header="Шаблоны группы" Subtitle="Кнопка шаблонов для сессии сообщества.">
             <vkui:Cell.After>
               <ToggleSwitch IsChecked="{Binding ComposerActionGroupTemplates, Mode=TwoWay}"/>
             </vkui:Cell.After>
           </vkui:Cell>
-          <vkui:Cell Header="Стикеры" Subtitle="Emoji, VK-стикеры и локальные паки.">
+          <vkui:Cell Header="Стикеры" Subtitle="Эмодзи, VK-стикеры и локальные паки.">
             <vkui:Cell.After>
               <ToggleSwitch IsChecked="{Binding ComposerActionStickers, Mode=TwoWay}"/>
             </vkui:Cell.After>
@@ -68,7 +68,7 @@
       <Border Classes="Group" VerticalAlignment="Top">
         <StackPanel>
           <Grid Classes="GroupHeader">
-            <TextBlock Text="Bubble"/>
+            <TextBlock Text="Пузыри сообщений"/>
           </Grid>
           <vkui:Cell Header="Размер аватаров в сообщениях" Subtitle="Отдельно от списка чатов, чтобы не ломать плотность ленты.">
             <vkui:Cell.After>
@@ -81,7 +81,7 @@
               </ComboBox>
             </vkui:Cell.After>
           </vkui:Cell>
-          <vkui:Cell Header="Шрифт сообщений" Subtitle="Глобальный размер текста bubble; личная тема чата может переопределить его.">
+          <vkui:Cell Header="Шрифт сообщений" Subtitle="Глобальный размер текста пузырей; личная тема чата может переопределить его.">
             <vkui:Cell.After>
               <ComboBox Classes="Alternate" ItemsSource="{Binding MessageFontSizeOptions}" SelectedItem="{Binding CurrentMessageFontSize, Mode=TwoWay}">
                 <ComboBox.ItemTemplate>
@@ -92,7 +92,7 @@
               </ComboBox>
             </vkui:Cell.After>
           </vkui:Cell>
-          <vkui:Cell Header="Ширина bubble" Subtitle="Максимальная ширина текстовых сообщений.">
+          <vkui:Cell Header="Ширина пузырей" Subtitle="Максимальная ширина текстовых сообщений.">
             <vkui:Cell.After>
               <ComboBox Classes="Alternate" ItemsSource="{Binding MessageBubbleWidthOptions}" SelectedItem="{Binding CurrentMessageBubbleWidth, Mode=TwoWay}">
                 <ComboBox.ItemTemplate>
@@ -103,7 +103,7 @@
               </ComboBox>
             </vkui:Cell.After>
           </vkui:Cell>
-          <vkui:Cell Header="Плотность bubble" Subtitle="Отступы между сообщениями и внутри текста.">
+          <vkui:Cell Header="Плотность пузырей" Subtitle="Отступы между сообщениями и внутри текста.">
             <vkui:Cell.After>
               <ComboBox Classes="Alternate" ItemsSource="{Binding MessageBubbleDensityOptions}" SelectedItem="{Binding CurrentMessageBubbleDensity, Mode=TwoWay}">
                 <ComboBox.ItemTemplate>
@@ -114,7 +114,7 @@
               </ComboBox>
             </vkui:Cell.After>
           </vkui:Cell>
-          <vkui:Cell Header="Стиль bubble" Subtitle="VK, Telegram, Minimal, Outline или Flat.">
+          <vkui:Cell Header="Стиль пузырей" Subtitle="VK, Telegram, минимализм, контур или плоский стиль.">
             <vkui:Cell.After>
               <ComboBox Classes="Alternate" ItemsSource="{Binding MessageBubbleStyleOptions}" SelectedItem="{Binding CurrentMessageBubbleStyle, Mode=TwoWay}">
                 <ComboBox.ItemTemplate>
@@ -125,7 +125,18 @@
               </ComboBox>
             </vkui:Cell.After>
           </vkui:Cell>
-          <vkui:Cell Header="Прозрачность bubble" Subtitle="Фон сообщений поверх картинки чата.">
+          <vkui:Cell Header="Галочки сообщений" Subtitle="Вид статуса отправки и прочтения у исходящих сообщений.">
+            <vkui:Cell.After>
+              <ComboBox Classes="Alternate" ItemsSource="{Binding MessageCheckmarkStyleOptions}" SelectedItem="{Binding CurrentMessageCheckmarkStyle, Mode=TwoWay}">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="mdl:TwoStringTuple">
+                    <TextBlock Text="{Binding Item2}"/>
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Прозрачность пузырей" Subtitle="Фон сообщений поверх картинки чата.">
             <vkui:Cell.After>
               <ComboBox Classes="Alternate" ItemsSource="{Binding MessageBubbleOpacityOptions}" SelectedItem="{Binding CurrentMessageBubbleOpacity, Mode=TwoWay}">
                 <ComboBox.ItemTemplate>
@@ -136,9 +147,20 @@
               </ComboBox>
             </vkui:Cell.After>
           </vkui:Cell>
-          <vkui:Cell Header="Авто-цвет bubble" Subtitle="Подбирать цвет исходящих под фон чата, если цвет не задан вручную.">
+          <vkui:Cell Header="Авто-цвет пузырей" Subtitle="Подбирать цвет исходящих под фон чата, если цвет не задан вручную.">
             <vkui:Cell.After>
               <ToggleSwitch IsChecked="{Binding MessageBubbleAutoColor, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="При открытии чата" Subtitle="Куда прокручивать ленту после входа в диалог.">
+            <vkui:Cell.After>
+              <ComboBox Classes="Alternate" ItemsSource="{Binding ChatOpenBehaviorOptions}" SelectedItem="{Binding CurrentChatOpenBehavior, Mode=TwoWay}">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="mdl:TwoStringTuple">
+                    <TextBlock Text="{Binding Item2}"/>
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
             </vkui:Cell.After>
           </vkui:Cell>
         </StackPanel>
@@ -149,7 +171,7 @@
           <Grid Classes="GroupHeader">
             <TextBlock Text="Горячие клавиши"/>
           </Grid>
-          <vkui:Cell Header="Command palette" Subtitle="Например: Ctrl+P">
+          <vkui:Cell Header="Палитра команд" Subtitle="Например: Ctrl+P">
             <vkui:Cell.After>
               <TextBox Width="150" Text="{Binding KeymapCommandPalette, Mode=TwoWay}"/>
             </vkui:Cell.After>
@@ -164,7 +186,7 @@
               <TextBox Width="150" Text="{Binding KeymapChatSearch, Mode=TwoWay}"/>
             </vkui:Cell.After>
           </vkui:Cell>
-          <vkui:Cell Header="Фокус composer">
+          <vkui:Cell Header="Фокус поля ввода">
             <vkui:Cell.After>
               <TextBox Width="150" Text="{Binding KeymapFocusComposer, Mode=TwoWay}"/>
             </vkui:Cell.After>
@@ -184,7 +206,7 @@
               <TextBox Width="150" Text="{Binding KeymapSettings, Mode=TwoWay}"/>
             </vkui:Cell.After>
           </vkui:Cell>
-          <vkui:Cell Header="Panic lock">
+          <vkui:Cell Header="Panic-замок">
             <vkui:Cell.After>
               <TextBox Width="150" Text="{Binding KeymapPanicLock, Mode=TwoWay}"/>
             </vkui:Cell.After>

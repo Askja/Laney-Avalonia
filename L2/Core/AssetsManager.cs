@@ -1,6 +1,8 @@
 ﻿using Avalonia;
 using Avalonia.Media.Imaging;
+using Avalonia.Controls;
 using Avalonia.Platform;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -37,11 +39,62 @@ namespace ELOR.Laney.Core {
         }
 
         public static string GetThemeDependentTrayIcon() {
+            return GetTrayIconUri();
+        }
+
+        public static WindowIcon GetTrayWindowIcon(string variant = null) {
+            return GetWindowIconFromUri(GetTrayIconUri(variant), "avares://laney/Assets/Logo/Tray/t32cw.png");
+        }
+
+        public static WindowIcon GetWindowIconFromUri(string uri, string fallbackUri = null) {
+            try {
+                return new WindowIcon(GetBitmapFromUri(new Uri(uri)));
+            } catch (Exception ex) {
+                Log.Error(ex, "Failed to open window icon {IconUri}", uri);
+                if (String.IsNullOrWhiteSpace(fallbackUri) || String.Equals(uri, fallbackUri, StringComparison.OrdinalIgnoreCase)) return null;
+
+                try {
+                    return new WindowIcon(GetBitmapFromUri(new Uri(fallbackUri)));
+                } catch (Exception fallbackEx) {
+                    Log.Error(fallbackEx, "Failed to open fallback window icon {IconUri}", fallbackUri);
+                    return null;
+                }
+            }
+        }
+
+        public static string GetTrayIconUri(string variant = null) {
+            variant = AppIconVariantIds.Normalize(variant ?? Settings.AppIconVariant);
+            if (variant != AppIconVariantIds.Auto) {
+                return variant switch {
+                    AppIconVariantIds.VkClassic => "avares://laney/Assets/Logo/Tray/t32vk_classic.png",
+                    AppIconVariantIds.VkColor => "avares://laney/Assets/Logo/Tray/t32vk_modern.png",
+                    AppIconVariantIds.VkBlue => "avares://laney/Assets/Logo/Tray/t32vk_blue.png",
+                    AppIconVariantIds.VkWhite => "avares://laney/Assets/Logo/Tray/t32vk_white.png",
+                    AppIconVariantIds.AnimeStar => "avares://laney/Assets/Logo/Tray/t32anime_star.png",
+                    AppIconVariantIds.AnimeAi => "avares://laney/Assets/Logo/Tray/t32anime_ai.png",
+                    AppIconVariantIds.AnimeAkane => "avares://laney/Assets/Logo/Tray/t32anime_akane.png",
+                    _ => "avares://laney/Assets/Logo/Tray/t32cw.png"
+                };
+            }
+
             var cv = Application.Current.PlatformSettings.GetColorValues();
 
             string theme = cv.ThemeVariant == PlatformThemeVariant.Light ? "b" : "w";
             string s = $"avares://laney/Assets/Logo/Tray/t32m{theme}.png";
             return s;
+        }
+
+        public static string GetAppIconUri(string variant = null) {
+            return AppIconVariantIds.Normalize(variant ?? Settings.AppIconVariant) switch {
+                AppIconVariantIds.VkClassic => "avares://laney/Assets/Logo/vk_classic.png",
+                AppIconVariantIds.VkColor => "avares://laney/Assets/Logo/vk_modern.png",
+                AppIconVariantIds.VkBlue => "avares://laney/Assets/Logo/vk_blue.png",
+                AppIconVariantIds.VkWhite => "avares://laney/Assets/Logo/vk_white.png",
+                AppIconVariantIds.AnimeStar => "avares://laney/Assets/Logo/anime_star.png",
+                AppIconVariantIds.AnimeAi => "avares://laney/Assets/Logo/anime_ai.png",
+                AppIconVariantIds.AnimeAkane => "avares://laney/Assets/Logo/anime_akane.png",
+                _ => GetTrayIconUri(AppIconVariantIds.Auto)
+            };
         }
 
         // Required for encryption/decryption some critical data (for example access_token),

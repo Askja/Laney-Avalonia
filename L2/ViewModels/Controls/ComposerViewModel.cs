@@ -374,6 +374,7 @@ namespace ELOR.Laney.ViewModels.Controls {
             ActionSheetItem importTelegramStickers = new ActionSheetItem {
                 Before = new VKIcon { Id = VKIconNames.Icon24SmileOutline },
                 Header = T("cm_import_telegram_stickers"),
+                Subtitle = "Импорт и управление паками теперь в настройках"
             };
             ActionSheetItem buildMiniPack = new ActionSheetItem {
                 Before = new VKIcon { Id = VKIconNames.Icon20PictureOutline },
@@ -425,7 +426,10 @@ namespace ELOR.Laney.ViewModels.Controls {
             e2eDocument.Click += async (a, b) => await AddE2EDocumentAsync(target);
             graffiti.Click += async (a, b) => await AddLocalFilesAsync(target, Constants.GraffitiUploadCommand, FilePickerFileTypes.ImageAll, true);
             audioMessage.Click += async (a, b) => await AddLocalFilesAsync(target, Constants.AudioMessageUploadCommand, GetAudioMessageFileType());
-            importTelegramStickers.Click += async (a, b) => await ImportLocalStickersAsync(target);
+            importTelegramStickers.Click += async (a, b) => {
+                var settings = new ELOR.Laney.Views.SettingsWindow(typeof(ELOR.Laney.Views.SettingsCategories.Stickers));
+                await settings.ShowDialog(session.ModalWindow);
+            };
             buildMiniPack.Click += async (a, b) => await BuildMiniPackAsync(target);
             imageEditor.Click += async (a, b) => await EditImageBeforeSendAsync(target);
             poll.Click += async (a, b) => {

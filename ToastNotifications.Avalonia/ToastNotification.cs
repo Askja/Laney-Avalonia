@@ -1,5 +1,6 @@
 ﻿using Avalonia.Controls.Notifications;
 using Avalonia.Media.Imaging;
+using System.Collections.Generic;
 
 namespace ToastNotifications.Avalonia {
     public class ToastNotification : Notification {
@@ -9,6 +10,7 @@ namespace ToastNotifications.Avalonia {
         public Bitmap Image { get; private set; }
         public Action<string> OnSendClick { get; set; }
         public object AssociatedObject { get; private set; }
+        public IList<ToastNotificationAction> Actions { get; private set; } = new List<ToastNotificationAction>();
 
         public ToastNotification(object assObj, string header, string title, string text, string footnote = null, Bitmap avatar = null, Bitmap image = null) {
             AssociatedObject = assObj;

@@ -8,11 +8,11 @@ namespace ELOR.Laney.ViewModels.SettingsCategories {
     public sealed class AudioViewModel : CommonViewModel {
         public ObservableCollection<TwoStringTuple> AudioDspModes { get; } = new ObservableCollection<TwoStringTuple> {
             new TwoStringTuple(AudioDspModeIds.Off, "Выкл"),
-            new TwoStringTuple(AudioDspModeIds.Flat, "Flat"),
+            new TwoStringTuple(AudioDspModeIds.Flat, "Ровный"),
             new TwoStringTuple(AudioDspModeIds.Normalize, "Нормализация"),
             new TwoStringTuple(AudioDspModeIds.VoiceClarity, "Чёткий голос"),
             new TwoStringTuple(AudioDspModeIds.Night, "Ночь"),
-            new TwoStringTuple(AudioDspModeIds.BassBoost, "Bass boost")
+            new TwoStringTuple(AudioDspModeIds.BassBoost, "Больше баса")
         };
 
         public bool AudioPlayerLoop { get { return Settings.AudioPlayerLoop; } set { Settings.AudioPlayerLoop = value; OnPropertyChanged(); } }
@@ -30,7 +30,16 @@ namespace ELOR.Laney.ViewModels.SettingsCategories {
         public bool VoiceMessageResumeEnabled { get { return Settings.VoiceMessageResumeEnabled; } set { Settings.VoiceMessageResumeEnabled = value; OnPropertyChanged(); } }
         public bool VoiceMessageSkipSilence { get { return Settings.VoiceMessageSkipSilence; } set { Settings.VoiceMessageSkipSilence = value; OnPropertyChanged(); } }
         public bool LocalVoiceTranscriptionEnabled { get { return Settings.LocalVoiceTranscriptionEnabled; } set { Settings.LocalVoiceTranscriptionEnabled = value; MarkCustomProfile(); OnPropertyChanged(); } }
-        public string LocalVoiceTranscriptionModelPath { get { return Settings.LocalVoiceTranscriptionModelPath; } set { Settings.LocalVoiceTranscriptionModelPath = value; MarkCustomProfile(); OnPropertyChanged(); } }
+        public string LocalVoiceTranscriptionModelPath {
+            get { return Settings.LocalVoiceTranscriptionModelPath; }
+            set {
+                Settings.LocalVoiceTranscriptionModelPath = value;
+                MarkCustomProfile();
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(LocalVoiceTranscriptionModelPathSummary));
+            }
+        }
+        public string LocalVoiceTranscriptionModelPathSummary { get { return String.IsNullOrWhiteSpace(Settings.LocalVoiceTranscriptionModelPath) ? "Не выбрана" : Settings.LocalVoiceTranscriptionModelPath; } }
         public string LocalVoiceTranscriptionLanguage { get { return Settings.LocalVoiceTranscriptionLanguage; } set { Settings.LocalVoiceTranscriptionLanguage = value; MarkCustomProfile(); OnPropertyChanged(); } }
 
         private TwoStringTuple GetAudioDspMode() {

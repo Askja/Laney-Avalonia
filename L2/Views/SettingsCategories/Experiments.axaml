@@ -11,7 +11,7 @@
       <Border Classes="Group" VerticalAlignment="Top">
         <StackPanel>
           <Grid Classes="GroupHeader">
-            <TextBlock Text="Feature flags"/>
+            <TextBlock Text="Флаги функций"/>
           </Grid>
           <ItemsControl ItemsSource="{Binding FeatureFlags}">
             <ItemsControl.ItemTemplate>
@@ -32,12 +32,12 @@
           <Grid Classes="GroupHeader">
             <TextBlock Text="Режимы"/>
           </Grid>
-          <vkui:Cell Header="Streamer mode" Subtitle="Маскировать чувствительные данные на экране.">
+          <vkui:Cell Header="Режим стримера" Subtitle="Маскировать чувствительные данные на экране.">
             <vkui:Cell.After>
               <ToggleSwitch IsChecked="{Binding StreamerMode, Mode=TwoWay}"/>
             </vkui:Cell.After>
           </vkui:Cell>
-          <vkui:Cell Header="Dev items в меню" Subtitle="Показывать отладочные команды в context/action menu.">
+          <vkui:Cell Header="Dev-пункты в меню" Subtitle="Показывать отладочные команды в контекстных меню.">
             <vkui:Cell.After>
               <ToggleSwitch IsChecked="{Binding ShowDevItemsInContextMenus, Mode=TwoWay}"/>
             </vkui:Cell.After>
@@ -60,7 +60,7 @@
               <ToggleSwitch IsChecked="{Binding ShowFPS, Mode=TwoWay}"/>
             </vkui:Cell.After>
           </vkui:Cell>
-          <vkui:Cell Header="Chat counters">
+          <vkui:Cell Header="Счетчики чата">
             <vkui:Cell.After>
               <ToggleSwitch IsChecked="{Binding ShowDebugCounters, Mode=TwoWay}"/>
             </vkui:Cell.After>
@@ -78,17 +78,17 @@
           <Grid Classes="GroupHeader">
             <TextBlock Text="Логи"/>
           </Grid>
-          <vkui:Cell Header="Core logs">
+          <vkui:Cell Header="Логи ядра">
             <vkui:Cell.After>
               <ToggleSwitch IsChecked="{Binding EnableLogs, Mode=TwoWay}"/>
             </vkui:Cell.After>
           </vkui:Cell>
-          <vkui:Cell Header="BitmapManager logs">
+          <vkui:Cell Header="Логи BitmapManager">
             <vkui:Cell.After>
               <ToggleSwitch IsChecked="{Binding BitmapManagerLogs, Mode=TwoWay}"/>
             </vkui:Cell.After>
           </vkui:Cell>
-          <vkui:Cell Header="Message rendering logs">
+          <vkui:Cell Header="Логи рендера сообщений">
             <vkui:Cell.After>
               <ToggleSwitch IsChecked="{Binding MessageRenderingLogs, Mode=TwoWay}"/>
             </vkui:Cell.After>

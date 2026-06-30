@@ -45,6 +45,61 @@
           </vkui:Cell>
         </StackPanel>
       </Border>
+
+      <Border Classes="Group" VerticalAlignment="Top">
+        <StackPanel>
+          <Grid Classes="GroupHeader">
+            <TextBlock Text="{Binding StyleSectionTitle}"/>
+          </Grid>
+          <vkui:Cell Header="{Binding DeliveryModeTitle}" Subtitle="{Binding DeliveryModeSubtitle}">
+            <vkui:Cell.After>
+              <ComboBox Classes="Alternate" ItemsSource="{Binding DeliveryModes}" SelectedItem="{Binding CurrentDeliveryMode, Mode=TwoWay}">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="mdl:TwoStringTuple">
+                    <TextBlock Text="{Binding Item2}"/>
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="{Binding PositionTitle}" Subtitle="{Binding PositionSubtitle}">
+            <vkui:Cell.After>
+              <ComboBox Classes="Alternate" ItemsSource="{Binding Positions}" SelectedItem="{Binding CurrentPosition, Mode=TwoWay}">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="mdl:TwoStringTuple">
+                    <TextBlock Text="{Binding Item2}"/>
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="{Binding StackLimitTitle}" Subtitle="{Binding StackLimitSubtitle}">
+            <vkui:Cell.After>
+              <TextBox Width="96" Text="{Binding CustomNotificationStackLimitText, Mode=TwoWay}" PlaceholderText="4"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="{Binding TimeoutTitle}" Subtitle="{Binding TimeoutSubtitle}">
+            <vkui:Cell.After>
+              <TextBox Width="96" Text="{Binding CustomNotificationTimeoutText, Mode=TwoWay}" PlaceholderText="8"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="{Binding FastActionsTitle}" Subtitle="{Binding FastActionsSubtitle}">
+            <vkui:Cell.After>
+              <ToggleSwitch IsChecked="{Binding CustomNotificationFastActions, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="{Binding ShowAvatarsTitle}" Subtitle="{Binding ShowAvatarsSubtitle}">
+            <vkui:Cell.After>
+              <ToggleSwitch IsChecked="{Binding CustomNotificationShowAvatars, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="{Binding ShowImagesTitle}" Subtitle="{Binding ShowImagesSubtitle}">
+            <vkui:Cell.After>
+              <ToggleSwitch IsChecked="{Binding CustomNotificationShowImages, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+        </StackPanel>
+      </Border>
     </StackPanel>
   </ScrollViewer>
 </UserControl>

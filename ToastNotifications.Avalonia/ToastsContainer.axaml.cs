@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using Avalonia.Threading;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace ToastNotifications.Avalonia {
@@ -19,10 +20,17 @@ namespace ToastNotifications.Avalonia {
         }
 
         Action<string> Log;
+        ToastNotificationOptions Options = new ToastNotificationOptions();
 
         bool topAligned = false;
         bool leftAligned = false;
         Screen lastScreen = null;
+
+        internal void ApplyOptions(ToastNotificationOptions options) {
+            Options = options ?? new ToastNotificationOptions();
+            TrimOverflow();
+            SetPosition();
+        }
 
         private void SetPosition(bool cycle = false) {
             var screen = Screens.ScreenFromWindow(this);
@@ -58,11 +66,14 @@ namespace ToastNotifications.Avalonia {
             NotificationItems.Measure(new Size(MaxWidth, wh));
             double height = NotificationItems.DesiredSize.Height;
 
-            topAligned = sh > wh && wy != 0;
-            leftAligned = sw > ww && wx != 0;
-            int posx = Convert.ToInt32((leftAligned ? wx : ww - MaxWidth) * scale);
-            int posy = Convert.ToInt32((topAligned ? wy : wh - height) * scale);
-            if (topAligned) posy = posy + 9;
+            bool topRequested = Options.Position == ToastStackPosition.TopLeft || Options.Position == ToastStackPosition.TopRight;
+            bool leftRequested = Options.Position == ToastStackPosition.TopLeft || Options.Position == ToastStackPosition.BottomLeft;
+            topAligned = topRequested;
+            leftAligned = leftRequested;
+
+            const double margin = 12;
+            int posx = Convert.ToInt32((leftRequested ? wx + margin : wx + ww - MaxWidth - margin) * scale);
+            int posy = Convert.ToInt32((topRequested ? wy + margin : wy + wh - height - margin) * scale);
 
             Position = new PixelPoint(posx, needBigMargin ? posy + 48 : posy);
             Height = needBigMargin ? height - 96 : height;
@@ -72,15 +83,16 @@ namespace ToastNotifications.Avalonia {
         }
 
         internal void AddToastToContainer(ToastNotification notification, Bitmap appLogo) {
-            if (NotificationItems.Children.Count >= 4) NotificationItems.Children.RemoveAt(0);
+            TrimOverflow();
             Toast toast = new Toast() {
                 Header = notification.Header,
                 Title = notification.Title,
                 Body = notification.Message,
                 Footnote = notification.Footnote,
                 AppLogo = appLogo,
-                Avatar = notification.Avatar,
-                Image = notification.Image,
+                Avatar = Options.ShowAvatars ? notification.Avatar : null,
+                Image = Options.ShowImages ? notification.Image : null,
+                Actions = Options.FastActionsEnabled ? notification.Actions.ToArray() : Array.Empty<ToastNotificationAction>(),
                 IsWriteBarVisible = notification.OnSendClick != null,
                 Margin = new Thickness(12, 3, 12, 9)
             };
@@ -125,6 +137,11 @@ namespace ToastNotifications.Avalonia {
                 notification.OnSendClick?.Invoke(b);
                 RemoveToast(toast);
             };
+            toast.ActionButtonClick += (a, b) => {
+                timer.Stop();
+                b.Invoke();
+                if (b.DismissAfterClick) RemoveToast(toast);
+            };
             toast.Click += (a, b) => {
                 timer.Stop();
                 notification.OnClick?.Invoke();
@@ -132,7 +149,15 @@ namespace ToastNotifications.Avalonia {
             };
         }
 
+        private void TrimOverflow() {
+            int stackLimit = Math.Clamp(Options.StackLimit, 1, 10);
+            while (NotificationItems.Children.Count >= stackLimit) {
+                NotificationItems.Children.RemoveAt(0);
+            }
+        }
+
         private void RemoveToast(Toast toast) {
+            if (!NotificationItems.Children.Contains(toast)) return;
             NotificationItems.Children.Remove(toast);
             Log?.Invoke($"AddToastToContainer: toast {toast.GetHashCode()} removed!");
             SetPosition();

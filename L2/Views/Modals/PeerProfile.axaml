@@ -81,6 +81,10 @@
       </StackPanel>
     </DataTemplate>
 
+    <DataTemplate x:Key="AppearanceOptionTextTemplate" x:DataType="core:AppearanceOption">
+      <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis"/>
+    </DataTemplate>
+
     <DataTemplate x:Key="ChatStatisticTileTemplate" x:DataType="vm:ChatStatisticTile">
       <Border Margin="4" Padding="12" CornerRadius="8" Background="{DynamicResource VKModalCardBackgroundBrush}" BorderBrush="{DynamicResource VKSeparatorAlphaBrush}" BorderThickness="1">
         <Grid ColumnDefinitions="Auto *">
@@ -169,9 +173,15 @@
               <TextBox Grid.Row="1" Grid.Column="1" Margin="0,0,0,8"
                        Text="{Binding LocalAlias, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
                        PlaceholderText="Алиас только в Laney"/>
-              <TextBox Grid.Row="2" Grid.Column="1" Margin="0,0,0,8"
-                       Text="{Binding LocalAvatar, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
-                       PlaceholderText="Локальный путь или URL аватарки"/>
+              <Grid Grid.Row="2" Grid.Column="1" Margin="0,0,0,8" ColumnDefinitions="* Auto Auto" ColumnSpacing="8">
+                <TextBox Text="{Binding LocalAvatar, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" PlaceholderText="URL или путь аватарки"/>
+                <Button Grid.Column="1" Classes="Secondary" Width="36" Height="36" Padding="0" ToolTip.Tip="Выбрать файл" Click="SelectLocalAvatar_Click">
+                  <vkui:VKIcon Width="20" Height="20" Id="{x:Static vkui:VKIconNames.Icon20PictureOutline}"/>
+                </Button>
+                <Button Grid.Column="2" Classes="Tertiary" Width="36" Height="36" Padding="0" ToolTip.Tip="Очистить" Click="ClearLocalAvatar_Click">
+                  <vkui:VKIcon Width="20" Height="20" Id="{x:Static vkui:VKIconNames.Icon20DeleteOutline}"/>
+                </Button>
+              </Grid>
               <TextBox Grid.Row="3" Grid.Column="1"
                        Text="{Binding LocalTags, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
                        PlaceholderText="Теги: work, family, shop"/>
@@ -258,12 +268,20 @@
                 </Border>
                 <vkui:Cell Margin="-12,0,0,0" Header="Фон" Subtitle="Подложка сообщений в этом чате.">
                   <vkui:Cell.After>
-                    <ComboBox Classes="Alternate" Width="190" MaxDropDownHeight="260" ItemsSource="{Binding PeerChatBackgroundOptions}" SelectedItem="{Binding CurrentPeerChatBackground, Mode=TwoWay}" ItemTemplate="{StaticResource AppearanceOptionTemplate}"/>
+                    <ComboBox Classes="Alternate" Width="190" MaxDropDownHeight="260" ItemsSource="{Binding PeerChatBackgroundOptions}" SelectedItem="{Binding CurrentPeerChatBackground, Mode=TwoWay}" ItemTemplate="{StaticResource AppearanceOptionTextTemplate}"/>
                   </vkui:Cell.After>
                 </vkui:Cell>
                 <vkui:Cell Margin="-12,0,0,0" Header="Картинка фона" Subtitle="Локальный путь или URL. VK не трогаем.">
                   <vkui:Cell.After>
-                    <TextBox Width="260" Text="{Binding LocalBackgroundImage, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" PlaceholderText="C:\Images\chat.jpg или https://..."/>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <TextBox Width="220" Text="{Binding LocalBackgroundImage, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" PlaceholderText="URL или путь"/>
+                      <Button Classes="Secondary" Width="36" Height="36" Padding="0" ToolTip.Tip="Выбрать файл" Click="SelectLocalBackgroundImage_Click">
+                        <vkui:VKIcon Width="20" Height="20" Id="{x:Static vkui:VKIconNames.Icon20PictureOutline}"/>
+                      </Button>
+                      <Button Classes="Tertiary" Width="36" Height="36" Padding="0" ToolTip.Tip="Очистить" Click="ClearLocalBackgroundImage_Click">
+                        <vkui:VKIcon Width="20" Height="20" Id="{x:Static vkui:VKIconNames.Icon20DeleteOutline}"/>
+                      </Button>
+                    </StackPanel>
                   </vkui:Cell.After>
                 </vkui:Cell>
                 <vkui:Cell Margin="-12,0,0,0" Header="Затемнение" Subtitle="Темная подложка поверх картинки.">
@@ -277,7 +295,7 @@
                     </ComboBox>
                   </vkui:Cell.After>
                 </vkui:Cell>
-                <vkui:Cell Margin="-12,0,0,0" Header="Blur" Subtitle="Размытие фоновой картинки после downscale.">
+                <vkui:Cell Margin="-12,0,0,0" Header="Размытие" Subtitle="Размытие фоновой картинки после уменьшения.">
                   <vkui:Cell.After>
                     <ComboBox Classes="Alternate" Width="190" ItemsSource="{Binding PeerBackgroundBlurOptions}" SelectedItem="{Binding CurrentPeerBackgroundBlur, Mode=TwoWay}">
                       <ComboBox.ItemTemplate>
@@ -301,30 +319,30 @@
                 </vkui:Cell>
                 <vkui:Cell Margin="-12,0,0,0" Header="Акцент" Subtitle="Цвет ссылок, выделений и действий в этом чате.">
                   <vkui:Cell.After>
-                    <ComboBox Classes="Alternate" Width="190" MaxDropDownHeight="260" ItemsSource="{Binding PeerAccentOptions}" SelectedItem="{Binding CurrentPeerAccent, Mode=TwoWay}" ItemTemplate="{StaticResource AppearanceOptionTemplate}"/>
+                    <ComboBox Classes="Alternate" Width="190" MaxDropDownHeight="260" ItemsSource="{Binding PeerAccentOptions}" SelectedItem="{Binding CurrentPeerAccent, Mode=TwoWay}" ItemTemplate="{StaticResource AppearanceOptionTextTemplate}"/>
                   </vkui:Cell.After>
                 </vkui:Cell>
                 <vkui:Cell Margin="-12,0,0,0" Header="Плотность" Subtitle="Отступы между сообщениями.">
                   <vkui:Cell.After>
-                    <ComboBox Classes="Alternate" Width="190" MaxDropDownHeight="260" ItemsSource="{Binding PeerChatDensityOptions}" SelectedItem="{Binding CurrentPeerChatDensity, Mode=TwoWay}" ItemTemplate="{StaticResource AppearanceOptionTemplate}"/>
+                    <ComboBox Classes="Alternate" Width="190" MaxDropDownHeight="260" ItemsSource="{Binding PeerChatDensityOptions}" SelectedItem="{Binding CurrentPeerChatDensity, Mode=TwoWay}" ItemTemplate="{StaticResource AppearanceOptionTextTemplate}"/>
                   </vkui:Cell.After>
                 </vkui:Cell>
                 <vkui:Cell Margin="-12,0,0,0" Header="Шрифт" Subtitle="Размер текста сообщений.">
                   <vkui:Cell.After>
-                    <ComboBox Classes="Alternate" Width="190" MaxDropDownHeight="260" ItemsSource="{Binding PeerChatFontOptions}" SelectedItem="{Binding CurrentPeerChatFont, Mode=TwoWay}" ItemTemplate="{StaticResource AppearanceOptionTemplate}"/>
+                    <ComboBox Classes="Alternate" Width="190" MaxDropDownHeight="260" ItemsSource="{Binding PeerChatFontOptions}" SelectedItem="{Binding CurrentPeerChatFont, Mode=TwoWay}" ItemTemplate="{StaticResource AppearanceOptionTextTemplate}"/>
                   </vkui:Cell.After>
                 </vkui:Cell>
-                <vkui:Cell Margin="-12,0,0,0" Header="Bubble" Subtitle="Форма пузырей сообщений.">
+                <vkui:Cell Margin="-12,0,0,0" Header="Пузыри" Subtitle="Форма пузырей сообщений.">
                   <vkui:Cell.After>
-                    <ComboBox Classes="Alternate" Width="190" MaxDropDownHeight="260" ItemsSource="{Binding PeerBubbleStyleOptions}" SelectedItem="{Binding CurrentPeerBubbleStyle, Mode=TwoWay}" ItemTemplate="{StaticResource AppearanceOptionTemplate}"/>
+                    <ComboBox Classes="Alternate" Width="190" MaxDropDownHeight="260" ItemsSource="{Binding PeerBubbleStyleOptions}" SelectedItem="{Binding CurrentPeerBubbleStyle, Mode=TwoWay}" ItemTemplate="{StaticResource AppearanceOptionTextTemplate}"/>
                   </vkui:Cell.After>
                 </vkui:Cell>
                 <vkui:Cell Margin="-12,0,0,0" Header="Исходящие" Subtitle="Цвет твоих сообщений.">
                   <vkui:Cell.After>
-                    <ComboBox Classes="Alternate" Width="190" MaxDropDownHeight="260" ItemsSource="{Binding PeerBubbleColorOptions}" SelectedItem="{Binding CurrentPeerBubbleColor, Mode=TwoWay}" ItemTemplate="{StaticResource AppearanceOptionTemplate}"/>
+                    <ComboBox Classes="Alternate" Width="190" MaxDropDownHeight="260" ItemsSource="{Binding PeerBubbleColorOptions}" SelectedItem="{Binding CurrentPeerBubbleColor, Mode=TwoWay}" ItemTemplate="{StaticResource AppearanceOptionTextTemplate}"/>
                   </vkui:Cell.After>
                 </vkui:Cell>
-                <vkui:Cell Margin="-12,0,0,0" Header="Emoji-пак" Subtitle="Переопределение picker только для этого чата.">
+                <vkui:Cell Margin="-12,0,0,0" Header="Эмодзи-пак" Subtitle="Переопределение панели эмодзи только для этого чата.">
                   <vkui:Cell.After>
                     <ComboBox Classes="Alternate" Width="190" MaxDropDownHeight="260" ItemsSource="{Binding PeerEmojiPackOptions}" SelectedItem="{Binding CurrentPeerEmojiPack, Mode=TwoWay}">
                       <ComboBox.ItemTemplate>
@@ -372,7 +390,7 @@
                       <TextBlock Margin="0,2,0,0" Foreground="{DynamicResource VKTextPrimaryBrush}" Text="{Binding E2ESasText}"/>
                     </StackPanel>
                     <StackPanel Grid.Row="1" Grid.Column="1" Margin="12,10,0,0">
-                      <TextBlock Classes="Caption1" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="Fingerprint"/>
+                      <TextBlock Classes="Caption1" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="Отпечаток"/>
                       <TextBlock Margin="0,2,0,0" FontFamily="Consolas" FontSize="12" LineHeight="15" Foreground="{DynamicResource VKTextPrimaryBrush}" Text="{Binding E2EFingerprintText}" TextWrapping="Wrap" MaxLines="3"/>
                     </StackPanel>
                     <Grid Grid.Row="2" Grid.ColumnSpan="2" Margin="0,10,0,0" ColumnDefinitions="* *">
@@ -381,7 +399,7 @@
                           <ToggleSwitch IsChecked="{Binding E2EAutoEncryptText, Mode=TwoWay}" IsEnabled="{Binding E2EConfigured}"/>
                         </vkui:Cell.After>
                       </vkui:Cell>
-                      <vkui:Cell Grid.Column="1" Margin="0,0,-12,0" Header="Ключ сверен" Subtitle="После проверки SAS/fingerprint.">
+                      <vkui:Cell Grid.Column="1" Margin="0,0,-12,0" Header="Ключ сверен" Subtitle="После проверки SAS/отпечатка.">
                         <vkui:Cell.After>
                           <ToggleSwitch IsChecked="{Binding E2EVerified, Mode=TwoWay}" IsEnabled="{Binding E2EConfigured}"/>
                         </vkui:Cell.After>
@@ -399,19 +417,19 @@
                   <Button x:Name="E2ECreateHandshakeButton" Classes="Secondary" Margin="0,0,0,8" Command="{Binding CreateE2EHandshakeCommand}" IsEnabled="{Binding CanUseE2EActions}">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                       <vkui:VKIcon Width="20" Height="20" Id="{x:Static vkui:VKIconNames.Icon20ShareOutline}"/>
-                      <TextBlock Text="Создать handshake"/>
+                      <TextBlock Text="Создать обмен"/>
                     </StackPanel>
                   </Button>
                   <Button x:Name="E2EImportHandshakeButton" Classes="Secondary" Margin="0,0,8,8" Command="{Binding ImportE2EHandshakeCommand}" IsEnabled="{Binding CanUseE2EActions}">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                       <vkui:VKIcon Width="20" Height="20" Id="{x:Static vkui:VKIconNames.Icon20DocumentOutline}"/>
-                      <TextBlock Text="Импорт handshake"/>
+                      <TextBlock Text="Импорт обмена"/>
                     </StackPanel>
                   </Button>
                   <Button x:Name="E2EFingerprintButton" Classes="Secondary" Margin="0,0,0,8" Command="{Binding ShowE2EFingerprintCommand}" IsEnabled="{Binding E2EConfigured}">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                       <vkui:VKIcon Width="20" Height="20" Id="{x:Static vkui:VKIconNames.Icon20InfoCircleOutline}"/>
-                      <TextBlock Text="Fingerprint"/>
+                      <TextBlock Text="Отпечаток"/>
                     </StackPanel>
                   </Button>
                   <Button x:Name="E2ERotateButton" Classes="Secondary" Margin="0,0,8,8" Command="{Binding RotateE2EKeysCommand}" IsEnabled="{Binding E2EConfigured}">
@@ -423,13 +441,13 @@
                   <Button x:Name="E2EExportBackupButton" Classes="Secondary" Margin="0,0,0,8" Command="{Binding ExportE2EBackupCommand}" IsEnabled="{Binding E2EConfigured}">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                       <vkui:VKIcon Width="20" Height="20" Id="{x:Static vkui:VKIconNames.Icon20LockOutline}"/>
-                      <TextBlock Text="Экспорт backup"/>
+                      <TextBlock Text="Экспорт копии"/>
                     </StackPanel>
                   </Button>
                   <Button x:Name="E2EImportBackupButton" Classes="Secondary" Margin="0,0,8,0" Command="{Binding ImportE2EBackupCommand}" IsEnabled="{Binding CanUseE2EActions}">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                       <vkui:VKIcon Width="20" Height="20" Id="{x:Static vkui:VKIconNames.Icon20DocumentOutline}"/>
-                      <TextBlock Text="Импорт backup"/>
+                      <TextBlock Text="Импорт копии"/>
                     </StackPanel>
                   </Button>
                   <Button x:Name="E2EResetButton" Classes="Secondary" Margin="0,0,0,0" Command="{Binding ResetE2ECommand}" IsEnabled="{Binding E2EConfigured}">
@@ -445,30 +463,30 @@
               <vkui:VKIcon Margin="0,0,12,0" VerticalAlignment="Top" Foreground="{DynamicResource VKIconSecondaryBrush}" Id="{x:Static vkui:VKIconNames.Icon20BlockOutline}"/>
               <StackPanel Grid.Column="1">
                 <TextBlock Margin="0,1,0,6" FontWeight="Medium" Foreground="{DynamicResource VKTextPrimaryBrush}" Text="Локальная приватность"/>
-                <TextBlock Classes="Caption1" Margin="0,0,0,8" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="Mute и shadow-ban только в этом чате. VK ничего не получает."/>
+                <TextBlock Classes="Caption1" Margin="0,0,0,8" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="Тишина и shadow-ban работают только в этом чате. VK ничего не получает."/>
                 <vkui:Cell Margin="-12,0,0,4" Header="Анти-спам" Subtitle="Для групповых чатов: скрывать повторы и link+spam-keyword локально.">
                   <vkui:Cell.After>
                     <ToggleSwitch IsChecked="{Binding AntiSpamEnabled, Mode=TwoWay}"/>
                   </vkui:Cell.After>
                 </vkui:Cell>
-                <TextBlock Classes="Caption1" Margin="0,0,0,4" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="Mute: ID через запятую."/>
+                <TextBlock Classes="Caption1" Margin="0,0,0,4" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="Тишина: ID через запятую."/>
                 <Grid ColumnDefinitions="* Auto">
                   <TextBox Text="{Binding MutedSendersText, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" PlaceholderText="123, -456"/>
                   <Button Grid.Column="1" Classes="Tertiary" Width="44" Margin="8,0,0,0" Command="{Binding ClearMutedSendersCommand}" IsEnabled="{Binding HasMutedSenders}" ToolTip.Tip="Очистить mute">
                     <vkui:VKIcon Classes="ButtonIn" Id="{x:Static vkui:VKIconNames.Icon20DeleteOutline}"/>
                   </Button>
                 </Grid>
-                <TextBlock Classes="Caption1" Margin="0,8,0,4" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="Quiet words: слово или /regex/ по строкам. Только глушит уведомления."/>
+                <TextBlock Classes="Caption1" Margin="0,8,0,4" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="Тихие слова: слово или /regex/ по строкам. Только глушит уведомления."/>
                 <Grid ColumnDefinitions="* Auto">
                   <TextBox MinHeight="56" MaxHeight="100" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding QuietTextRules, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" PlaceholderText="спам или /казино|крипта/"/>
-                  <Button Grid.Column="1" Classes="Tertiary" Width="44" Margin="8,0,0,0" VerticalAlignment="Top" Command="{Binding ClearQuietTextRulesCommand}" IsEnabled="{Binding HasQuietTextRules}" ToolTip.Tip="Очистить quiet words">
+                  <Button Grid.Column="1" Classes="Tertiary" Width="44" Margin="8,0,0,0" VerticalAlignment="Top" Command="{Binding ClearQuietTextRulesCommand}" IsEnabled="{Binding HasQuietTextRules}" ToolTip.Tip="Очистить тихие слова">
                     <vkui:VKIcon Classes="ButtonIn" Id="{x:Static vkui:VKIconNames.Icon20DeleteOutline}"/>
                   </Button>
                 </Grid>
-                <TextBlock Classes="Caption1" Margin="0,8,0,4" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="Shadow-ban: ID через запятую."/>
+                <TextBlock Classes="Caption1" Margin="0,8,0,4" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="Скрывать локально: ID через запятую."/>
                 <Grid ColumnDefinitions="* Auto">
                   <TextBox Text="{Binding ShadowBannedSendersText, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" PlaceholderText="123, -456"/>
-                  <Button Grid.Column="1" Classes="Tertiary" Width="44" Margin="8,0,0,0" Command="{Binding ClearShadowBannedSendersCommand}" IsEnabled="{Binding HasShadowBannedSenders}" ToolTip.Tip="Очистить shadow-ban">
+                  <Button Grid.Column="1" Classes="Tertiary" Width="44" Margin="8,0,0,0" Command="{Binding ClearShadowBannedSendersCommand}" IsEnabled="{Binding HasShadowBannedSenders}" ToolTip.Tip="Очистить скрытых">
                     <vkui:VKIcon Classes="ButtonIn" Id="{x:Static vkui:VKIconNames.Icon20DeleteOutline}"/>
                   </Button>
                 </Grid>

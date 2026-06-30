@@ -44,6 +44,10 @@ namespace ELOR.Laney.Views.Modals {
             new Action(async () => await Launcher.LaunchUriAsync(new Uri("https://vk.com/terms")))();
         }
 
+        private void b05_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e) {
+            new Action(async () => await Launcher.LaunchUriAsync(new Uri("https://icons8.com/icons/set/vk")))();
+        }
+
         private void b04_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e) {
             new Action(async () => {
                 string libs = string.Join("\n", App.UsedLibs);

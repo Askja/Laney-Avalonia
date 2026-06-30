@@ -33,9 +33,10 @@ namespace ELOR.Laney.ViewModels.SettingsCategories {
 
         public ObservableCollection<TwoStringTuple> EmojiPackOptions { get; } = new ObservableCollection<TwoStringTuple> {
             new TwoStringTuple(EmojiPackIds.System, "Системные"),
-            new TwoStringTuple(EmojiPackIds.TelegramLike, "Telegram-like"),
-            new TwoStringTuple(EmojiPackIds.Fallback, "Fallback"),
-            new TwoStringTuple(EmojiPackIds.Custom, "Кастомный txt")
+            new TwoStringTuple(EmojiPackIds.TelegramLike, "Telegram/Noto Color"),
+            new TwoStringTuple(EmojiPackIds.Twemoji, "Twemoji"),
+            new TwoStringTuple(EmojiPackIds.Fallback, "Запасной набор"),
+            new TwoStringTuple(EmojiPackIds.Custom, "Кастомный manifest")
         };
 
         public ObservableCollection<TwoStringTuple> LocalStickerSendModeOptions { get; } = new ObservableCollection<TwoStringTuple> {
@@ -53,8 +54,9 @@ namespace ELOR.Laney.ViewModels.SettingsCategories {
         public TwoStringTuple CurrentEmojiPack { get { return GetEmojiPack(); } set { ChangeEmojiPack(value); OnPropertyChanged(); } }
         public TwoStringTuple CurrentLocalStickerSendMode { get { return GetLocalStickerSendMode(); } set { ChangeLocalStickerSendMode(value); OnPropertyChanged(); } }
         public string EmojiCustomPackPath { get { return Settings.EmojiCustomPackPath; } set { ChangeEmojiCustomPackPath(value); } }
+        public string EmojiCustomPackPathSummary { get { return String.IsNullOrWhiteSpace(Settings.EmojiCustomPackPath) ? "Не выбран" : Settings.EmojiCustomPackPath; } }
         public string LocalStickerCountText { get { return $"{LocalStickerStore.GetAll().Count} локальных"; } }
-        public string EmojiPackSummary => Settings.EmojiPack == EmojiPackIds.Custom && String.IsNullOrWhiteSpace(Settings.EmojiCustomPackPath) ? "кастомный пак без файла, будет fallback" : GetEmojiPack().Item2;
+        public string EmojiPackSummary => Settings.EmojiPack == EmojiPackIds.Custom && String.IsNullOrWhiteSpace(Settings.EmojiCustomPackPath) ? "кастомный пак без файла, будет запасной набор" : GetEmojiPack().Item2;
         public string LocalStickerManagerSummary => $"{LocalStickerPacks.Count} паков · {LocalStickerItems.Count} стикеров в списке";
         private string _localStickerManagerQuery;
         public string LocalStickerManagerQuery { get { return _localStickerManagerQuery; } set { _localStickerManagerQuery = value; OnPropertyChanged(); ReloadLocalManager(); } }
@@ -111,6 +113,7 @@ namespace ELOR.Laney.ViewModels.SettingsCategories {
             L2Emoji.ClearCache();
             MarkCustomProfile();
             OnPropertyChanged(nameof(EmojiCustomPackPath));
+            OnPropertyChanged(nameof(EmojiCustomPackPathSummary));
             OnPropertyChanged(nameof(EmojiPackSummary));
         }
 

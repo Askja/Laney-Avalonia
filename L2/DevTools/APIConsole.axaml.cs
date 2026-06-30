@@ -31,6 +31,7 @@ public partial class APIConsoleWindow : Window {
     private void APIConsoleWindow_Activated(object sender, EventArgs e) {
         Activated -= APIConsoleWindow_Activated;
         Version.Text = VKAPI.Version;
+        Domain.Text = VKAPI.CurrentDefaultDomain;
 
         // Test data
         Method.Text = "users.get";
@@ -55,12 +56,14 @@ public partial class APIConsoleWindow : Window {
         // Try to get access_token from current session. If fail (for example, current app is running in normal mode), show flyout to set token.
         try {
             Settings.Initialize();
+            Domain.Text = Settings.ApiDomain;
+            Version.Text = Settings.ApiVersion;
 
             string dt = Settings.GetVkAccessToken();
 
             if (dt == null) throw new Exception("Failed to get access_token from settings!");
             AccessToken.Text = dt;
-            API = new VKAPI(dt, Lang.Text, App.UserAgent);
+            API = new VKAPI(dt, Lang.Text, App.UserAgent, Domain.Text);
             Settings.UnlockSettingsFile(true);
 
             new Action(async () => {
@@ -141,7 +144,7 @@ public partial class APIConsoleWindow : Window {
         new Action(async () => {
             string token = AccessToken.Text;
             if (!string.IsNullOrEmpty(token)) {
-                API = new VKAPI(token, Lang.Text, App.UserAgent);
+                API = new VKAPI(token, Lang.Text, App.UserAgent, Domain.Text);
             } else {
                 VKUIDialog dialog = new VKUIDialog("Access token not set!", "Without token you cannot call API methods");
                 await dialog.ShowDialog(this);
@@ -153,5 +156,9 @@ public partial class APIConsoleWindow : Window {
 
     private void OnLangTextChanged(object? sender, TextChangedEventArgs e) {
         if (API != null) API.Language = Lang.Text;
+    }
+
+    private void OnDomainTextChanged(object? sender, TextChangedEventArgs e) {
+        if (API != null) API.Domain = Domain.Text;
     }
 }

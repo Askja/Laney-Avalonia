@@ -63,7 +63,7 @@
           <Grid Classes="GroupHeader">
             <TextBlock Text="Правила"/>
           </Grid>
-          <vkui:Cell Header="Rules engine" Subtitle="{Binding AutomationRulesSummary}">
+          <vkui:Cell Header="Правила автоматизации" Subtitle="{Binding AutomationRulesSummary}">
             <vkui:Cell.After>
               <Button Classes="Secondary" Content="Сбросить пример" Command="{Binding ResetAutomationRulesCommand}"/>
             </vkui:Cell.After>
@@ -123,7 +123,7 @@
           <Grid Classes="GroupHeader">
             <TextBlock Text="Автоответчик"/>
           </Grid>
-          <vkui:Cell Header="Auto-replies" Subtitle="{Binding AutoReplyRulesSummary}">
+          <vkui:Cell Header="Автоответы" Subtitle="{Binding AutoReplyRulesSummary}">
             <vkui:Cell.After>
               <Button Classes="Secondary" Content="Сбросить пример" Command="{Binding ResetAutoReplyRulesCommand}"/>
             </vkui:Cell.After>

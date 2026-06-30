@@ -28,6 +28,28 @@
       <Border Classes="Group" VerticalAlignment="Top">
         <StackPanel>
           <Grid Classes="GroupHeader">
+            <TextBlock Text="{Binding AutostartSectionTitle}"/>
+          </Grid>
+          <vkui:Cell Header="{Binding AutostartEnabledTitle}" Subtitle="{Binding AutostartEnabledSubtitle}">
+            <vkui:Cell.After>
+              <ToggleSwitch IsChecked="{Binding AutostartEnabled, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell IsVisible="{Binding AutostartEnabled}" Header="{Binding AutostartMinimizedTitle}" Subtitle="{Binding AutostartMinimizedSubtitle}">
+            <vkui:Cell.After>
+              <ToggleSwitch IsChecked="{Binding AutostartMinimized, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="{Binding AutostartStatusTitle}" Subtitle="{Binding AutostartStatus}">
+            <vkui:Cell.Before>
+              <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon24DoneOutline}"/>
+            </vkui:Cell.Before>
+          </vkui:Cell>
+        </StackPanel>
+      </Border>
+      <Border Classes="Group" VerticalAlignment="Top">
+        <StackPanel>
+          <Grid Classes="GroupHeader">
             <TextBlock Text="Профиль интерфейса"/>
           </Grid>
           <vkui:Cell Header="Пресет" Subtitle="Быстрые наборы настроек под работу, ночь, слабое железо и стрим.">

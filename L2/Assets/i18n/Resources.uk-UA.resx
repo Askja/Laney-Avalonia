@@ -165,6 +165,12 @@
   <data name="no" xml:space="preserve">
     <value>Нi</value>
   </data>
+  <data name="ok" xml:space="preserve">
+    <value>Зрозуміло</value>
+  </data>
+  <data name="cancel" xml:space="preserve">
+    <value>Скасувати</value>
+  </data>
   <data name="retry" xml:space="preserve">
     <value>Повторити спробу</value>
   </data>
@@ -1104,6 +1110,44 @@
   <data name="settings_search_empty_text" xml:space="preserve">
     <value>Спробуй інше слово. Налаштування не телепати.</value>
   </data>
+  <data name="settings_autostart_section" xml:space="preserve"><value>Автозапуск</value></data>
+  <data name="settings_autostart_enabled" xml:space="preserve"><value>Запускати Laney разом із системою</value></data>
+  <data name="settings_autostart_enabled_desc" xml:space="preserve"><value>Додає клієнт в автозапуск поточного користувача</value></data>
+  <data name="settings_autostart_minimized" xml:space="preserve"><value>Стартувати згорнутим</value></data>
+  <data name="settings_autostart_minimized_desc" xml:space="preserve"><value>Вікно відкриється відразу згорнутим, без зайвого вистрибування</value></data>
+  <data name="settings_autostart_status" xml:space="preserve"><value>Стан у системі</value></data>
+  <data name="settings_notifications_style_section" xml:space="preserve"><value>Стиль сповіщень</value></data>
+  <data name="settings_notifications_delivery" xml:space="preserve"><value>Режим доставки</value></data>
+  <data name="settings_notifications_delivery_desc" xml:space="preserve"><value>Кастомні сповіщення Laney, системні сповіщення або обидва варіанти</value></data>
+  <data name="settings_notifications_delivery_custom" xml:space="preserve"><value>Кастомні Laney</value></data>
+  <data name="settings_notifications_delivery_system" xml:space="preserve"><value>Системні</value></data>
+  <data name="settings_notifications_delivery_both" xml:space="preserve"><value>Кастомні + системні</value></data>
+  <data name="settings_notifications_position" xml:space="preserve"><value>Позиція на екрані</value></data>
+  <data name="settings_notifications_position_desc" xml:space="preserve"><value>Кут, де з'явиться стек кастомних сповіщень</value></data>
+  <data name="settings_notifications_position_bottom_right" xml:space="preserve"><value>Знизу праворуч</value></data>
+  <data name="settings_notifications_position_bottom_left" xml:space="preserve"><value>Знизу ліворуч</value></data>
+  <data name="settings_notifications_position_top_right" xml:space="preserve"><value>Зверху праворуч</value></data>
+  <data name="settings_notifications_position_top_left" xml:space="preserve"><value>Зверху ліворуч</value></data>
+  <data name="settings_notifications_stack_limit" xml:space="preserve"><value>Розмір стека</value></data>
+  <data name="settings_notifications_stack_limit_desc" xml:space="preserve"><value>Скільки кастомних сповіщень тримати на екрані одночасно</value></data>
+  <data name="settings_notifications_timeout" xml:space="preserve"><value>Таймаут, секунд</value></data>
+  <data name="settings_notifications_timeout_desc" xml:space="preserve"><value>Через скільки секунд кастомне сповіщення зникне саме</value></data>
+  <data name="settings_notifications_fast_actions" xml:space="preserve"><value>Швидкі дії</value></data>
+  <data name="settings_notifications_fast_actions_desc" xml:space="preserve"><value>Кнопки відкрити, прочитати й заглушити прямо у сповіщенні</value></data>
+  <data name="settings_notifications_show_avatars" xml:space="preserve"><value>Показувати аватари</value></data>
+  <data name="settings_notifications_show_avatars_desc" xml:space="preserve"><value>Аватар відправника у кастомному сповіщенні</value></data>
+  <data name="settings_notifications_show_images" xml:space="preserve"><value>Показувати зображення</value></data>
+  <data name="settings_notifications_show_images_desc" xml:space="preserve"><value>Прев'ю вкладень у кастомному сповіщенні</value></data>
+  <data name="settings_api_section" xml:space="preserve"><value>VK API</value></data>
+  <data name="settings_api_domain" xml:space="preserve"><value>Домен API</value></data>
+  <data name="settings_api_domain_desc" xml:space="preserve"><value>Хост VK API без шляху, наприклад api.vk.me</value></data>
+  <data name="settings_api_version" xml:space="preserve"><value>Версія API</value></data>
+  <data name="settings_api_version_desc" xml:space="preserve"><value>Версія, яка піде в параметрі v</value></data>
+  <data name="settings_api_reset" xml:space="preserve"><value>Скинути VK API</value></data>
+  <data name="settings_api_reset_desc" xml:space="preserve"><value>Повернути домен і версію, з якими клієнт зібрано за замовчуванням</value></data>
+  <data name="notification_action_open" xml:space="preserve"><value>Відкрити</value></data>
+  <data name="notification_action_mark_read" xml:space="preserve"><value>Прочитано</value></data>
+  <data name="notification_action_mute_1h" xml:space="preserve"><value>Тиша 1 год</value></data>
   <data name="cm_local_quiet" xml:space="preserve"><value>Локальна тиша</value></data>
   <data name="cm_local_quiet_subtitle" xml:space="preserve"><value>Заглушити toast і звук локально на час; VK не чіпаємо</value></data>
   <data name="cm_until" xml:space="preserve"><value>До {0}</value></data>
@@ -1131,6 +1175,52 @@
   <data name="cm_open_floating_window_subtitle" xml:space="preserve"><value>Поверх усіх вікон, окремий компактний чат</value></data>
   <data name="cm_jump_to_date" xml:space="preserve"><value>Перейти до дати</value></data>
   <data name="cm_jump_to_date_subtitle" xml:space="preserve"><value>Знайти найближче повідомлення без повного backfill</value></data>
+  <data name="cm_debug_simulate_deleted" xml:space="preserve"><value>Зімітувати видалення чату</value></data>
+  <data name="cm_jump_date_placeholder" xml:space="preserve"><value>2026-06-27 або 27.06.2026</value></data>
+  <data name="cm_jump_to_date_dialog_text" xml:space="preserve"><value>Laney знайде найближче повідомлення до початку вибраного дня. Якщо дата не завантажена, буде дешевий пошук по історії, а не скачування всього чату.</value></data>
+  <data name="cm_jump_failed_title" xml:space="preserve"><value>Перехід не виконано</value></data>
+  <data name="cm_bulk_period_all_selected" xml:space="preserve"><value>Усі вибрані</value></data>
+  <data name="cm_bulk_period_today" xml:space="preserve"><value>Сьогодні</value></data>
+  <data name="cm_bulk_period_7_days" xml:space="preserve"><value>7 днів</value></data>
+  <data name="cm_bulk_period_30_days" xml:space="preserve"><value>30 днів</value></data>
+  <data name="cm_bulk_attachment_any" xml:space="preserve"><value>Будь-який тип</value></data>
+  <data name="cm_bulk_attachment_media" xml:space="preserve"><value>Фото/відео</value></data>
+  <data name="cm_bulk_attachment_documents" xml:space="preserve"><value>Документи</value></data>
+  <data name="cm_bulk_attachment_links" xml:space="preserve"><value>Посилання</value></data>
+  <data name="cm_bulk_attachment_voice" xml:space="preserve"><value>Голосові</value></data>
+  <data name="cm_bulk_attachment_graffiti" xml:space="preserve"><value>Графіті</value></data>
+  <data name="cm_bulk_attachment_stickers" xml:space="preserve"><value>Стікери</value></data>
+  <data name="cm_bulk_attachment_text" xml:space="preserve"><value>Тільки текст</value></data>
+  <data name="cm_bulk_sender_any" xml:space="preserve"><value>Будь-який відправник</value></data>
+  <data name="cm_bulk_sender_mine" xml:space="preserve"><value>Тільки мої</value></data>
+  <data name="cm_bulk_sender_others" xml:space="preserve"><value>Тільки чужі</value></data>
+  <data name="cm_download_profile_all" xml:space="preserve"><value>Усі вкладення</value></data>
+  <data name="cm_download_profile_photos" xml:space="preserve"><value>Фотоархів</value></data>
+  <data name="cm_download_profile_documents" xml:space="preserve"><value>Документи</value></data>
+  <data name="cm_download_profile_voice" xml:space="preserve"><value>Голосові</value></data>
+  <data name="cm_download_profile_video" xml:space="preserve"><value>Відео</value></data>
+  <data name="cm_download_profile_audio" xml:space="preserve"><value>Аудіо</value></data>
+  <data name="cm_download_profile_stickers" xml:space="preserve"><value>Стікери/графіті</value></data>
+  <data name="cm_download_speed_unlimited" xml:space="preserve"><value>Без ліміту</value></data>
+  <data name="cm_download_filter_placeholder" xml:space="preserve"><value>ім'я, розширення, тип або URL; можна порожньо</value></data>
+  <data name="cm_download_sender_placeholder" xml:space="preserve"><value>sender id; можна порожньо</value></data>
+  <data name="cm_download_from_placeholder" xml:space="preserve"><value>з дати: 2026-06-01 або 01.06.2026</value></data>
+  <data name="cm_download_to_placeholder" xml:space="preserve"><value>по дату: 2026-06-27 або 27.06.2026</value></data>
+  <data name="cm_download_size_placeholder" xml:space="preserve"><value>макс. розмір MB; можна порожньо</value></data>
+  <data name="cm_download_dedup" xml:space="preserve"><value>Дедуп за URL і SHA-256</value></data>
+  <data name="cm_download_sidecar" xml:space="preserve"><value>Писати sidecar JSON поруч із файлами</value></data>
+  <data name="cm_download_resume" xml:space="preserve"><value>Resume: пропускати вже завантажене в цій папці</value></data>
+  <data name="cm_download_backfill" xml:space="preserve"><value>Full-history backfill через VK API</value></data>
+  <data name="cm_download_pause" xml:space="preserve"><value>Пауза після однієї API-сторінки</value></data>
+  <data name="cm_download_field_profile" xml:space="preserve"><value>Профіль</value></data>
+  <data name="cm_download_field_filter" xml:space="preserve"><value>Фільтр</value></data>
+  <data name="cm_download_field_sender" xml:space="preserve"><value>Відправник</value></data>
+  <data name="cm_download_field_from" xml:space="preserve"><value>Дата з</value></data>
+  <data name="cm_download_field_to" xml:space="preserve"><value>Дата по</value></data>
+  <data name="cm_download_field_size" xml:space="preserve"><value>Розмір</value></data>
+  <data name="cm_download_field_speed" xml:space="preserve"><value>Швидкість</value></data>
+  <data name="cm_download_dialog_text" xml:space="preserve"><value>За замовчуванням експортується завантажений локальний зріз. Full-history вмикає прохід через VK API з resume-чергою.</value></data>
+  <data name="cm_download_choose_folder" xml:space="preserve"><value>Вибрати папку</value></data>
   <data name="cm_section_debug" xml:space="preserve"><value>Налагодження</value></data>
   <data name="cm_section_status_notifications" xml:space="preserve"><value>Статус і сповіщення</value></data>
   <data name="cm_section_appearance_security" xml:space="preserve"><value>Оформлення і безпека</value></data>

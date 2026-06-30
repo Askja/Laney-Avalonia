@@ -5,7 +5,6 @@ using Avalonia.Controls.Shapes;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
-using ColorTextBlock.Avalonia;
 using ELOR.Laney.Controls.Attachments;
 using ELOR.Laney.Core;
 using ELOR.Laney.Core.Localization;
@@ -96,8 +95,8 @@ namespace ELOR.Laney.Controls {
         Button ReplyMessageButton;
         GiftUI Gift;
         Grid MessageTextHost;
-        CTextBlock MessageText;
         SelectableTextBlock SelectableMessageText;
+        TextBlock RichMessageText;
         AttachmentsContainer MessageAttachments;
         Rectangle Map;
         Border ForwardedMessagesContainer;
@@ -125,8 +124,8 @@ namespace ELOR.Laney.Controls {
             ReplyMessageButton = e.NameScope.Find<Button>(nameof(ReplyMessageButton));
             Gift = e.NameScope.Find<GiftUI>(nameof(Gift));
             MessageTextHost = e.NameScope.Find<Grid>(nameof(MessageTextHost));
-            MessageText = e.NameScope.Find<CTextBlock>(nameof(MessageText));
             SelectableMessageText = e.NameScope.Find<SelectableTextBlock>(nameof(SelectableMessageText));
+            RichMessageText = e.NameScope.Find<TextBlock>(nameof(RichMessageText));
             MessageAttachments = e.NameScope.Find<AttachmentsContainer>(nameof(MessageAttachments));
             Map = e.NameScope.Find<Rectangle>(nameof(Map));
             ForwardedMessagesContainer = e.NameScope.Find<Border>(nameof(ForwardedMessagesContainer));
@@ -187,8 +186,40 @@ namespace ELOR.Laney.Controls {
         }
 
         private void Settings_SettingChanged(string key, object value) {
-            if (Message == null || key != $"{Settings.PEER_LOCAL_MESSAGE_REACTIONS_PREFIX}{Message.PeerId}") return;
-            Dispatcher.UIThread.Post(UpdateLocalReactionIndicator);
+            if (Message == null) return;
+
+            if (key == $"{Settings.PEER_LOCAL_MESSAGE_REACTIONS_PREFIX}{Message.PeerId}") {
+                Dispatcher.UIThread.Post(UpdateLocalReactionIndicator);
+                return;
+            }
+
+            if (key == Settings.MESSAGE_CHECKMARK_STYLE) {
+                Dispatcher.UIThread.Post(ChangeUI);
+                return;
+            }
+
+            if (IsMessageAppearanceSettingKey(key)) {
+                Dispatcher.UIThread.Post(RenderElement);
+            }
+        }
+
+        private bool IsMessageAppearanceSettingKey(string key) {
+            long peerId = Message?.PeerId ?? 0;
+            return key == Settings.STREAMER_MODE
+                || key == Settings.APP_FONT_FAMILY
+                || key == Settings.MESSAGE_FONT_SIZE
+                || key == Settings.MESSAGE_BUBBLE_WIDTH
+                || key == Settings.MESSAGE_BUBBLE_DENSITY
+                || key == Settings.MESSAGE_BUBBLE_STYLE
+                || key == Settings.MESSAGE_BUBBLE_OPACITY
+                || key == Settings.MESSAGE_BUBBLE_AUTO_COLOR
+                || key == Settings.EMOJI_PACK
+                || key == Settings.EMOJI_CUSTOM_PACK_PATH
+                || key == $"{Settings.PEER_LOCAL_DENSITY_PREFIX}{peerId}"
+                || key == $"{Settings.PEER_LOCAL_FONT_PREFIX}{peerId}"
+                || key == $"{Settings.PEER_LOCAL_BUBBLE_COLOR_PREFIX}{peerId}"
+                || key == $"{Settings.PEER_LOCAL_BUBBLE_STYLE_PREFIX}{peerId}"
+                || key == $"{Settings.PEER_LOCAL_EMOJI_PACK_PREFIX}{peerId}";
         }
 
         // Это чтобы событие нажатия не доходили до родителей (особенно к ListBox)
@@ -375,13 +406,13 @@ namespace ELOR.Laney.Controls {
                 Gift.HorizontalAlignment = String.IsNullOrEmpty(Message.Text) ? HorizontalAlignment.Left : HorizontalAlignment.Stretch;
                 Gift.Margin = new Thickness(4, 4, 4, String.IsNullOrEmpty(Message.Text) ? 12 : 0);
                 Gift.IsVisible = true;
-                MessageText.TextAlignment = TextAlignment.Center;
                 SelectableMessageText.TextAlignment = TextAlignment.Center;
+                RichMessageText.TextAlignment = TextAlignment.Center;
                 MessageTextHost.Margin = new Thickness(mtm.Left, mtm.Top, mtm.Right, 12);
             } else {
                 Gift.IsVisible = false;
-                MessageText.TextAlignment = TextAlignment.Left;
                 SelectableMessageText.TextAlignment = TextAlignment.Left;
+                RichMessageText.TextAlignment = TextAlignment.Left;
                 MessageTextHost.Margin = new Thickness(mtm.Left, mtm.Top, mtm.Right, 8);
             }
 
@@ -476,25 +507,53 @@ namespace ELOR.Laney.Controls {
         private void UpdateText() {
             if (Settings.StreamerMode) {
                 SetText(PrivacyMask.HiddenMessage);
-                MessageText.Classes.Add("Empty");
                 return;
             }
 
             SetText(Message.UIType == MessageUIType.Empty ? Assets.i18n.Resources.empty_message : Message.DisplayText);
-            if (Message.UIType == MessageUIType.Empty) {
-                MessageText.Classes.Add("Empty");
-            }
         }
 
         private void SetText(string text) {
             if (Settings.MessageRenderingLogs) Log.Verbose($">>> MessageBubble: {Message.PeerId}_{Message.ConversationMessageId} setting text...");
-            MessageText.Classes.Clear();
-            TextParser.SetText(text, MessageText, OnLinkClicked, Message.PeerId);
             string selectableText = TextParser.GetParsedText(text);
-            SelectableMessageText.Text = selectableText;
             MessageTextHost.IsVisible = !String.IsNullOrEmpty(selectableText);
             SelectableMessageText.Classes.Remove("Empty");
-            if (String.Equals(text, Assets.i18n.Resources.empty_message, StringComparison.Ordinal)) SelectableMessageText.Classes.Add("Empty");
+            RichMessageText.Classes.Remove("Empty");
+
+            if (String.IsNullOrEmpty(selectableText)) {
+                SelectableMessageText.ClearValue(TextBlock.FontFamilyProperty);
+                SelectableMessageText.Text = String.Empty;
+                SelectableMessageText.IsVisible = false;
+                RichMessageText.Inlines?.Clear();
+                RichMessageText.ClearValue(TextBlock.FontFamilyProperty);
+                RichMessageText.Text = String.Empty;
+                RichMessageText.IsVisible = false;
+                return;
+            }
+
+            bool isEmptyMessage = String.Equals(text, Assets.i18n.Resources.empty_message, StringComparison.Ordinal);
+            bool richEmoji = !isEmptyMessage && MessageEmojiInlineRenderer.TryApply(RichMessageText, selectableText, Message.PeerId);
+            if (richEmoji) {
+                SelectableMessageText.ClearValue(TextBlock.FontFamilyProperty);
+                RichMessageText.ClearValue(TextBlock.FontFamilyProperty);
+                RichMessageText.Text = String.Empty;
+                SelectableMessageText.Text = String.Empty;
+                SelectableMessageText.IsVisible = false;
+                RichMessageText.IsVisible = true;
+            } else {
+                SelectableMessageText.ClearValue(TextBlock.FontFamilyProperty);
+                RichMessageText.Inlines?.Clear();
+                RichMessageText.ClearValue(TextBlock.FontFamilyProperty);
+                RichMessageText.Text = String.Empty;
+                RichMessageText.IsVisible = false;
+                SelectableMessageText.Text = selectableText;
+                SelectableMessageText.IsVisible = true;
+            }
+
+            if (isEmptyMessage) {
+                SelectableMessageText.Classes.Add("Empty");
+                RichMessageText.Classes.Add("Empty");
+            }
 
             if (Settings.MessageRenderingLogs) Log.Verbose($"<<< MessageBubble: {Message.PeerId}_{Message.ConversationMessageId} text rendered.");
         }
@@ -615,28 +674,7 @@ namespace ELOR.Laney.Controls {
             // Message state
             var state = Message.State;
             ReadIndicator.IsVisible = !IsOutgoing && state == MessageVMState.Unread;
-            switch (state) {
-                case MessageVMState.Unread:
-                    StateIndicator.IsVisible = IsOutgoing;
-                    StateIndicator.Width = StateIndicator.Height = 16; // ¯\_(ツ)_/¯
-                    StateIndicator.Id = VKIconNames.Icon16CheckOutline;
-                    break;
-                case MessageVMState.Read:
-                    StateIndicator.IsVisible = IsOutgoing;
-                    StateIndicator.Width = StateIndicator.Height = 16;
-                    StateIndicator.Id = VKIconNames.Icon16CheckDoubleOutline;
-                    break;
-                case MessageVMState.Loading:
-                    StateIndicator.IsVisible = true;
-                    StateIndicator.Width = StateIndicator.Height = 12; // ¯\_(ツ)_/¯
-                    StateIndicator.Id = VKIconNames.Icon16ClockOutline;
-                    break;
-                case MessageVMState.Deleted:
-                    StateIndicator.IsVisible = true;
-                    StateIndicator.Width = StateIndicator.Height = 12;
-                    StateIndicator.Id = VKIconNames.Icon16DeleteOutline;
-                    break;
-            }
+            ApplyStateIndicator(state);
 
             // Time & is edited
             TimeIndicator.Text = Message.SentTime.ToString("H:mm");
@@ -687,6 +725,36 @@ namespace ELOR.Laney.Controls {
             if (Settings.MessageRenderingLogs) Log.Verbose($"<<< MessageBubble: {Message.PeerId}_{Message.ConversationMessageId} ChangeUI completed.");
         }
 
+        private void ApplyStateIndicator(MessageVMState state) {
+            string style = Settings.MessageCheckmarkStyle;
+            StateIndicator.Margin = style == MessageCheckmarkStyleIds.Compact
+                ? new Thickness(3, 0, 0, 0)
+                : new Thickness(4, 0, 0, 0);
+
+            switch (state) {
+                case MessageVMState.Unread:
+                    StateIndicator.IsVisible = IsOutgoing && style != MessageCheckmarkStyleIds.Hidden;
+                    StateIndicator.Width = StateIndicator.Height = style == MessageCheckmarkStyleIds.Minimal ? 12 : 16;
+                    StateIndicator.Id = style == MessageCheckmarkStyleIds.Compact ? VKIconNames.Icon20Check : VKIconNames.Icon16CheckOutline;
+                    break;
+                case MessageVMState.Read:
+                    StateIndicator.IsVisible = IsOutgoing && style != MessageCheckmarkStyleIds.Hidden;
+                    StateIndicator.Width = StateIndicator.Height = style == MessageCheckmarkStyleIds.Minimal ? 12 : 16;
+                    StateIndicator.Id = style == MessageCheckmarkStyleIds.Compact ? VKIconNames.Icon20CheckCircleOn : VKIconNames.Icon16CheckDoubleOutline;
+                    break;
+                case MessageVMState.Loading:
+                    StateIndicator.IsVisible = true;
+                    StateIndicator.Width = StateIndicator.Height = 12;
+                    StateIndicator.Id = VKIconNames.Icon16ClockOutline;
+                    break;
+                case MessageVMState.Deleted:
+                    StateIndicator.IsVisible = true;
+                    StateIndicator.Width = StateIndicator.Height = 12;
+                    StateIndicator.Id = VKIconNames.Icon16DeleteOutline;
+                    break;
+            }
+        }
+
         private void UpdateIndicatorsUI(MessageUIType uiType, bool hasReply) {
             IndicatorContainer.Classes.RemoveAll([INDICATOR_DEFAULT, INDICATOR_IMAGE, INDICATOR_COMPLEX_IMAGE, INDICATOR_GIFT, INDICATOR_OUTGOING]);
             if (IsOutgoing) IndicatorContainer.Classes.Add(INDICATOR_OUTGOING);
@@ -722,7 +790,7 @@ namespace ELOR.Laney.Controls {
                 if (Message.Reactions?.Count > 0) {
                     Grid.SetRow(IndicatorContainer, 2);
                 } else {
-                    Grid.SetRow(IndicatorContainer, 0);
+                    Grid.SetRow(IndicatorContainer, 1);
                 }
             }
         }

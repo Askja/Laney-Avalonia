@@ -88,6 +88,7 @@ namespace ELOR.Laney.Core {
 
             ObservableCollection<EmojiGroup> emojis = normalizedPackId switch {
                 EmojiPackIds.TelegramLike => BuildTelegramLikePack(),
+                EmojiPackIds.Twemoji => BuildTelegramLikePack(),
                 EmojiPackIds.Fallback => BuildFallbackPack(),
                 EmojiPackIds.Custom => BuildCustomPack(normalizedPath) ?? BuildSystemPack(),
                 _ => BuildSystemPack()

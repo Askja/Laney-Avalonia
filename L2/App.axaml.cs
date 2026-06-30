@@ -5,9 +5,11 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Markup.Xaml.Templates;
 using Avalonia.Media;
 using Avalonia.Styling;
+using ELOR.Laney.Controls;
 using ELOR.Laney.Core;
 using ELOR.Laney.Core.Localization;
 using ELOR.Laney.Extensions;
+using ELOR.VKAPILib;
 using Serilog;
 using System;
 using System.Collections.Generic;
@@ -25,6 +27,7 @@ namespace ELOR.Laney {
         public static new App Current => _current;
         public ClassicDesktopStyleApplicationLifetime DesktopLifetime { get; private set; }
         public double DPI { get; private set; } = 2;
+        public static bool StartMinimized => HasCmdLineValue("minimized");
 
         public override void Initialize() {
             _current = this;
@@ -110,6 +113,10 @@ namespace ELOR.Laney {
 
         private void Prepare() {
             ApplyPerfOverrides();
+            VKAPI.ConfigureDefaults(Settings.ApiDomain, Settings.ApiVersion);
+            VKAPI.ConfigureProxy(Settings.ProxyEnabled, Settings.ProxyUri, Settings.ProxyBypassLocal);
+            AutostartService.ApplyConfiguredState();
+            MessageEmojiInlineRenderer.Prewarm();
             Debug.WriteLine("Getting and loading language...");
             string lang = Settings.Get(Settings.LANGUAGE, Constants.DefaultLang);
             Localizer.LoadLanguage(lang);
@@ -143,7 +150,8 @@ namespace ELOR.Laney {
             TrayIcons icons = Application.Current.GetValue(TrayIcon.IconsProperty);
             if (icons != null && icons.Count > 0) {
                 TrayIcon icon = icons[0];
-                icon.Icon = new WindowIcon(AssetsManager.GetBitmapFromUri(new Uri(AssetsManager.GetThemeDependentTrayIcon())));
+                WindowIcon trayIcon = AssetsManager.GetTrayWindowIcon();
+                if (trayIcon != null) icon.Icon = trayIcon;
             }
         }
 
@@ -195,7 +203,9 @@ namespace ELOR.Laney {
                     AppearanceManager.ApplyAppearanceSettings();
                     break;
                 case Settings.ACCENT_COLOR:
+                case Settings.APP_FONT_FAMILY:
                 case Settings.CHAT_BACKGROUND:
+                case Settings.CHAT_BACKGROUND_IMAGE:
                 case Settings.CHAT_LIST_DENSITY:
                 case Settings.CHAT_LIST_AVATAR_SIZE:
                 case Settings.CHAT_LIST_AVATAR_SHAPE:
@@ -208,6 +218,9 @@ namespace ELOR.Laney {
                 case Settings.MESSAGE_BUBBLE_OPACITY:
                 case Settings.MESSAGE_BUBBLE_AUTO_COLOR:
                     AppearanceManager.ApplyAppearanceSettings();
+                    break;
+                case Settings.APP_ICON_VARIANT:
+                    UpdateTrayIcon();
                     break;
             }
         }

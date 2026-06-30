@@ -43,14 +43,20 @@ namespace ELOR.VKAPILib {
         private string _accessToken;
         private string _language;
         private string _domain;
+        private static string _defaultDomain = DefaultDomain;
         private static string _version = "5.263";
+        private static bool _proxyEnabled;
+        private static Uri _proxyUri;
+        private static bool _proxyBypassLocal = true;
 
         public string AccessToken { get { return _accessToken; } internal set { _accessToken = value; } }
         public string Language { get { return _language; } set { _language = value; } }
-        public string Domain { get { return _domain; } }
+        public string Domain { get { return _domain; } set { _domain = NormalizeDomain(value); } }
         public int LongPollVersion { get; set; } = 19;
         public static string UserAgent { get; private set; }
         public static string Version { get { return _version; } }
+        public static string BundledVersion => "5.263";
+        public static string CurrentDefaultDomain => _defaultDomain;
 
         private HttpClient HttpClient;
 
@@ -70,15 +76,9 @@ namespace ELOR.VKAPILib {
             _accessToken = accessToken;
             _language = language;
             UserAgent = userAgent;
-            _domain = domain;
+            _domain = NormalizeDomain(String.Equals(domain, DefaultDomain, StringComparison.OrdinalIgnoreCase) ? _defaultDomain : domain);
 
-            HttpClientHandler handler = new HttpClientHandler() {
-                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
-            };
-            HttpClient = new HttpClient(handler, false);
-            HttpClient.DefaultRequestHeaders.CacheControl = new CacheControlHeaderValue { NoCache = true };
-            HttpClient.DefaultRequestHeaders.Add("Accept-Encoding", "zstd,gzip,deflate");
-            if (!String.IsNullOrEmpty(userAgent)) HttpClient.DefaultRequestHeaders.Add("User-Agent", userAgent);
+            HttpClient = CreateConfiguredHttpClient(userAgent);
 
             Account = new AccountMethods(this);
             Apps = new AppsMethods(this);
@@ -93,6 +93,48 @@ namespace ELOR.VKAPILib {
             Users = new UsersMethods(this);
             Utils = new UtilsMethods(this);
             Video = new VideoMethods(this);
+        }
+
+        public static void ConfigureDefaults(string domain, string version) {
+            _defaultDomain = NormalizeDomain(domain);
+            _version = NormalizeVersion(version);
+        }
+
+        public static void ConfigureProxy(bool enabled, string proxyUri, bool bypassLocal) {
+            Uri parsedProxy = null;
+            _proxyEnabled = enabled && Uri.TryCreate(proxyUri, UriKind.Absolute, out parsedProxy);
+            _proxyUri = _proxyEnabled ? parsedProxy : null;
+            _proxyBypassLocal = bypassLocal;
+        }
+
+        public static HttpClientHandler CreateHttpClientHandler(bool allowAutoRedirect = true, int maxConnectionsPerServer = 0, DecompressionMethods automaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate) {
+            HttpClientHandler handler = new HttpClientHandler {
+                AllowAutoRedirect = allowAutoRedirect,
+                AutomaticDecompression = automaticDecompression
+            };
+            if (maxConnectionsPerServer > 0) handler.MaxConnectionsPerServer = maxConnectionsPerServer;
+
+            if (_proxyEnabled && _proxyUri != null) {
+                handler.UseProxy = true;
+                handler.Proxy = new WebProxy(_proxyUri) {
+                    BypassProxyOnLocal = _proxyBypassLocal
+                };
+            }
+
+            return handler;
+        }
+
+        public void ResetHttpClient() {
+            HttpClient?.Dispose();
+            HttpClient = CreateConfiguredHttpClient(UserAgent);
+        }
+
+        private static HttpClient CreateConfiguredHttpClient(string userAgent) {
+            HttpClient client = new HttpClient(CreateHttpClientHandler(), false);
+            client.DefaultRequestHeaders.CacheControl = new CacheControlHeaderValue { NoCache = true };
+            client.DefaultRequestHeaders.Add("Accept-Encoding", "zstd,gzip,deflate");
+            if (!String.IsNullOrEmpty(userAgent)) client.DefaultRequestHeaders.Add("User-Agent", userAgent);
+            return client;
         }
 
         internal Dictionary<string, string> GetNormalizedParameters(Dictionary<string, string> parameters) {
@@ -226,6 +268,24 @@ namespace ELOR.VKAPILib {
             } else {
                 throw apiex;
             }
+        }
+
+        private static string NormalizeDomain(string domain) {
+            if (String.IsNullOrWhiteSpace(domain)) return DefaultDomain;
+
+            string normalized = domain.Trim().Trim('/');
+            if (Uri.TryCreate(normalized, UriKind.Absolute, out Uri uri) && !String.IsNullOrWhiteSpace(uri.Host)) {
+                normalized = uri.Host;
+            }
+
+            return String.IsNullOrWhiteSpace(normalized) ? DefaultDomain : normalized;
+        }
+
+        private static string NormalizeVersion(string version) {
+            if (String.IsNullOrWhiteSpace(version)) return BundledVersion;
+
+            string normalized = version.Trim();
+            return normalized.Length > 16 ? normalized[..16] : normalized;
         }
     }
 }

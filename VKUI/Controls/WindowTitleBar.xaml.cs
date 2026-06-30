@@ -78,6 +78,10 @@ namespace VKUI.Controls {
         }
 
         private void MaximizeButton_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e) {
+            ToggleMaximize();
+        }
+
+        private void ToggleMaximize() {
             OwnerWindow.WindowState = OwnerWindow.WindowState == WindowState.Maximized
                 ? WindowState.Normal
                 : WindowState.Maximized;
@@ -142,7 +146,15 @@ namespace VKUI.Controls {
         }
 
         private void DragArea_PointerPressed(object sender, Avalonia.Input.PointerPressedEventArgs e) {
-            if (CanMove) OwnerWindow.BeginMoveDrag(e);
+            if (!CanMove) return;
+
+            if (e.ClickCount == 2 && OwnerWindow.CanResize) {
+                ToggleMaximize();
+                e.Handled = true;
+                return;
+            }
+
+            OwnerWindow.BeginMoveDrag(e);
         }
     }
 }

@@ -68,11 +68,11 @@
   </Style>
   
   <Style Selector="ListBoxItem:pointerover /template/ Border#PART_Root">
-    <Setter Property="Background" Value="{DynamicResource VKBackgroundHoverBrush}"/>
+    <Setter Property="Background" Value="{DynamicResource LaneyChatListHoverBrush}"/>
   </Style>
 
   <Style Selector="ListBoxItem:selected /template/ Border#PART_Root">
-    <Setter Property="Background" Value="{DynamicResource VKBackgroundHighlightedBrush}"/>
+    <Setter Property="Background" Value="{DynamicResource LaneyChatListSelectedBrush}"/>
   </Style>
 
   <Style Selector="ListBox[SelectionMode=Multiple] ListBoxItem:selected /template/ vkui|VKIcon#PART_CheckIcon, ListBox[SelectionMode=Multiple,Toggle] ListBoxItem:selected /template/ vkui|VKIcon#PART_CheckIcon">

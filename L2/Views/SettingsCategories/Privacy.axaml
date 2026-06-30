@@ -15,29 +15,29 @@
         <Border Classes="Group" VerticalAlignment="Top">
           <StackPanel>
             <Grid Classes="GroupHeader">
-              <TextBlock Text="Laney privacy cockpit"/>
+              <TextBlock Text="Приватность Laney"/>
             </Grid>
-            <vkui:Cell Header="Streamer mode" Subtitle="Маскирует имена, аватары, текст сообщений и системные уведомления. Sensitive overlay без цирка.">
+            <vkui:Cell Header="Режим стримера" Subtitle="Маскирует имена, аватары, текст сообщений и системные уведомления. Приватный оверлей без цирка.">
               <vkui:Cell.After>
                 <ToggleSwitch IsChecked="{Binding StreamerMode, Mode=TwoWay}"/>
               </vkui:Cell.After>
             </vkui:Cell>
-            <vkui:Cell Header="Panic lock сейчас" Subtitle="Скрыть окно и включить приватный overlay. Clipboard scrub зависит от настройки ниже.">
+            <vkui:Cell Header="Скрыть сейчас" Subtitle="Скрыть окно и включить приватный оверлей. Очистка буфера зависит от настройки ниже.">
               <vkui:Cell.After>
                 <Button Classes="Secondary" Command="{Binding PanicLockCommand}">
                   <StackPanel Orientation="Horizontal" Spacing="6">
                     <vkui:VKIcon Width="20" Height="20" Id="{x:Static vkui:VKIconNames.Icon20LockOutline}"/>
-                    <TextBlock Text="Lock"/>
+                    <TextBlock Text="Скрыть"/>
                   </StackPanel>
                 </Button>
               </vkui:Cell.After>
             </vkui:Cell>
-            <vkui:Cell Header="Panic hotkey" Subtitle="Быстрая клавиша для overlay + скрытия окна.">
+            <vkui:Cell Header="Горячая клавиша Panic" Subtitle="Быстрая клавиша для оверлея и скрытия окна.">
               <vkui:Cell.After>
                 <TextBox Width="150" Text="{Binding KeymapPanicLock, Mode=TwoWay}"/>
               </vkui:Cell.After>
             </vkui:Cell>
-            <vkui:Cell Header="Panic чистит clipboard" Subtitle="По умолчанию включено: меньше шансов светануть ссылку, токен или текст.">
+            <vkui:Cell Header="Panic очищает буфер" Subtitle="По умолчанию включено: меньше шансов светануть ссылку, токен или текст.">
               <vkui:Cell.After>
                 <ToggleSwitch IsChecked="{Binding PanicLockClearClipboard, Mode=TwoWay}"/>
               </vkui:Cell.After>
@@ -47,7 +47,37 @@
                 <ToggleSwitch IsChecked="{Binding AutoBlockBlacklistedUsers, Mode=TwoWay}"/>
               </vkui:Cell.After>
             </vkui:Cell>
-            <vkui:Cell Header="Auto-lock клиента" Subtitle="Локально закрывает Laney оверлеем после простоя. Без отправки данных в VK.">
+            <vkui:Cell Header="Невидимка" Subtitle="Глушит клиентские сигналы Laney: online ping, прочтение, stories и прочее. Официальный VK за другие клиенты не отвечает.">
+              <vkui:Cell.After>
+                <ToggleSwitch IsChecked="{Binding InvisibleMode, Mode=TwoWay}"/>
+              </vkui:Cell.After>
+            </vkui:Cell>
+            <vkui:Cell Header="Не слать online" Subtitle="Отключает периодический account.setOnline из Laney.">
+              <vkui:Cell.After>
+                <ToggleSwitch IsChecked="{Binding InvisibleDisableSetOnline, Mode=TwoWay}"/>
+              </vkui:Cell.After>
+            </vkui:Cell>
+            <vkui:Cell Header="Не отмечать сообщения" Subtitle="Блокирует auto mark-as-read и fast-action прочтения из уведомлений.">
+              <vkui:Cell.After>
+                <ToggleSwitch IsChecked="{Binding InvisibleDisableReadReceipts, Mode=TwoWay}"/>
+              </vkui:Cell.After>
+            </vkui:Cell>
+            <vkui:Cell Header="Не отмечать голосовые" Subtitle="Резерв для API-сигналов прослушивания; текущий плеер Laney отдельный viewed-сигнал не шлёт.">
+              <vkui:Cell.After>
+                <ToggleSwitch IsChecked="{Binding InvisibleDisableVoiceListened, Mode=TwoWay}"/>
+              </vkui:Cell.After>
+            </vkui:Cell>
+            <vkui:Cell Header="Не отмечать stories" Subtitle="При включении Laney открывает story-вложения только локальным preview без viewed-сигнала.">
+              <vkui:Cell.After>
+                <ToggleSwitch IsChecked="{Binding InvisibleDisableStoryViewed, Mode=TwoWay}"/>
+              </vkui:Cell.After>
+            </vkui:Cell>
+            <vkui:Cell Header="Не показывать набор текста" Subtitle="Laney сейчас не вызывает messages.setActivity; настройка оставлена как явный стоп-кран.">
+              <vkui:Cell.After>
+                <ToggleSwitch IsChecked="{Binding InvisibleDisableTypingStatus, Mode=TwoWay}"/>
+              </vkui:Cell.After>
+            </vkui:Cell>
+            <vkui:Cell Header="Автоблокировка клиента" Subtitle="Локально закрывает Laney оверлеем после простоя. Без отправки данных в VK.">
               <vkui:Cell.After>
                 <ToggleSwitch IsChecked="{Binding AutoLockEnabled, Mode=TwoWay}"/>
               </vkui:Cell.After>
@@ -63,7 +93,7 @@
                 </ComboBox>
               </vkui:Cell.After>
             </vkui:Cell>
-            <vkui:Cell IsVisible="{Binding CanConfigureAutoLock}" Header="Auto-lock чистит clipboard" Subtitle="Жестче, но может стереть полезный текст, если просто отошёл за кофе.">
+            <vkui:Cell IsVisible="{Binding CanConfigureAutoLock}" Header="Автоблокировка очищает буфер" Subtitle="Жестче, но может стереть полезный текст, если просто отошёл за кофе.">
               <vkui:Cell.After>
                 <ToggleSwitch IsChecked="{Binding AutoLockClearClipboard, Mode=TwoWay}"/>
               </vkui:Cell.After>

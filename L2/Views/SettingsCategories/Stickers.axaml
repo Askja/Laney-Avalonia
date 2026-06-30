@@ -15,7 +15,7 @@
           <Grid Classes="GroupHeader">
             <TextBlock Text="Подсказки и анимация"/>
           </Grid>
-          <vkui:Cell Header="Подсказывать стикеры" Subtitle="VK и локальные стикеры по тексту в composer.">
+          <vkui:Cell Header="Подсказывать стикеры" Subtitle="VK и локальные стикеры по тексту в поле ввода.">
             <vkui:Cell.After>
               <ToggleSwitch IsChecked="{Binding SuggestStickers, Mode=TwoWay}"/>
             </vkui:Cell.After>
@@ -37,7 +37,7 @@
       <Border Classes="Group" VerticalAlignment="Top">
         <StackPanel>
           <Grid Classes="GroupHeader">
-            <TextBlock Text="Emoji-паки"/>
+            <TextBlock Text="Эмодзи-паки"/>
           </Grid>
           <vkui:Cell Header="Набор emoji" Subtitle="Глобальный порядок и состав emoji в picker. Для отдельных чатов можно переопределить в профиле чата.">
             <vkui:Cell.After>
@@ -50,9 +50,14 @@
               </ComboBox>
             </vkui:Cell.After>
           </vkui:Cell>
-          <vkui:Cell Header="Кастомный txt" Subtitle="Файл со списком emoji через пробел, запятую или перенос строки.">
+          <vkui:Cell Header="Кастомный emoji manifest" Subtitle="Файл со списком emoji или sprite-пака: emoji=path/to/image.png.">
             <vkui:Cell.After>
-              <TextBox Width="280" Text="{Binding EmojiCustomPackPath, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" PlaceholderText="C:\Emoji\pack.txt"/>
+              <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <TextBlock Width="280" Classes="Subhead" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="{Binding EmojiCustomPackPathSummary}" TextTrimming="CharacterEllipsis"/>
+                <Button Classes="Secondary" Click="EmojiCustomPackBrowse_Click">
+                  <TextBlock Text="Выбрать"/>
+                </Button>
+              </StackPanel>
             </vkui:Cell.After>
           </vkui:Cell>
           <vkui:Cell Header="Активный режим" Subtitle="Если custom-файл пустой или битый, picker не падает, а берет системный пак.">
@@ -68,12 +73,24 @@
           <Grid Classes="GroupHeader">
             <TextBlock Text="Локальная библиотека"/>
           </Grid>
-          <vkui:Cell Header="Импортированные стикеры" Subtitle="Telegram/WebP/WebM/TGS паки лежат локально и доступны в picker.">
+          <vkui:Cell Header="Импортированные стикеры" Subtitle="Telegram/WebP/WebM/TGS паки лежат локально и доступны в панели стикеров.">
             <vkui:Cell.After>
               <TextBlock Classes="Subhead" Text="{Binding LocalStickerCountText}" Foreground="{DynamicResource VKTextSecondaryBrush}"/>
             </vkui:Cell.After>
           </vkui:Cell>
-          <vkui:Cell Header="Отправка локальных" Subtitle="Auto: raster как граффити, анимации и неподходящие форматы как файл.">
+          <vkui:Cell Header="Импорт Telegram/локальных" Subtitle="Файлы, zip или официальный импорт TG-пака по ссылке через Bot API token.">
+            <vkui:Cell.After>
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button Classes="Tertiary" Click="ImportLocalStickerFiles_Click">
+                  <TextBlock Text="Файлы"/>
+                </Button>
+                <Button Classes="Tertiary" Click="ImportTelegramPackLink_Click">
+                  <TextBlock Text="Ссылка Telegram"/>
+                </Button>
+              </StackPanel>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Отправка локальных" Subtitle="Авто: растровые как граффити, анимации и неподходящие форматы как файл.">
             <vkui:Cell.After>
               <ComboBox Classes="Alternate" Width="190" ItemsSource="{Binding LocalStickerSendModeOptions}" SelectedItem="{Binding CurrentLocalStickerSendMode, Mode=TwoWay}">
                 <ComboBox.ItemTemplate>
@@ -84,7 +101,7 @@
               </ComboBox>
             </vkui:Cell.After>
           </vkui:Cell>
-          <vkui:Cell Header="Управление паками" Subtitle="Отключение, порядок и импорт по ссылке вынесены отдельным шагом плана, не прячем это обратно в меню.">
+          <vkui:Cell Header="Управление паками" Subtitle="Отключение, порядок, избранное и теги локальной библиотеки.">
             <vkui:Cell.After>
               <TextBlock Classes="Subhead" Text="{Binding LocalStickerManagerSummary}" Foreground="{DynamicResource VKTextSecondaryBrush}"/>
             </vkui:Cell.After>

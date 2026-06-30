@@ -16,11 +16,11 @@
     </Design.PreviewWith>
 
   <Style Selector="TextBox">
-    <Setter Property="Background" Value="{DynamicResource VKFieldBackgroundBrush}"/>
-    <Setter Property="BorderBrush" Value="{DynamicResource VKFieldBorderBrush}"/>
+    <Setter Property="Background" Value="{DynamicResource LaneyFieldBackgroundBrush}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource LaneyFieldBorderBrush}"/>
     <Setter Property="BorderThickness" Value="1"/>
-    <Setter Property="CornerRadius" Value="8"/>
-    <Setter Property="Padding" Value="12,10,12,10"/>
+    <Setter Property="CornerRadius" Value="10"/>
+    <Setter Property="Padding" Value="12,7,12,7"/>
     <Setter Property="MinHeight" Value="36"/>
     <!-- <Setter Property="FontFamily" Value="{StaticResource VKSansText}"/> -->
     <Setter Property="FontSize" Value="13"/>
@@ -99,8 +99,8 @@
   </Style>
     
   <Style Selector="TextBox:pointerover /template/ Border#PART_BorderElement">
-    <Setter Property="Background" Value="{DynamicResource VKFieldBackgroundBrush}"/>
-    <Setter Property="BorderBrush" Value="{DynamicResource VKIconTertiaryAlphaBrush}"/>
+    <Setter Property="Background" Value="{DynamicResource LaneyFieldHoverBrush}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource LaneyBorderStrongBrush}"/>
   </Style>
 
   <Style Selector="TextBox:pointerover /template/ TextBlock#PART_Watermark">
@@ -116,19 +116,19 @@
   </Style>
 
   <Style Selector="TextBox:focus /template/ Border#PART_BorderElement">
-    <Setter Property="Background" Value="{DynamicResource VKFieldBackgroundBrush}"/>
-    <Setter Property="BorderBrush" Value="{DynamicResource VKAccentBrush}"/>
+    <Setter Property="Background" Value="{DynamicResource LaneyFieldBackgroundBrush}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource LaneyAccentBrush}"/>
     <Setter Property="BorderThickness" Value="1" />
   </Style>
 
   <!-- Searchbox -->
 
   <Style Selector="TextBox.Search">
-    <Setter Property="Background" Value="{DynamicResource VKSearchBarFieldBackgroundBrush}"/>
+    <Setter Property="Background" Value="{DynamicResource LaneyMutedSurfaceBrush}"/>
     <Setter Property="BorderThickness" Value="0"/>
     <Setter Property="CornerRadius" Value="10"/>
     <Setter Property="Padding" Value="6,7,12,5"/>
-    <Setter Property="MinHeight" Value="32"/>
+    <Setter Property="MinHeight" Value="34"/>
     <!-- <Setter Property="FontFamily" Value="{StaticResource VKSansText}"/> -->
     <Setter Property="FontSize" Value="14"/>
     <Setter Property="LineHeight" Value="18"/>
@@ -143,18 +143,18 @@
   </Style>
 
   <Style Selector="TextBox.Search /template/ TextPresenter#PART_TextPresenter">
-    <Setter Property="MinHeight" Value="20"/>
+    <Setter Property="MinHeight" Value="18"/>
   </Style>
     
     
   <Style Selector="TextBox.Search /template/ TextBlock#PART_Watermark, TextBox.Search /template/ TextBlock#PART_FloatingWatermark">
     <Setter Property="Foreground" Value="{DynamicResource VKSearchBarFieldTintBrush}" />
-    <Setter Property="FontSize" Value="15"/>
-    <Setter Property="LineHeight" Value="20"/>
+    <Setter Property="FontSize" Value="14"/>
+    <Setter Property="LineHeight" Value="18"/>
   </Style>
     
   <Style Selector="TextBox.Search:pointerover /template/ Border#PART_BorderElement">
-    <Setter Property="Background" Value="{DynamicResource VKSearchBarFieldBackgroundBrush}"/>
+    <Setter Property="Background" Value="{DynamicResource LaneyFieldHoverBrush}"/>
   </Style>
 
   <Style Selector="TextBox.Search:pointerover /template/ TextBlock#PART_Watermark, TextBox.Search:pointerover /template/ TextBlock#PART_FloatingWatermark">
@@ -166,7 +166,7 @@
   </Style>
 
   <Style Selector="TextBox.Search:focus /template/ Border#PART_BorderElement">
-    <Setter Property="Background" Value="{DynamicResource VKSearchBarFieldBackgroundBrush}"/>
+    <Setter Property="Background" Value="{DynamicResource LaneyFieldBackgroundBrush}"/>
     <Setter Property="BorderThickness" Value="0" />
   </Style>
 
@@ -174,8 +174,8 @@
 
   <Style Selector="TextBox.WriteBar">
     <Setter Property="CornerRadius" Value="18"/>
-    <Setter Property="Padding" Value="12,8,12,5"/>
-    <Setter Property="MinHeight" Value="36"/>
+    <Setter Property="Padding" Value="12,8,12,6"/>
+    <Setter Property="MinHeight" Value="38"/>
     <!-- <Setter Property="FontFamily" Value="{StaticResource VKSansText}"/> -->
     <Setter Property="FontSize" Value="15"/>
     <Setter Property="LineHeight" Value="20"/>
@@ -194,23 +194,23 @@
   <!-- Transparent -->
 
   <Style Selector="TextBox.Transparent">
-    <Setter Property="Padding" Value="6,0"/>
-    <Setter Property="MinHeight" Value="20"/>
+    <Setter Property="Padding" Value="4,0"/>
+    <Setter Property="MinHeight" Value="18"/>
     <!-- <Setter Property="FontFamily" Value="{StaticResource VKSansText}"/> -->
-    <Setter Property="FontSize" Value="15"/>
-    <Setter Property="LineHeight" Value="20"/>
+    <Setter Property="FontSize" Value="14"/>
+    <Setter Property="LineHeight" Value="18"/>
     <Setter Property="Background" Value="Transparent"/>
     <Setter Property="BorderThickness" Value="0"/>
     <Setter Property="Foreground" Value="{DynamicResource VKTextPrimaryBrush}"/>
   </Style>
 
   <Style Selector="TextBox.Transparent /template/ TextPresenter#PART_TextPresenter">
-    <Setter Property="MinHeight" Value="20"/>
+    <Setter Property="MinHeight" Value="18"/>
   </Style>
 
   <Style Selector="TextBox.Transparent /template/ TextBlock#PART_Watermark, TextBox.Transparent /template/ TextBlock#PART_FloatingWatermark">
-    <Setter Property="FontSize" Value="15"/>
-    <Setter Property="LineHeight" Value="20"/>
+    <Setter Property="FontSize" Value="14"/>
+    <Setter Property="LineHeight" Value="18"/>
     <Setter Property="Foreground" Value="{DynamicResource VKFieldTextPlaceholderBrush}" />
   </Style>
 

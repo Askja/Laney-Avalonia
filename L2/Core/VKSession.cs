@@ -1,12 +1,15 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Controls.Notifications;
+using Avalonia.Controls.Primitives;
 using Avalonia.Dialogs;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Platform;
 using Avalonia.Threading;
 using ELOR.Laney.Core.Localization;
+using ELOR.Laney.Core.Network;
 using ELOR.Laney.DataModels;
 using ELOR.Laney.Execute;
 using ELOR.Laney.Execute.Objects;
@@ -29,6 +32,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using ToastNotifications.Avalonia;
@@ -281,12 +285,37 @@ namespace ELOR.Laney.Core {
             TrayMenu = new NativeMenu();
 
             foreach (var session in Sessions) {
-                var item = new NativeMenuItem { Header = session.Name };
+                var item = new NativeMenuItem {
+                    Header = $"{(session.IsGroup ? "Сообщество" : "Аккаунт")}: {session.Name}"
+                };
                 item.Click += (a, b) => TryOpenSessionWindow(session.Id);
                 TrayMenu.Items.Add(item);
             }
 
             TrayMenu.Items.Add(new NativeMenuItemSeparator());
+
+            var openLast = new NativeMenuItem { Header = "Открыть последнее окно" };
+            openLast.Click += (a, b) => {
+                long targetId = lastSessionId != 0 ? lastSessionId : Main?.Id ?? 0;
+                TryOpenSessionWindow(targetId);
+            };
+
+            var stories = new NativeMenuItem { Header = "Истории VK" };
+            stories.Click += async (a, b) => await Launcher.LaunchUrl("https://vk.com/stories");
+
+            var invisible = new NativeMenuItem { Header = Settings.InvisibleMode ? "Невидимка: включена" : "Невидимка: выключена" };
+            invisible.Click += (a, b) => {
+                Settings.InvisibleMode = !Settings.InvisibleMode;
+                SetUpTrayMenu();
+            };
+
+            var settings = new NativeMenuItem { Header = Assets.i18n.Resources.settings };
+            settings.Click += (a, b) => {
+                SettingsWindow window = new SettingsWindow();
+                Window owner = Main?.Window;
+                if (owner != null) window.Show(owner);
+                else window.Show();
+            };
 
             var ft = new NativeMenuItem { Header = Localizer.Get("session_dev_field_test") };
             ft.Click += (a, b) => {
@@ -298,13 +327,18 @@ namespace ELOR.Laney.Core {
                 App.Current.DesktopLifetime.Shutdown();
             };
 
+            TrayMenu.Items.Add(openLast);
+            TrayMenu.Items.Add(stories);
+            TrayMenu.Items.Add(invisible);
+            TrayMenu.Items.Add(settings);
+            TrayMenu.Items.Add(new NativeMenuItemSeparator());
 #if !RELEASE && !BETA
             TrayMenu.Items.Add(ft);
 #endif
             TrayMenu.Items.Add(exit);
 
             TrayIcon icon = new TrayIcon {
-                Icon = new WindowIcon(AssetsManager.GetBitmapFromUri(new Uri(AssetsManager.GetThemeDependentTrayIcon()))),
+                Icon = new WindowIcon(AssetsManager.GetBitmapFromUri(new Uri(AssetsManager.GetTrayIconUri()))),
                 Menu = TrayMenu,
                 IsVisible = true,
                 ToolTipText = "Laney"
@@ -320,61 +354,393 @@ namespace ELOR.Laney.Core {
             Application.Current.SetValue(TrayIcon.IconsProperty, icons);
         }
 #else
+        private static TrayIcon trayIcon;
+        private static Window trayMenuWindow;
+
         private static void SetUpTrayMenu() {
-            TrayMenu = new NativeMenu();
+            TrayMenu = BuildNativeTrayMenu();
+            App.Current.DesktopLifetime.ShutdownMode = ShutdownMode.OnExplicitShutdown;
 
-            foreach (var session in Sessions) {
-                var item = new NativeMenuItem { Header = session.Name };
-                item.Click += (a, b) => TryOpenSessionWindow(session.Id);
-                TrayMenu.Items.Add(item);
-            }
-
-            TrayMenu.Items.Add(new NativeMenuItemSeparator());
-
-            var ft = new NativeMenuItem { Header = Localizer.Get("session_dev_field_test") };
-            ft.Click += (a, b) => {
-                new FieldTestWindow().Show();
-            };
-
-            var exit = new NativeMenuItem { Header = Assets.i18n.Resources.exit };
-            exit.Click += (a, b) => {
-                App.Current.DesktopLifetime.Shutdown();
-            };
-
-#if !RELEASE && !BETA
-            TrayMenu.Items.Add(ft);
-#endif
-            TrayMenu.Items.Add(exit);
-
-            TrayIcons icons = Application.Current.GetValue<TrayIcons>(TrayIcon.IconsProperty);
-
-            if (icons != null && icons.Count == 1) {
-                icons[0].Menu = TrayMenu;
-            } else {
-                WindowIcon wi = null;
-                try {
-                    wi = new WindowIcon(AssetLoader.Open(new Uri(AssetsManager.GetThemeDependentTrayIcon())));
-                } catch (Exception ex) {
-                    Log.Error(ex, "Failed to open a tray icon!");
-                }
-
-                TrayIcon icon = new TrayIcon {
-                    Icon = wi,
-                    Menu = TrayMenu,
+            if (trayIcon == null) {
+                trayIcon = new TrayIcon {
                     IsVisible = true,
                     ToolTipText = "Laney"
                 };
-                icon.Clicked += (a, b) => {
-                    Log.Information($"User clicked on tray icon. Last displayed session id = {lastSessionId}");
-                    if (lastSessionId == 0) return;
-                    var s = Sessions.Where(s => s.Id == lastSessionId).FirstOrDefault();
-                    if (s != null) s.TryOpenWindow();
-                };
-
-                icons = new TrayIcons { icon };
-                Application.Current.SetValue(TrayIcon.IconsProperty, icons);
+                trayIcon.Clicked += (a, b) => ShowTrayMenuWindow();
             }
+
+            WindowIcon icon = LoadTrayIcon();
+            if (icon != null) trayIcon.Icon = icon;
+            trayIcon.Menu = TrayMenu;
+            trayIcon.IsVisible = true;
+
+            EnsureTrayIconPublished();
         }
+
+        private static WindowIcon LoadTrayIcon() {
+            return AssetsManager.GetTrayWindowIcon();
+        }
+
+        private static void EnsureTrayIconPublished() {
+            TrayIcons icons = Application.Current.GetValue(TrayIcon.IconsProperty);
+            if (icons != null && icons.Contains(trayIcon)) return;
+            Application.Current.SetValue(TrayIcon.IconsProperty, new TrayIcons { trayIcon });
+        }
+
+        private static void ShowTrayMenuWindow() {
+            CloseTrayMenuWindow();
+
+            double estimatedHeight = EstimateTrayMenuHeight();
+            Window menu = new Window {
+                Width = 282,
+                MaxHeight = 560,
+                SizeToContent = SizeToContent.Height,
+                WindowStartupLocation = WindowStartupLocation.Manual,
+                WindowDecorations = WindowDecorations.None,
+                CanResize = false,
+                ShowInTaskbar = false,
+                Topmost = true,
+                Background = Brushes.Transparent,
+                Content = BuildTrayMenuContent()
+            };
+
+            trayMenuWindow = menu;
+            menu.Deactivated += (a, b) => CloseTrayMenuWindow();
+            menu.Closed += (a, b) => {
+                if (trayMenuWindow == menu) trayMenuWindow = null;
+            };
+            menu.Opened += (a, b) => PositionTrayMenu(menu, Math.Max(menu.Bounds.Height, estimatedHeight));
+
+            PositionTrayMenu(menu, estimatedHeight);
+            menu.Show();
+            menu.Activate();
+        }
+
+        private static Control BuildTrayMenuContent() {
+            StackPanel items = new StackPanel { Spacing = 2 };
+
+            if (Sessions.Count > 0) {
+                items.Children.Add(CreateTraySectionHeader("Аккаунты"));
+                foreach (VKSession session in Sessions) {
+                    items.Children.Add(CreateTrayMenuItem(
+                        CreateTrayAvatar(session),
+                        session.DisplayName,
+                        session.IsGroup ? "Сообщество" : "Аккаунт",
+                        () => TryOpenSessionWindow(session.Id)));
+                }
+                items.Children.Add(CreateTraySeparator());
+            }
+
+            items.Children.Add(CreateTrayMenuItem(
+                CreateTrayIconControl(VKIconNames.Icon20HomeOutline),
+                "Открыть последнее окно",
+                "Вернуть последний активный чат",
+                OpenLastSessionWindow));
+            items.Children.Add(CreateTrayMenuItem(
+                CreateTrayIconControl(VKIconNames.Icon20StoryOutline),
+                "Истории VK",
+                "Открыть просмотр историй",
+                () => _ = Launcher.LaunchUrl("https://vk.com/stories")));
+            items.Children.Add(CreateTrayMenuItem(
+                CreateTrayIconControl(Settings.InvisibleMode ? VKIconNames.Icon20ViewOutline : VKIconNames.Icon20NotificationSlashOutline),
+                Settings.InvisibleMode ? "Невидимка включена" : "Невидимка выключена",
+                "Переключить приватное поведение",
+                ToggleInvisibleMode));
+            items.Children.Add(CreateTrayMenuItem(
+                CreateTrayIconControl(VKIconNames.Icon20GearOutline),
+                Assets.i18n.Resources.settings,
+                "Открыть настройки клиента",
+                OpenSettingsWindow));
+
+#if !RELEASE && !BETA
+            items.Children.Add(CreateTraySeparator());
+            items.Children.Add(CreateTrayMenuItem(
+                CreateTrayIconControl(VKIconNames.Icon20BugOutline),
+                "Диагностика UI",
+                "Песочница компонентов",
+                () => new FieldTestWindow().Show()));
+#endif
+
+            items.Children.Add(CreateTraySeparator());
+            items.Children.Add(CreateTrayMenuItem(
+                CreateTrayIconControl(VKIconNames.Icon20DoorArrowRightOutline, true),
+                Assets.i18n.Resources.exit,
+                "Закрыть Laney",
+                () => App.Current.DesktopLifetime.Shutdown(),
+                true));
+
+            ScrollViewer scroller = new ScrollViewer {
+                MaxHeight = 548,
+                HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                Content = items
+            };
+
+            Border card = new Border {
+                Margin = new Thickness(8),
+                Padding = new Thickness(6),
+                CornerRadius = new CornerRadius(10),
+                BorderThickness = new Thickness(1),
+                Background = GetTrayBrush("VKModalCardBackgroundBrush", "#FFFFFF"),
+                BorderBrush = GetTrayBrush("VKModalCardBorderBrush", "#DCE1E6"),
+                BoxShadow = BoxShadows.Parse("0 0 2 #1F000000, 0 14 36 #26000000"),
+                Child = scroller
+            };
+
+            return card;
+        }
+
+        private static TextBlock CreateTraySectionHeader(string text) {
+            return new TextBlock {
+                Text = text,
+                Margin = new Thickness(10, 8, 10, 4),
+                FontSize = 12,
+                LineHeight = 16,
+                FontWeight = FontWeight.SemiBold,
+                Foreground = GetTrayBrush("VKTextSecondaryBrush", "#6D7885")
+            };
+        }
+
+        private static Control CreateTraySeparator() {
+            return new Border {
+                Height = 1,
+                Margin = new Thickness(8, 5),
+                Background = GetTrayBrush("VKSeparatorAlphaBrush", "#DCE1E6")
+            };
+        }
+
+        private static Control CreateTrayAvatar(VKSession session) {
+            return new Avatar {
+                Width = 28,
+                Height = 28,
+                Initials = session.DisplayInitials,
+                Background = session.DisplayAvatarSeed.GetGradient(),
+                Foreground = new SolidColorBrush(Colors.White)
+            };
+        }
+
+        private static Control CreateTrayIconControl(string iconId, bool destructive = false) {
+            return new VKIcon {
+                Id = iconId,
+                Width = 20,
+                Height = 20,
+                Foreground = destructive
+                    ? GetTrayBrush("VKDestructiveBrush", "#E64646")
+                    : GetTrayBrush("VKIconSecondaryBrush", "#99A2AD")
+            };
+        }
+
+        private static Button CreateTrayMenuItem(Control before, string header, string subtitle, System.Action action, bool destructive = false) {
+            Border iconSlot = new Border {
+                Width = 36,
+                Height = 36,
+                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
+                VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+                Child = before
+            };
+
+            TextBlock headerText = new TextBlock {
+                Text = header,
+                FontSize = 14,
+                LineHeight = 18,
+                TextTrimming = TextTrimming.CharacterEllipsis,
+                Foreground = destructive
+                    ? GetTrayBrush("VKDestructiveBrush", "#E64646")
+                    : GetTrayBrush("VKTextPrimaryBrush", "#000000")
+            };
+
+            TextBlock subtitleText = new TextBlock {
+                Text = subtitle,
+                FontSize = 12,
+                LineHeight = 16,
+                MaxLines = 1,
+                TextTrimming = TextTrimming.CharacterEllipsis,
+                IsVisible = !String.IsNullOrWhiteSpace(subtitle),
+                Foreground = GetTrayBrush("VKTextSecondaryBrush", "#6D7885")
+            };
+
+            StackPanel text = new StackPanel {
+                Margin = new Thickness(8, 5, 8, 5),
+                VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+                Children = {
+                    headerText,
+                    subtitleText
+                }
+            };
+
+            Grid grid = new Grid {
+                ColumnDefinitions = new ColumnDefinitions {
+                    new ColumnDefinition(new GridLength(36)),
+                    new ColumnDefinition(new GridLength(1, GridUnitType.Star))
+                },
+                Children = {
+                    iconSlot,
+                    text
+                }
+            };
+            Grid.SetColumn(text, 1);
+
+            Button button = new Button {
+                Classes = { "Tertiary", "ListItem" },
+                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch,
+                HorizontalContentAlignment = Avalonia.Layout.HorizontalAlignment.Stretch,
+                MinHeight = 44,
+                Padding = new Thickness(0),
+                CornerRadius = new CornerRadius(8),
+                Content = grid
+            };
+            button.Click += (a, b) => {
+                CloseTrayMenuWindow();
+                action?.Invoke();
+            };
+
+            return button;
+        }
+
+        private static NativeMenu BuildNativeTrayMenu() {
+            NativeMenu menu = new NativeMenu();
+
+            foreach (VKSession session in Sessions) {
+                NativeMenuItem sessionItem = new NativeMenuItem {
+                    Header = $"{(session.IsGroup ? "Сообщество" : "Аккаунт")}: {session.DisplayName}"
+                };
+                long sessionId = session.Id;
+                sessionItem.Click += (a, b) => TryOpenSessionWindow(sessionId);
+                menu.Items.Add(sessionItem);
+            }
+
+            if (Sessions.Count > 0) menu.Items.Add(new NativeMenuItemSeparator());
+
+            NativeMenuItem openLast = new NativeMenuItem { Header = "Открыть последнее окно" };
+            openLast.Click += (a, b) => OpenLastSessionWindow();
+
+            NativeMenuItem stories = new NativeMenuItem { Header = "Истории VK" };
+            stories.Click += (a, b) => _ = Launcher.LaunchUrl("https://vk.com/stories");
+
+            NativeMenuItem invisible = new NativeMenuItem {
+                Header = Settings.InvisibleMode ? "Невидимка: включена" : "Невидимка: выключена"
+            };
+            invisible.Click += (a, b) => ToggleInvisibleMode();
+
+            NativeMenuItem settings = new NativeMenuItem { Header = Assets.i18n.Resources.settings };
+            settings.Click += (a, b) => OpenSettingsWindow();
+
+            NativeMenuItem exit = new NativeMenuItem { Header = Assets.i18n.Resources.exit };
+            exit.Click += (a, b) => App.Current.DesktopLifetime.Shutdown();
+
+            menu.Items.Add(openLast);
+            menu.Items.Add(stories);
+            menu.Items.Add(invisible);
+            menu.Items.Add(settings);
+
+#if !RELEASE && !BETA
+            menu.Items.Add(new NativeMenuItemSeparator());
+            NativeMenuItem fieldTest = new NativeMenuItem { Header = "Диагностика UI" };
+            fieldTest.Click += (a, b) => new FieldTestWindow().Show();
+            menu.Items.Add(fieldTest);
+#endif
+
+            menu.Items.Add(new NativeMenuItemSeparator());
+            menu.Items.Add(exit);
+
+            return menu;
+        }
+
+        private static IBrush GetTrayBrush(string key, string fallback) {
+            if (App.Current?.TryFindResource(key, out object resource) == true && resource is IBrush brush) return brush;
+            return new SolidColorBrush(Color.Parse(fallback));
+        }
+
+        private static void CloseTrayMenuWindow() {
+            if (trayMenuWindow == null) return;
+            Window window = trayMenuWindow;
+            trayMenuWindow = null;
+            window.Close();
+        }
+
+        private static void OpenLastSessionWindow() {
+            long targetId = lastSessionId != 0 ? lastSessionId : Main?.Id ?? 0;
+            if (targetId == 0) return;
+            TryOpenSessionWindow(targetId);
+        }
+
+        private static void ToggleInvisibleMode() {
+            Settings.InvisibleMode = !Settings.InvisibleMode;
+            SetUpTrayMenu();
+        }
+
+        private static void OpenSettingsWindow() {
+            SettingsWindow window = new SettingsWindow();
+            Window owner = Main?.Window;
+            if (owner != null) window.Show(owner);
+            else window.Show();
+        }
+
+        private static double EstimateTrayMenuHeight() {
+            int debugRows = 0;
+#if !RELEASE && !BETA
+            debugRows = 1;
+#endif
+            int visibleSessionRows = Math.Min(Sessions.Count, 6);
+            int rows = visibleSessionRows + 5 + debugRows;
+            int separators = Sessions.Count > 0 ? 3 : 2;
+            int header = Sessions.Count > 0 ? 28 : 0;
+            return Math.Min(560, 28 + header + rows * 48 + separators * 11);
+        }
+
+        private static void PositionTrayMenu(Window menu, double estimatedHeight) {
+            TryGetCursorPosition(out PixelPoint cursor);
+
+            int width = (int)Math.Ceiling(menu.Width);
+            int height = (int)Math.Ceiling(Math.Clamp(estimatedHeight, 140, 560));
+            int x = cursor.X - width + 16;
+            int y = cursor.Y - height - 12;
+
+            Screens screens = Main?.Window?.Screens;
+            var screen = screens?.ScreenFromPoint(cursor) ?? screens?.Primary;
+            if (screen != null) {
+                PixelRect workingArea = screen.WorkingArea;
+                int minX = workingArea.X + 4;
+                int minY = workingArea.Y + 4;
+                int maxX = Math.Max(minX, workingArea.X + workingArea.Width - width - 4);
+                int maxY = Math.Max(minY, workingArea.Y + workingArea.Height - height - 4);
+                x = Math.Clamp(x, minX, maxX);
+                y = Math.Clamp(y, minY, maxY);
+            }
+
+            menu.Position = new PixelPoint(x, y);
+        }
+
+        private static bool TryGetCursorPosition(out PixelPoint position) {
+#if WIN
+            if (GetCursorPos(out WinPoint point)) {
+                position = new PixelPoint(point.X, point.Y);
+                return true;
+            }
+#endif
+
+            Window owner = Main?.Window;
+            if (owner != null) {
+                position = new PixelPoint(
+                    owner.Position.X + (int)(owner.Bounds.Width / 2),
+                    owner.Position.Y + (int)(owner.Bounds.Height / 2));
+                return false;
+            }
+
+            position = new PixelPoint(120, 120);
+            return false;
+        }
+
+#if WIN
+        [StructLayout(LayoutKind.Sequential)]
+        private struct WinPoint {
+            public int X;
+            public int Y;
+        }
+
+        [DllImport("user32.dll")]
+        private static extern bool GetCursorPos(out WinPoint lpPoint);
+#endif
 #endif
 
         #endregion
@@ -451,6 +817,7 @@ namespace ELOR.Laney.Core {
                     }
 
                     _sessions = sessions;
+                    NotifySessionsChanged();
 
                     // Set online
                     // TODO: сделать параметр для юзера, который позволил бы включить/отключить
@@ -466,6 +833,7 @@ namespace ELOR.Laney.Core {
                                 isMinimized = Window.WindowState == WindowState.Minimized;
                             });
                             if (isMinimized) return;
+                            if (Settings.ShouldSuppressSetOnline) return;
                             try {
                                 bool result = await API.Account.SetOnlineAsync();
                                 Log.Information($"account.setOnline: {result}");
@@ -500,6 +868,7 @@ namespace ELOR.Laney.Core {
                 // Notifications
                 var appLogo = await BitmapManager.GetBitmapAsync(new Uri("avares://laney/Assets/Logo/Tray/t32cw.png"), 16, 16);
                 if (_systemNotificationManager == null) _systemNotificationManager = new ToastNotificationsManager(appLogo, (log) => Log.Information($"[CSToast] {log}"));
+                ConfigureToastNotifications();
 
                 SetUpTrayMenu(); // обновляем tray menu, отображая уже все загружнные сессии
             } catch (Exception ex) {
@@ -550,8 +919,9 @@ namespace ELOR.Laney.Core {
             TryOpenSessionWindow(sessionId);
         }
 
-        private static void TryOpenSessionWindow(long sessionId) {
+        public static void TryOpenSessionWindow(long sessionId) {
             VKSession session = _sessions.Where(s => s.Id == sessionId).FirstOrDefault();
+            if (session == null) return;
 
             if (session.Window == null) {
                 Log.Information("Creating and showing new window for session {0}", sessionId);
@@ -639,6 +1009,7 @@ namespace ELOR.Laney.Core {
                     }
 
                     _sessions = sessions;
+                    NotifySessionsChanged();
                     SetUpTrayMenu();
                 } catch (Exception ex) {
                     if (await ExceptionHelper.ShowErrorDialogAsync(Window, ex)) UpdateGroupSessions(groupIds);
@@ -792,8 +1163,22 @@ namespace ELOR.Laney.Core {
         }
 
         public void ShowSystemNotification(ToastNotification notification) {
-            if (NativeNotificationService.Show(notification)) return;
-            _systemNotificationManager?.Show(notification);
+            if (notification == null) return;
+
+            ConfigureToastNotifications();
+            string mode = Settings.NotificationDeliveryMode;
+            bool nativeShown = false;
+            if (mode == NotificationDeliveryModeIds.System || mode == NotificationDeliveryModeIds.Both) {
+                try {
+                    nativeShown = NativeNotificationService.Show(notification);
+                } catch (Exception ex) {
+                    Log.Warning(ex, "Native notification service failed.");
+                }
+            }
+
+            if (mode == NotificationDeliveryModeIds.Custom || mode == NotificationDeliveryModeIds.Both || !nativeShown) {
+                _systemNotificationManager?.Show(notification);
+            }
         }
 
         #endregion
@@ -804,8 +1189,10 @@ namespace ELOR.Laney.Core {
         public static IReadOnlyList<VKSession> Sessions { get => _sessions.AsReadOnly(); }
         public static VKSession Main { get => _sessions.FirstOrDefault(); }
         private static long lastSessionId = 0;
+        public static event EventHandler SessionsChanged;
 
         public static void StartUserSession(long userId, string accessToken) {
+            ApplyApiSettings();
             VKSession session = new VKSession {
                 UserId = userId,
                 Name = "...",
@@ -814,12 +1201,15 @@ namespace ELOR.Laney.Core {
             };
             session.LongPoll = new LongPoll(session.API, session.Id, session.GroupId);
             _sessions.Add(session);
+            NotifySessionsChanged();
             session.Window.DataContext = session;
             session.ImViewModel = new ImViewModel(session);
             session.Window.Activated += (a, b) => lastSessionId = ((a as Window).DataContext as VKSession).Id;
             new System.Action(async () => await session.InitAsync())();
             session.Window.Show();
+            if (App.StartMinimized) session.Window.WindowState = WindowState.Minimized;
 
+            Settings.SettingChanged -= Settings_SettingChanged;
             Settings.SettingChanged += Settings_SettingChanged;
 
             new System.Action(async () => {
@@ -837,6 +1227,29 @@ namespace ELOR.Laney.Core {
                     foreach (VKSession session in Sessions) {
                         session.RefreshStreamerMode();
                     }
+                    break;
+                case Settings.AUTOSTART_ENABLED:
+                case Settings.AUTOSTART_MINIMIZED:
+                    AutostartService.ApplyConfiguredState();
+                    break;
+                case Settings.API_DOMAIN:
+                case Settings.API_VERSION:
+                case Settings.PROXY_ENABLED:
+                case Settings.PROXY_URI:
+                case Settings.PROXY_BYPASS_LOCAL:
+                    ApplyApiSettings();
+                    break;
+                case Settings.NOTIF_DELIVERY_MODE:
+                case Settings.NOTIF_CUSTOM_POSITION:
+                case Settings.NOTIF_CUSTOM_STACK_LIMIT:
+                case Settings.NOTIF_CUSTOM_TIMEOUT_SECONDS:
+                case Settings.NOTIF_CUSTOM_FAST_ACTIONS:
+                case Settings.NOTIF_CUSTOM_SHOW_AVATARS:
+                case Settings.NOTIF_CUSTOM_SHOW_IMAGES:
+                    ConfigureToastNotifications();
+                    break;
+                case Settings.INVISIBLE_MODE:
+                    SetUpTrayMenu();
                     break;
             }
         }
@@ -867,9 +1280,46 @@ namespace ELOR.Laney.Core {
                 if (mainSession.Id == session.Id) {
                     new System.Action(async () => await session.InitAsync())();
                     session.Window.Show();
+                    if (App.StartMinimized) session.Window.WindowState = WindowState.Minimized;
                 }
             }
+            NotifySessionsChanged();
             SetUpTrayMenu();
+        }
+
+        private static void NotifySessionsChanged() {
+            SessionsChanged?.Invoke(null, EventArgs.Empty);
+        }
+
+        private static void ApplyApiSettings() {
+            VKAPI.ConfigureDefaults(Settings.ApiDomain, Settings.ApiVersion);
+            VKAPI.ConfigureProxy(Settings.ProxyEnabled, Settings.ProxyUri, Settings.ProxyBypassLocal);
+            LNet.ResetHttpClients();
+            foreach (VKSession session in Sessions) {
+                if (session.API == null) continue;
+                session.API.Domain = Settings.ApiDomain;
+                session.API.ResetHttpClient();
+            }
+        }
+
+        private static void ConfigureToastNotifications() {
+            ToastNotificationsManager.Configure(new ToastNotificationOptions {
+                Position = GetToastStackPosition(Settings.CustomNotificationPosition),
+                StackLimit = Settings.CustomNotificationStackLimit,
+                Expiration = TimeSpan.FromSeconds(Settings.CustomNotificationTimeoutSeconds),
+                FastActionsEnabled = Settings.CustomNotificationFastActions,
+                ShowAvatars = Settings.CustomNotificationShowAvatars,
+                ShowImages = Settings.CustomNotificationShowImages
+            });
+        }
+
+        private static ToastStackPosition GetToastStackPosition(string position) {
+            return NotificationPositionIds.Normalize(position) switch {
+                NotificationPositionIds.BottomLeft => ToastStackPosition.BottomLeft,
+                NotificationPositionIds.TopRight => ToastStackPosition.TopRight,
+                NotificationPositionIds.TopLeft => ToastStackPosition.TopLeft,
+                _ => ToastStackPosition.BottomRight
+            };
         }
 
         public static void LogOut() {

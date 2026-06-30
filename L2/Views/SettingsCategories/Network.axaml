@@ -13,7 +13,7 @@
           <Grid Classes="GroupHeader">
             <TextBlock Text="Трафик"/>
           </Grid>
-          <vkui:Cell Header="Low traffic" Subtitle="Отключает background long poll групп и увеличивает TTL кеша.">
+          <vkui:Cell Header="Экономия трафика" Subtitle="Отключает фоновый long poll групп и увеличивает TTL кеша.">
             <vkui:Cell.After>
               <ToggleSwitch IsChecked="{Binding LowTrafficMode, Mode=TwoWay}"/>
             </vkui:Cell.After>
@@ -24,9 +24,57 @@
       <Border Classes="Group" VerticalAlignment="Top">
         <StackPanel>
           <Grid Classes="GroupHeader">
+            <TextBlock Text="Прокси"/>
+          </Grid>
+          <vkui:Cell Header="Использовать прокси" Subtitle="Применяется к VK API, LNet и upload-запросам после пересоздания HTTP handler.">
+            <vkui:Cell.After>
+              <ToggleSwitch IsChecked="{Binding ProxyEnabled, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Адрес прокси" Subtitle="Например http://127.0.0.1:8080 или socks5://127.0.0.1:1080, если handler платформы это поддерживает.">
+            <vkui:Cell.After>
+              <TextBox Width="240" Text="{Binding ProxyUri, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" PlaceholderText="http://127.0.0.1:8080"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="Обходить локальные адреса" Subtitle="Не гонять localhost и локальную сеть через прокси.">
+            <vkui:Cell.After>
+              <ToggleSwitch IsChecked="{Binding ProxyBypassLocal, Mode=TwoWay}"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="Group" VerticalAlignment="Top">
+        <StackPanel>
+          <Grid Classes="GroupHeader">
+            <TextBlock Text="{Binding ApiSectionTitle}"/>
+          </Grid>
+          <vkui:Cell Header="{Binding ApiDomainTitle}" Subtitle="{Binding ApiDomainSubtitle}">
+            <vkui:Cell.After>
+              <TextBox Width="180" Text="{Binding ApiDomain, Mode=TwoWay}" PlaceholderText="api.vk.me"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <vkui:Cell Header="{Binding ApiVersionTitle}" Subtitle="{Binding ApiVersionSubtitle}">
+            <vkui:Cell.After>
+              <TextBox Width="96" Text="{Binding ApiVersion, Mode=TwoWay}" PlaceholderText="5.263"/>
+            </vkui:Cell.After>
+          </vkui:Cell>
+          <Button Classes="Tertiary" Click="ResetApiDefaults_Click">
+            <vkui:Cell Header="{Binding ApiResetTitle}" Subtitle="{Binding ApiResetSubtitle}">
+              <vkui:Cell.Before>
+                <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon24RepeatOutline}"/>
+              </vkui:Cell.Before>
+            </vkui:Cell>
+          </Button>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="Group" VerticalAlignment="Top">
+        <StackPanel>
+          <Grid Classes="GroupHeader">
             <TextBlock Text="Long Poll"/>
           </Grid>
-          <vkui:Cell Header="Фоновых групп" Subtitle="Сколько групп держать в background long poll. 0 отключает.">
+          <vkui:Cell Header="Фоновых групп" Subtitle="Сколько групп держать в фоновом long poll. 0 отключает.">
             <vkui:Cell.After>
               <TextBox Width="96" Text="{Binding GroupsBackgroundLongPollLimitText, Mode=TwoWay}" PlaceholderText="3"/>
             </vkui:Cell.After>
@@ -39,17 +87,17 @@
           <Grid Classes="GroupHeader">
             <TextBlock Text="Логи сети"/>
           </Grid>
-          <vkui:Cell Header="Long Poll logs" Subtitle="Писать long poll события в лог.">
+          <vkui:Cell Header="Логи Long Poll" Subtitle="Писать long poll события в лог.">
             <vkui:Cell.After>
               <ToggleSwitch IsChecked="{Binding EnableLongPollLogs, Mode=TwoWay}"/>
             </vkui:Cell.After>
           </vkui:Cell>
-          <vkui:Cell Header="LNet logs" Subtitle="Сетевой слой и HTTP ошибки.">
+          <vkui:Cell Header="Логи LNet" Subtitle="Сетевой слой и HTTP ошибки.">
             <vkui:Cell.After>
               <ToggleSwitch IsChecked="{Binding LNetLogs, Mode=TwoWay}"/>
             </vkui:Cell.After>
           </vkui:Cell>
-          <vkui:Cell Header="API call buffer" Subtitle="Хранить последние 300 VK API вызовов для debug-панели. Все чувствительные параметры redacted.">
+          <vkui:Cell Header="Буфер API-вызовов" Subtitle="Хранить последние 300 VK API вызовов для debug-панели. Все чувствительные параметры скрываются.">
             <vkui:Cell.After>
               <ToggleSwitch IsChecked="{Binding ApiDebugMonitorEnabled, Mode=TwoWay}"/>
             </vkui:Cell.After>
@@ -62,7 +110,7 @@
             </vkui:Cell>
           </Button>
           <Button Classes="Tertiary" Click="RunAccountHealthCheck_Click">
-            <vkui:Cell Header="Health-check аккаунта" Subtitle="Проверить сеть, API auth, LongPoll, recent ошибки и риск rate-limit.">
+            <vkui:Cell Header="Проверка аккаунта" Subtitle="Проверить сеть, API auth, LongPoll, свежие ошибки и риск rate-limit.">
               <vkui:Cell.Before>
                 <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon28DoneOutline}"/>
               </vkui:Cell.Before>

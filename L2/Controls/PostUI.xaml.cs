@@ -10,7 +10,6 @@ using ELOR.Laney.Extensions;
 using ELOR.Laney.Helpers;
 using ELOR.Laney.Views.Modals;
 using ELOR.VKAPILib.Objects;
-using Serilog;
 using System;
 using System.Linq;
 using VKUI.Controls;
@@ -45,6 +44,7 @@ namespace ELOR.Laney.Controls {
         Border ForwardedMessagesContainer;
         StackPanel ForwardedMessagesStack;
 
+        int mapSetupAttempts;
         bool isUILoaded = false;
         protected override void OnApplyTemplate(TemplateAppliedEventArgs e) {
             base.OnApplyTemplate(e);
@@ -138,6 +138,7 @@ namespace ELOR.Laney.Controls {
                 Attachments.Attachments = message.Attachments;
             }
 
+            mapSetupAttempts = 0;
             TrySetupMap(message);
 
             ForwardedMessagesStack.Children.Clear();
@@ -213,23 +214,31 @@ namespace ELOR.Laney.Controls {
         }
 
         private void TrySetupMap(Message message) {
-            if (Bounds.Width == 0) {
-                Log.Warning($"PostUI > TrySetupMap: UI is not ready, so its width is 0. Trying in next frame...");
-                var tl = TopLevel.GetTopLevel(this);
-                tl.RequestAnimationFrame((t) => TrySetupMap(message));
+            if (message.Geo == null) {
+                Map.IsVisible = false;
                 return;
             }
-            Log.Warning($"PostUI > TrySetupMap: UI width is {Bounds.Width}.");
+
+            if (Bounds.Width == 0) {
+                if (mapSetupAttempts++ >= 12) {
+                    Map.IsVisible = false;
+                    return;
+                }
+
+                var tl = TopLevel.GetTopLevel(this);
+                if (tl != null) tl.RequestAnimationFrame((t) => TrySetupMap(message));
+                return;
+            }
+
             Map.Width = Bounds.Width - Map.Margin.Left;
             Map.Height = Map.Width / 2;
-            Map.IsVisible = message.Geo != null;
-            if (message.Geo != null) {
-                var glong = message.Geo.Coordinates.Longitude.ToString().Replace(",", ".");
-                var glat = message.Geo.Coordinates.Latitude.ToString().Replace(",", ".");
-                var w = Math.Ceiling(Map.Width * App.Current.DPI);
-                var h = Math.Ceiling(Map.Height * App.Current.DPI);
-                Map.SetImageFill(new Uri($"https://static-maps.yandex.ru/1.x/?ll={glong},{glat}&size={w},{h}&z=12&lang=ru_RU&l=pmap&pt={glong},{glat},vkbkm"), Map.Width, Map.Height);
-            }
+            Map.IsVisible = true;
+
+            var glong = message.Geo.Coordinates.Longitude.ToString().Replace(",", ".");
+            var glat = message.Geo.Coordinates.Latitude.ToString().Replace(",", ".");
+            var w = Math.Ceiling(Map.Width * App.Current.DPI);
+            var h = Math.Ceiling(Map.Height * App.Current.DPI);
+            Map.SetImageFill(new Uri($"https://static-maps.yandex.ru/1.x/?ll={glong},{glat}&size={w},{h}&z=12&lang=ru_RU&l=pmap&pt={glong},{glat},vkbkm"), Map.Width, Map.Height);
         }
 
         private void OnLinkClicked(string link) {

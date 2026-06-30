@@ -2,6 +2,7 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using ELOR.Laney.Core;
+using ELOR.Laney.ViewModels.SettingsCategories;
 using ELOR.Laney.Views;
 using ELOR.Laney.Views.Modals;
 using System;
@@ -24,6 +25,10 @@ namespace ELOR.Laney.Views.SettingsCategories {
             } else {
                 window.Show(owner);
             }
+        }
+
+        private void ResetApiDefaults_Click(object sender, RoutedEventArgs e) {
+            if (DataContext is NetworkViewModel viewModel) viewModel.ResetApiDefaults();
         }
 
         private async void RunAccountHealthCheck_Click(object sender, RoutedEventArgs e) {

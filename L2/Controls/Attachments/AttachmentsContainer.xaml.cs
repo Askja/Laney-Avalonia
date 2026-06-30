@@ -158,13 +158,14 @@ namespace ELOR.Laney.Controls.Attachments {
 
                 Button imgBtn = new Button {
                     Tag = new Tuple<List<IPreview>, IPreview>(previews, previews[0]),
-                    Background = App.GetResource<SolidColorBrush>("VKBackgroundHoverBrush"),
+                    Background = GetSkeletonBrush(),
                     HorizontalContentAlignment = HorizontalAlignment.Stretch,
                     VerticalContentAlignment = VerticalAlignment.Stretch,
                     Padding = new Thickness(0),
                     CornerRadius = new CornerRadius(NoMargins ? 4 : 16),
                     Width = w,
                     Height = h,
+                    ClipToBounds = true,
                     Margin = NoMargins ? new Thickness(0, 0, 0, 2) : new Thickness(-6, 0, -6, 2)
                 };
                 AddPreviewInfo(previews[0], imgBtn);
@@ -208,13 +209,14 @@ namespace ELOR.Laney.Controls.Attachments {
 
                     Button imgBtn = new Button {
                         Tag = new Tuple<List<IPreview>, IPreview>(previews, preview),
-                        Background = App.GetResource<SolidColorBrush>("VKBackgroundHoverBrush"),
+                        Background = GetSkeletonBrush(),
                         HorizontalContentAlignment = HorizontalAlignment.Stretch,
                         VerticalContentAlignment = VerticalAlignment.Stretch,
                         Padding = new Thickness(0),
                         CornerRadius = new CornerRadius(tl, tr, br, bl),
                         Width = rect.Width,
-                        Height = rect.Height
+                        Height = rect.Height,
+                        ClipToBounds = true
                     };
                     Canvas.SetLeft(imgBtn, rect.Left);
                     Canvas.SetTop(imgBtn, rect.Top);
@@ -570,6 +572,11 @@ namespace ELOR.Laney.Controls.Attachments {
                 DialogContent = preview
             };
             await dialog.ShowDialog<int>(ownerSession.ModalWindow);
+        }
+
+        private IBrush GetSkeletonBrush() {
+            if (this.TryFindResource("LaneySkeletonBrush", out object resource) && resource is IBrush brush) return brush;
+            return App.GetResource<IBrush>("LaneySkeletonBrush") ?? new SolidColorBrush(Color.Parse("#28313D"));
         }
 
         private void AddPreviewInfo(IPreview preview, Button button) {

@@ -13,9 +13,9 @@
         WindowDecorations="None"
         WindowStartupLocation="CenterScreen"
         Icon="avares://laney/Assets/Logo/icon.ico"
-        Background="{DynamicResource VKBackgroundPageBrush}"
+        Background="{DynamicResource LaneySurfaceRootBrush}"
         Title="Laney">
-  <Border BorderBrush="{DynamicResource LaneyBorderSubtleBrush}" BorderThickness="1" Background="{DynamicResource VKBackgroundPageBrush}">
+  <Border BorderBrush="{DynamicResource LaneyGlassBorderBrush}" BorderThickness="1" Background="{DynamicResource LaneySurfaceRootBrush}">
     <Grid RowDefinitions="Auto *">
       <vkui:WindowTitleBar x:Name="TitleBar" CanShowTitle="True" CanMove="True"/>
       <vkui:NavigationControl x:Name="AuthFlow" Grid.Row="1"/>

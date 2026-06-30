@@ -64,6 +64,12 @@ namespace ELOR.Laney.ViewModels.SettingsCategories {
         public bool AutoLockClearClipboard { get { return Settings.AutoLockClearClipboard; } set { Settings.AutoLockClearClipboard = value; OnPropertyChanged(); } }
         public string KeymapPanicLock { get { return Settings.KeymapPanicLock; } set { Settings.KeymapPanicLock = value; OnPropertyChanged(); } }
         public RelayCommand PanicLockCommand { get { return _panicLockCommand; } private set { _panicLockCommand = value; OnPropertyChanged(); } }
+        public bool InvisibleMode { get { return Settings.InvisibleMode; } set { Settings.InvisibleMode = value; OnPropertyChanged(); ReloadOpenedChat(); } }
+        public bool InvisibleDisableSetOnline { get { return Settings.InvisibleDisableSetOnline; } set { Settings.InvisibleDisableSetOnline = value; OnPropertyChanged(); } }
+        public bool InvisibleDisableReadReceipts { get { return Settings.InvisibleDisableReadReceipts; } set { Settings.InvisibleDisableReadReceipts = value; OnPropertyChanged(); } }
+        public bool InvisibleDisableVoiceListened { get { return Settings.InvisibleDisableVoiceListened; } set { Settings.InvisibleDisableVoiceListened = value; OnPropertyChanged(); } }
+        public bool InvisibleDisableStoryViewed { get { return Settings.InvisibleDisableStoryViewed; } set { Settings.InvisibleDisableStoryViewed = value; OnPropertyChanged(); } }
+        public bool InvisibleDisableTypingStatus { get { return Settings.InvisibleDisableTypingStatus; } set { Settings.InvisibleDisableTypingStatus = value; OnPropertyChanged(); } }
 
         public TwoStringTuple CurrentAutoLockIdleMinutes {
             get { return GetAutoLockMinutes(Settings.AutoLockIdleMinutes); }

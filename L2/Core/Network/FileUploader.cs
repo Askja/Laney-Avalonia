@@ -1,9 +1,11 @@
 ﻿using Avalonia.Platform.Storage;
+using ELOR.VKAPILib;
 using Serilog;
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading;
@@ -41,7 +43,7 @@ namespace ELOR.Laney.Core.Network {
                     throw new ArgumentException("One of the important parameters is null");
                 Stream data = await _file.OpenReadAsync();
 
-                using (var httpClient = new HttpClient()) {
+                using (var httpClient = new HttpClient(VKAPI.CreateHttpClientHandler(true, 0, DecompressionMethods.None), false)) {
                     httpClient.Timeout = Timeout.InfiniteTimeSpan;
                     string disposition = new string(Encoding.UTF8.GetBytes($"form-data; name=\"{_type}\"; filename=\"{_file.Name}\"")
                         .Select(b => (char)b).ToArray());

@@ -1,5 +1,7 @@
 ﻿using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
 using ELOR.Laney.Core;
 using ELOR.Laney.Extensions;
 using ELOR.Laney.Helpers;
@@ -10,6 +12,7 @@ using ELOR.VKAPILib.Objects;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using VKUI.Controls;
 using VKUI.Popups;
 using VKUI.Windows;
@@ -163,6 +166,50 @@ namespace ELOR.Laney.Views.Modals {
                     new System.Action(async () => await Router.LaunchLink(session, a.Attachment.Link.Uri))();
                     break;
             }
+        }
+
+        private async void SelectLocalBackgroundImage_Click(object sender, RoutedEventArgs e) {
+            if (ViewModel == null) return;
+
+            string path = await PickLocalImagePathAsync("Выбрать картинку фона");
+            if (String.IsNullOrWhiteSpace(path)) return;
+            ViewModel.LocalBackgroundImage = path;
+        }
+
+        private void ClearLocalBackgroundImage_Click(object sender, RoutedEventArgs e) {
+            if (ViewModel == null) return;
+            ViewModel.LocalBackgroundImage = String.Empty;
+        }
+
+        private async void SelectLocalAvatar_Click(object sender, RoutedEventArgs e) {
+            if (ViewModel == null) return;
+
+            string path = await PickLocalImagePathAsync("Выбрать локальную аватарку");
+            if (String.IsNullOrWhiteSpace(path)) return;
+            ViewModel.LocalAvatar = path;
+        }
+
+        private void ClearLocalAvatar_Click(object sender, RoutedEventArgs e) {
+            if (ViewModel == null) return;
+            ViewModel.LocalAvatar = String.Empty;
+        }
+
+        private async Task<string> PickLocalImagePathAsync(string title) {
+            if (StorageProvider?.CanOpen != true) return null;
+
+            IReadOnlyList<IStorageFile> files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions {
+                Title = title,
+                AllowMultiple = false,
+                FileTypeFilter = [
+                    new FilePickerFileType("Картинки") {
+                        Patterns = ["*.png", "*.jpg", "*.jpeg", "*.webp", "*.bmp"]
+                    },
+                    FilePickerFileTypes.All
+                ]
+            });
+
+            IStorageFile file = files?.FirstOrDefault();
+            return file?.TryGetLocalPath() ?? file?.Path.LocalPath;
         }
     }
 }

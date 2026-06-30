@@ -11,6 +11,7 @@ using Avalonia.VisualTree;
 using ELOR.Laney.Core;
 using Serilog;
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,7 +19,10 @@ using VKUI.Controls;
 
 namespace ELOR.Laney.Controls {
     public static class ImageLoader {
-        private const double ViewportPreloadMargin = 384;
+        private const double ViewportPreloadMargin = 192;
+        private const double MaxBackgroundDecodePixels = 960;
+        private const double MaxBlurBackgroundDecodePixels = 320;
+        private const double ActiveViewportCheckIntervalMs = 240;
 
         static ImageLoader() {
             SourceProperty.Changed
@@ -107,6 +111,7 @@ namespace ELOR.Laney.Controls {
 
         private static void OnActiveImageLayoutUpdated(object sender, EventArgs e) {
             if (sender is not Control control) return;
+            if (!ShouldRunActiveViewportCheck(control)) return;
             if (IsNearViewport(control)) return;
 
             CancelLoad(control);
@@ -128,11 +133,25 @@ namespace ELOR.Laney.Controls {
             return viewport.Intersects(controlRect);
         }
 
+        private static bool ShouldRunActiveViewportCheck(Control control) {
+            long now = Stopwatch.GetTimestamp();
+            long last = GetLastViewportCheckTicks(control);
+            if (last != 0) {
+                double elapsedMs = (now - last) * 1000.0 / Stopwatch.Frequency;
+                if (elapsedMs < ActiveViewportCheckIntervalMs) return false;
+            }
+
+            SetLastViewportCheckTicks(control, now);
+            return true;
+        }
+
         private static ImageLoadState BeginLoad(Control control) {
             CancelLoad(control);
 
             ImageLoadState state = new ImageLoadState();
             SetLoadState(control, state);
+            SetLoadingPlaceholder(control);
+            if (!control.Classes.Contains("ImageLoading")) control.Classes.Add("ImageLoading");
 
             control.DetachedFromVisualTree -= OnDetachedFromVisualTree;
             control.DetachedFromVisualTree += OnDetachedFromVisualTree;
@@ -144,6 +163,7 @@ namespace ELOR.Laney.Controls {
         private static void FinishLoad(Control control, ImageLoadState state) {
             if (ReferenceEquals(GetLoadState(control), state)) {
                 SetLoadState(control, null);
+                control.Classes.Remove("ImageLoading");
                 control.LayoutUpdated -= OnActiveImageLayoutUpdated;
             }
 
@@ -156,9 +176,34 @@ namespace ELOR.Laney.Controls {
 
             if (state != null && ReferenceEquals(GetLoadState(control), state)) {
                 SetLoadState(control, null);
+                control.Classes.Remove("ImageLoading");
             }
 
             control.LayoutUpdated -= OnActiveImageLayoutUpdated;
+        }
+
+        private static void SetLoadingPlaceholder(Control control) {
+            IBrush brush = GetResourceFromControl<IBrush>(control, "LaneySkeletonBrush")
+                ?? App.GetResource<IBrush>("LaneySkeletonBrush")
+                ?? App.GetResource<IBrush>("VKSkeletonForegroundFromBrush")
+                ?? new SolidColorBrush(Color.Parse("#2A3442"));
+
+            switch (control) {
+                case Shape shape:
+                    shape.Fill = brush;
+                    break;
+                case Border border:
+                    border.Background = brush;
+                    break;
+                case ContentControl contentControl:
+                    contentControl.Background = brush;
+                    break;
+            }
+        }
+
+        private static T GetResourceFromControl<T>(Control control, string key) where T : class {
+            if (control?.TryFindResource(key, out object resource) == true && resource is T typedResource) return typedResource;
+            return null;
         }
 
         private static bool IsCurrent(Control control, ImageLoadState state, Uri uri) {
@@ -184,8 +229,9 @@ namespace ELOR.Laney.Controls {
                 case Image image:
                     image.Source = null;
                     break;
-                case Avatar avatar:
-                    avatar.Image = null;
+                case Avatar:
+                    // Аватар не обнуляем: при смене темы/настроек visual tree может пересобраться,
+                    // а пользователь не должен видеть пустую дырку до возврата bitmap из RAM-кэша.
                     break;
                 case Shape shape:
                     shape.Fill = null;
@@ -277,7 +323,7 @@ namespace ELOR.Laney.Controls {
             }
 
             if (!EnsureAttached(sender)) return;
-            SetBackground(sender, App.GetResource<SolidColorBrush>("VKBackgroundHoverBrush"));
+            SetLoadingPlaceholder(sender);
             _ = LoadBitmapIntoBackgroundAsync(sender, uri);
         }
 
@@ -289,6 +335,8 @@ namespace ELOR.Laney.Controls {
             if (blurRadius > 0) {
                 decodeWidth = GetBlurDecodeSize(decodeWidth);
                 decodeHeight = GetBlurDecodeSize(decodeHeight);
+            } else {
+                NormalizeBackgroundDecodeSize(sender, ref decodeWidth, ref decodeHeight);
             }
 
             try {
@@ -325,7 +373,7 @@ namespace ELOR.Laney.Controls {
             }
 
             if (!EnsureAttached(sender)) return;
-            sender.Fill = App.GetResource<SolidColorBrush>("VKBackgroundHoverBrush");
+            SetLoadingPlaceholder(sender);
             _ = LoadBitmapIntoFillAsync(sender, uri);
         }
 
@@ -376,7 +424,6 @@ namespace ELOR.Laney.Controls {
             }
 
             if (!EnsureAttached(sender)) return;
-            sender.Image = null;
             _ = LoadBitmapIntoAvatarAsync(sender, uri);
         }
 
@@ -428,9 +475,36 @@ namespace ELOR.Laney.Controls {
             return 0;
         }
 
+        private static void NormalizeBackgroundDecodeSize(Control control, ref double decodeWidth, ref double decodeHeight) {
+            if (decodeWidth <= 0 || decodeHeight <= 0) {
+                TopLevel topLevel = TopLevel.GetTopLevel(control);
+                if (decodeWidth <= 0 && topLevel?.Bounds.Width > 0) decodeWidth = topLevel.Bounds.Width;
+                if (decodeHeight <= 0 && topLevel?.Bounds.Height > 0) decodeHeight = topLevel.Bounds.Height;
+            }
+
+            if (decodeWidth <= 0 && decodeHeight <= 0) {
+                decodeWidth = GetDecodeDipLimit(MaxBackgroundDecodePixels);
+                return;
+            }
+
+            double maxDimension = Math.Max(decodeWidth, decodeHeight);
+            double maxBackgroundDecodeDimension = GetDecodeDipLimit(MaxBackgroundDecodePixels);
+            if (maxDimension <= maxBackgroundDecodeDimension) return;
+
+            double scale = maxBackgroundDecodeDimension / maxDimension;
+            if (decodeWidth > 0) decodeWidth *= scale;
+            if (decodeHeight > 0) decodeHeight *= scale;
+        }
+
         private static double GetBlurDecodeSize(double value) {
-            if (value <= 0) return 720;
-            return Math.Min(value, 720);
+            double limit = GetDecodeDipLimit(MaxBlurBackgroundDecodePixels);
+            if (value <= 0) return limit;
+            return Math.Min(value, limit);
+        }
+
+        private static double GetDecodeDipLimit(double pixelLimit) {
+            double dpi = Math.Max(1, App.Current?.DPI ?? 1);
+            return Math.Max(1, pixelLimit / dpi);
         }
 
         private static Bitmap CreateBlurredBitmap(Bitmap source, int radius) {
@@ -535,6 +609,17 @@ namespace ELOR.Laney.Controls {
 
         private static void SetLoadState(Control element, ImageLoadState? value) {
             element.SetValue(LoadStateProperty, value);
+        }
+
+        private static readonly AttachedProperty<long> LastViewportCheckTicksProperty =
+            AvaloniaProperty.RegisterAttached<Control, long>("LastViewportCheckTicks", typeof(ImageLoader), 0);
+
+        private static long GetLastViewportCheckTicks(Control element) {
+            return element.GetValue(LastViewportCheckTicksProperty);
+        }
+
+        private static void SetLastViewportCheckTicks(Control element, long value) {
+            element.SetValue(LastViewportCheckTicksProperty, value);
         }
 
         public static readonly AttachedProperty<Uri?> SourceProperty =

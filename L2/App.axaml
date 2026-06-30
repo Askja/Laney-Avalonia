@@ -48,6 +48,8 @@
           <SolidColorBrush x:Key="SystemControlHighlightTransparentBrush" Color="Transparent"/>
         </ResourceDictionary>
       </ResourceDictionary.ThemeDictionaries>
+
+      <FontFamily x:Key="LaneyAppFontFamily">Segoe UI</FontFamily>
     </ResourceDictionary>
 
     <conv:AvatarGradientConverter x:Key="agc"/>
@@ -55,6 +57,7 @@
     <conv:DateConverter x:Key="dc"/>
     <conv:TimeConverter x:Key="tc"/>
     <conv:DocumentIconConverter x:Key="dic"/>
+    <conv:EmojiImageUriConverter x:Key="eic"/>
     <conv:FileSizeConverter x:Key="fsc"/>
     <conv:InitialsConverter x:Key="ic"/>
     <conv:IsNotZeroConverter x:Key="nzc"/>
@@ -155,11 +158,33 @@
       <Setter Property="LetterSpacing" Value="{StaticResource TextDefaultLetterSpacing}"/>
     </Style>
 
+    <Style Selector="TextBlock">
+      <Setter Property="FontFamily" Value="{DynamicResource LaneyAppFontFamily}"/>
+    </Style>
+
+    <Style Selector="SelectableTextBlock">
+      <Setter Property="FontFamily" Value="{DynamicResource LaneyAppFontFamily}"/>
+    </Style>
+
+    <Style Selector="TextBox">
+      <Setter Property="FontFamily" Value="{DynamicResource LaneyAppFontFamily}"/>
+    </Style>
+
     <Style Selector="Button.Hyperlink">
       <Setter Property="Background" Value="Transparent"/>
       <Setter Property="Padding" Value="0"/>
       <Setter Property="FontSize" Value="15"/>
       <Setter Property="MinHeight" Value="0"/>
+    </Style>
+
+    <Style Selector="vkui|PanelHeader Button">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="CornerRadius" Value="12"/>
+    </Style>
+
+    <Style Selector="vkui|PanelHeader Button /template/ Border#PART_Hover">
+      <Setter Property="Margin" Value="4"/>
     </Style>
 
     <!-- Fix margin for first and last element in ListBox -->
@@ -228,6 +253,54 @@
     </Style>
     <Style Selector="TextBox.Mono">
       <Setter Property="FontFamily" Value="Consolas,Andale Mono,DejaVu Sans Mono,Monospace"/>
+    </Style>
+
+    <Style Selector="Border.Skeleton">
+      <Setter Property="Background" Value="{DynamicResource LaneySkeletonBrush}"/>
+      <Setter Property="Opacity" Value="0.88"/>
+    </Style>
+    <Style Selector="Rectangle.Skeleton, Ellipse.Skeleton">
+      <Setter Property="Fill" Value="{DynamicResource LaneySkeletonBrush}"/>
+      <Setter Property="Opacity" Value="0.88"/>
+    </Style>
+    <Style Selector="Image.ImageLoading">
+      <Setter Property="Opacity" Value="0.72"/>
+    </Style>
+    <Style Selector="Rectangle.ImageLoading">
+      <Setter Property="Fill" Value="{DynamicResource LaneySkeletonBrush}"/>
+    </Style>
+    <Style Selector="Border.ImageLoading">
+      <Setter Property="Background" Value="{DynamicResource LaneySkeletonBrush}"/>
+    </Style>
+
+    <Style Selector="Border.GlassPanel">
+      <Setter Property="Background" Value="{DynamicResource LaneyGlassPanelBrush}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource LaneyGlassBorderBrush}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+    </Style>
+
+    <Style Selector="Border.GlassRaised">
+      <Setter Property="Background" Value="{DynamicResource LaneyGlassRaisedBrush}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource LaneyGlassBorderBrush}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+    </Style>
+
+    <Style Selector="Border.GlassInput">
+      <Setter Property="Background" Value="{DynamicResource LaneyFieldBackgroundBrush}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource LaneyFieldBorderBrush}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+    </Style>
+
+    <Style Selector="Border.Group">
+      <Setter Property="Background" Value="{DynamicResource LaneyGlassPanelBrush}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource LaneyGlassBorderBrush}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+    </Style>
+
+    <Style Selector="MenuFlyoutPresenter">
+      <Setter Property="Background" Value="{DynamicResource LaneyGlassOverlayBrush}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource LaneyGlassBorderBrush}"/>
+      <Setter Property="CornerRadius" Value="12"/>
     </Style>
   </Application.Styles>
 </Application>

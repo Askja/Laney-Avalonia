@@ -16,14 +16,14 @@ namespace ELOR.Laney.ViewModels.SettingsCategories {
             new TwoStringTuple(((int)StickerAnimationMode.Never).ToString(), "Никогда")
         };
         public ObservableCollection<TwoStringTuple> InterfaceProfiles { get; private set; } = new ObservableCollection<TwoStringTuple> {
-            new TwoStringTuple(InterfaceProfileIds.Custom, "Custom"),
-            new TwoStringTuple(InterfaceProfileIds.Compact, "Compact"),
-            new TwoStringTuple(InterfaceProfileIds.Balanced, "Balanced"),
-            new TwoStringTuple(InterfaceProfileIds.Touch, "Touch"),
-            new TwoStringTuple(InterfaceProfileIds.Work, "Work"),
-            new TwoStringTuple(InterfaceProfileIds.Night, "Night"),
-            new TwoStringTuple(InterfaceProfileIds.LowRam, "Low RAM"),
-            new TwoStringTuple(InterfaceProfileIds.Streamer, "Streamer")
+            new TwoStringTuple(InterfaceProfileIds.Custom, "Свои"),
+            new TwoStringTuple(InterfaceProfileIds.Compact, "Компактный"),
+            new TwoStringTuple(InterfaceProfileIds.Balanced, "Баланс"),
+            new TwoStringTuple(InterfaceProfileIds.Touch, "Сенсорный"),
+            new TwoStringTuple(InterfaceProfileIds.Work, "Работа"),
+            new TwoStringTuple(InterfaceProfileIds.Night, "Ночь"),
+            new TwoStringTuple(InterfaceProfileIds.LowRam, "Слабое железо"),
+            new TwoStringTuple(InterfaceProfileIds.Streamer, "Стример")
         };
 
         public TwoStringTuple CurrentLanguage { get { return GetLang(); } set { ChangeLang(value); OnPropertyChanged(); } }
@@ -41,8 +41,35 @@ namespace ELOR.Laney.ViewModels.SettingsCategories {
         public string LocalOcrTesseractPath { get { return Settings.LocalOcrTesseractPath; } set { Settings.LocalOcrTesseractPath = value; MarkCustomProfile(); OnPropertyChanged(); } }
         public string LocalOcrLanguage { get { return Settings.LocalOcrLanguage; } set { Settings.LocalOcrLanguage = value; MarkCustomProfile(); OnPropertyChanged(); } }
         public string LocalBackupDirectory { get { return String.IsNullOrWhiteSpace(Settings.LocalBackupDirectory) ? "Не выбрана" : Settings.LocalBackupDirectory; } }
-        public string LocalDataMode { get { return App.IsPortableMode ? "Portable: ./data рядом с приложением" : "System: LocalAppData"; } }
+        public string LocalDataMode { get { return App.IsPortableMode ? "Портативный: ./data рядом с приложением" : "Системный: LocalAppData"; } }
         public string LocalDataPath { get { return App.LocalDataPath; } }
+        public string AutostartSectionTitle { get { return Localizer.Get("settings_autostart_section"); } }
+        public string AutostartEnabledTitle { get { return Localizer.Get("settings_autostart_enabled"); } }
+        public string AutostartEnabledSubtitle { get { return Localizer.Get("settings_autostart_enabled_desc"); } }
+        public string AutostartMinimizedTitle { get { return Localizer.Get("settings_autostart_minimized"); } }
+        public string AutostartMinimizedSubtitle { get { return Localizer.Get("settings_autostart_minimized_desc"); } }
+        public string AutostartStatusTitle { get { return Localizer.Get("settings_autostart_status"); } }
+        public string AutostartStatus { get { return AutostartService.StatusText; } }
+        public bool AutostartEnabled {
+            get { return Settings.AutostartEnabled; }
+            set {
+                Settings.AutostartEnabled = value;
+                AutostartService.ApplyConfiguredState();
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(AutostartMinimized));
+                OnPropertyChanged(nameof(AutostartStatus));
+            }
+        }
+
+        public bool AutostartMinimized {
+            get { return Settings.AutostartMinimized; }
+            set {
+                Settings.AutostartMinimized = value;
+                AutostartService.ApplyConfiguredState();
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(AutostartStatus));
+            }
+        }
 
         public GeneralViewModel() {
 

@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using System.Text;
 using System.Threading.Tasks;
@@ -33,10 +34,10 @@ namespace ELOR.Laney.Helpers {
         private static string T(string key) => Localizer.Get(key);
         private static string TF(string key, params object[] args) => Localizer.GetFormatted(key, args);
 
-        private static readonly string[] BulkCleanupPeriodOptions = ["Все выбранные", "Сегодня", "7 дней", "30 дней"];
-        private static readonly string[] BulkCleanupAttachmentOptions = ["Любой тип", "Фото/видео", "Документы", "Ссылки", "Голосовые", "Граффити", "Стикеры", "Только текст"];
-        private static readonly string[] BulkCleanupSenderOptions = ["Любой отправитель", "Только мои", "Только чужие"];
-        private static readonly string[] AttachmentDownloadProfileOptions = ["Все вложения", "Фотоархив", "Документы", "Голосовые", "Видео", "Аудио", "Стикеры/граффити"];
+        private static string[] BulkCleanupPeriodOptions => [T("cm_bulk_period_all_selected"), T("cm_bulk_period_today"), T("cm_bulk_period_7_days"), T("cm_bulk_period_30_days")];
+        private static string[] BulkCleanupAttachmentOptions => [T("cm_bulk_attachment_any"), T("cm_bulk_attachment_media"), T("cm_bulk_attachment_documents"), T("cm_bulk_attachment_links"), T("cm_bulk_attachment_voice"), T("cm_bulk_attachment_graffiti"), T("cm_bulk_attachment_stickers"), T("cm_bulk_attachment_text")];
+        private static string[] BulkCleanupSenderOptions => [T("cm_bulk_sender_any"), T("cm_bulk_sender_mine"), T("cm_bulk_sender_others")];
+        private static string[] AttachmentDownloadProfileOptions => [T("cm_download_profile_all"), T("cm_download_profile_photos"), T("cm_download_profile_documents"), T("cm_download_profile_voice"), T("cm_download_profile_video"), T("cm_download_profile_audio"), T("cm_download_profile_stickers")];
         private static readonly string[] AttachmentDownloadProfileOptionIds = [
             AttachmentDownloadProfileIds.All,
             AttachmentDownloadProfileIds.Photos,
@@ -46,8 +47,14 @@ namespace ELOR.Laney.Helpers {
             AttachmentDownloadProfileIds.Audio,
             AttachmentDownloadProfileIds.Stickers
         ];
-        private static readonly string[] AttachmentDownloadSpeedOptions = ["Без лимита", "512 KB/s", "2 MB/s", "8 MB/s"];
+        private static string[] AttachmentDownloadSpeedOptions => [T("cm_download_speed_unlimited"), "512 KB/s", "2 MB/s", "8 MB/s"];
         private static readonly int[] AttachmentDownloadSpeedLimits = [0, 512, 2048, 8192];
+        private static readonly string[] E2EPassphraseWords = [
+            "atlas", "comet", "delta", "ember", "fable", "glow",
+            "harbor", "iris", "juno", "karma", "lumen", "matrix",
+            "nova", "orbit", "pixel", "quartz", "raven", "signal",
+            "tundra", "umbra", "velvet", "wave", "xenon", "yuki"
+        ];
 
         #region For chat
 
@@ -62,7 +69,7 @@ namespace ELOR.Laney.Helpers {
             };
             ActionSheetItem debugDeleteConvoVisually = new ActionSheetItem {
                 Before = new VKIcon { Id = VKIconNames.Icon20BugOutline },
-                Header = $"Simulate chat deleted event"
+                Header = T("cm_debug_simulate_deleted")
             };
 
             ActionSheetItem read = new ActionSheetItem {
@@ -254,14 +261,14 @@ namespace ELOR.Laney.Helpers {
 
             TextBox dateBox = new TextBox {
                 Text = DateTime.Now.ToString("yyyy-MM-dd"),
-                PlaceholderText = "2026-06-27 или 27.06.2026",
+                PlaceholderText = T("cm_jump_date_placeholder"),
                 MinWidth = 280
             };
 
             VKUIDialog dialog = new VKUIDialog(
-                "Перейти к дате",
-                "Laney найдет ближайшее сообщение к началу выбранного дня. Если дата не загружена, будет дешевый поиск по истории, а не скачивание всего чата.",
-                ["Перейти", "Отмена"],
+                T("cm_jump_to_date"),
+                T("cm_jump_to_date_dialog_text"),
+                [T("go"), T("cancel")],
                 2) {
                 DialogContent = dateBox
             };
@@ -274,7 +281,7 @@ namespace ELOR.Laney.Helpers {
                 if (date == null) throw new ArgumentException("Дата пустая. Тут без гадания на кофейной гуще.");
                 await new VKUIWaitDialog<bool>().ShowAsync(session.ModalWindow, JumpToDateAsync(chat, date.Value));
             } catch (Exception ex) {
-                await new VKUIDialog("Прыжок не выполнен", ex.GetBaseException().Message, ["Понятно"], 1).ShowDialog<int>(session.ModalWindow);
+                await new VKUIDialog(T("cm_jump_failed_title"), ex.GetBaseException().Message, [T("ok")], 1).ShowDialog<int>(session.ModalWindow);
             }
         }
 
@@ -340,43 +347,43 @@ namespace ELOR.Laney.Helpers {
             ComboBox profileBox = CreateBulkCleanupComboBox(AttachmentDownloadProfileOptions);
             ComboBox speedBox = CreateBulkCleanupComboBox(AttachmentDownloadSpeedOptions);
             TextBox filterBox = new TextBox {
-                PlaceholderText = "имя, расширение, тип или URL; можно пусто",
+                PlaceholderText = T("cm_download_filter_placeholder"),
                 MinWidth = 360
             };
             TextBox senderBox = new TextBox {
-                PlaceholderText = "sender id; можно пусто",
+                PlaceholderText = T("cm_download_sender_placeholder"),
                 MinWidth = 360
             };
             TextBox fromBox = new TextBox {
-                PlaceholderText = "с даты: 2026-06-01 или 01.06.2026",
+                PlaceholderText = T("cm_download_from_placeholder"),
                 MinWidth = 360
             };
             TextBox toBox = new TextBox {
-                PlaceholderText = "по дату: 2026-06-27 или 27.06.2026",
+                PlaceholderText = T("cm_download_to_placeholder"),
                 MinWidth = 360
             };
             TextBox maxSizeBox = new TextBox {
-                PlaceholderText = "макс. размер MB; можно пусто",
+                PlaceholderText = T("cm_download_size_placeholder"),
                 MinWidth = 360
             };
             CheckBox dedupeBox = new CheckBox {
-                Content = "Дедуп по URL и SHA-256",
+                Content = T("cm_download_dedup"),
                 IsChecked = true
             };
             CheckBox sidecarBox = new CheckBox {
-                Content = "Писать sidecar JSON рядом с файлами",
+                Content = T("cm_download_sidecar"),
                 IsChecked = true
             };
             CheckBox resumeBox = new CheckBox {
-                Content = "Resume: пропускать уже скачанное в этой папке",
+                Content = T("cm_download_resume"),
                 IsChecked = true
             };
             CheckBox fullHistoryBox = new CheckBox {
-                Content = "Full-history backfill через VK API",
+                Content = T("cm_download_backfill"),
                 IsChecked = false
             };
             CheckBox pauseAfterPageBox = new CheckBox {
-                Content = "Пауза после одной API-страницы",
+                Content = T("cm_download_pause"),
                 IsChecked = false
             };
 
@@ -384,13 +391,13 @@ namespace ELOR.Laney.Helpers {
                 Spacing = 8,
                 MinWidth = 380
             };
-            content.Children.Add(CreateBulkCleanupField("Профиль", profileBox));
-            content.Children.Add(CreateBulkCleanupField("Фильтр", filterBox));
-            content.Children.Add(CreateBulkCleanupField("Отправитель", senderBox));
-            content.Children.Add(CreateBulkCleanupField("Дата с", fromBox));
-            content.Children.Add(CreateBulkCleanupField("Дата по", toBox));
-            content.Children.Add(CreateBulkCleanupField("Размер", maxSizeBox));
-            content.Children.Add(CreateBulkCleanupField("Скорость", speedBox));
+            content.Children.Add(CreateBulkCleanupField(T("cm_download_field_profile"), profileBox));
+            content.Children.Add(CreateBulkCleanupField(T("cm_download_field_filter"), filterBox));
+            content.Children.Add(CreateBulkCleanupField(T("cm_download_field_sender"), senderBox));
+            content.Children.Add(CreateBulkCleanupField(T("cm_download_field_from"), fromBox));
+            content.Children.Add(CreateBulkCleanupField(T("cm_download_field_to"), toBox));
+            content.Children.Add(CreateBulkCleanupField(T("cm_download_field_size"), maxSizeBox));
+            content.Children.Add(CreateBulkCleanupField(T("cm_download_field_speed"), speedBox));
             content.Children.Add(dedupeBox);
             content.Children.Add(sidecarBox);
             content.Children.Add(resumeBox);
@@ -398,9 +405,9 @@ namespace ELOR.Laney.Helpers {
             content.Children.Add(pauseAfterPageBox);
 
             VKUIDialog dialog = new VKUIDialog(
-                "Скачать вложения",
-                "По умолчанию экспортируется загруженный локальный срез. Full-history включает проход по VK API с resume-очередью.",
-                ["Отмена", "Выбрать папку"],
+                T("cm_download_attachments"),
+                T("cm_download_dialog_text"),
+                [T("cancel"), T("cm_download_choose_folder")],
                 2) {
                 DialogContent = new ScrollViewer {
                     MaxHeight = 520,
@@ -648,6 +655,8 @@ namespace ELOR.Laney.Helpers {
         }
 
         public static async Task ShowE2ESetupDialogAsync(VKSession session, ChatViewModel chat) {
+            if (session == null || chat == null || chat.PeerId == 0) return;
+
             E2EPeerState state = E2EManager.GetPeerState(chat.PeerId);
             List<string> profileIds = E2ESecurityProfileIds.All.ToList();
             ComboBox profileBox = new ComboBox {
@@ -660,6 +669,23 @@ namespace ELOR.Laney.Helpers {
                 PlaceholderText = "Общая E2E-фраза",
                 HorizontalAlignment = HorizontalAlignment.Stretch
             };
+            Button generateButton = new Button {
+                Classes = { "Secondary" },
+                Content = "Сгенерировать",
+                Margin = new Avalonia.Thickness(8, 0, 0, 0)
+            };
+            generateButton.Click += (a, b) => {
+                passphraseBox.PasswordChar = '\0';
+                passphraseBox.Text = GenerateE2EPassphrase();
+            };
+            Grid passphraseRow = new Grid {
+                ColumnDefinitions = new ColumnDefinitions("* Auto"),
+                Children = {
+                    passphraseBox,
+                    generateButton
+                }
+            };
+            Grid.SetColumn(generateButton, 1);
             CheckBox verifiedBox = new CheckBox {
                 Content = "Сразу отметить ключ сверенным",
                 IsChecked = state?.IsVerified == true
@@ -676,7 +702,7 @@ namespace ELOR.Laney.Helpers {
                         TextWrapping = Avalonia.Media.TextWrapping.Wrap
                     },
                     profileBox,
-                    passphraseBox,
+                    passphraseRow,
                     verifiedBox,
                     autoEncryptBox
                 }
@@ -696,6 +722,15 @@ namespace ELOR.Laney.Helpers {
             } catch (Exception ex) {
                 await new VKUIDialog("E2E не настроен", ex.Message, ["Понятно"], 1).ShowDialog(session.ModalWindow);
             }
+        }
+
+        private static string GenerateE2EPassphrase() {
+            List<string> words = new List<string>(7);
+            for (int i = 0; i < 6; i++) {
+                words.Add(E2EPassphraseWords[RandomNumberGenerator.GetInt32(E2EPassphraseWords.Length)]);
+            }
+            words.Add(RandomNumberGenerator.GetInt32(10, 100).ToString(CultureInfo.InvariantCulture));
+            return String.Join("-", words);
         }
 
         public static async Task ShowCreateX25519HandshakeDialogAsync(VKSession session, ChatViewModel chat, Control target) {

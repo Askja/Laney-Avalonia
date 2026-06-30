@@ -20,7 +20,9 @@
       <Setter Property="Width" Value="40"/>
       <Setter Property="Height" Value="40"/>
       <Setter Property="CornerRadius" Value="20"/>
-      <Setter Property="Background" Value="{DynamicResource LaneySurfaceRaisedBrush}"/>
+      <Setter Property="Background" Value="{DynamicResource LaneyGlassRaisedBrush}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource LaneyGlassBorderBrush}"/>
+      <Setter Property="BorderThickness" Value="1"/>
     </Style>
     <Style Selector="Button.OnChat vkui|VKIcon">
       <Setter Property="Foreground" Value="{DynamicResource LaneyTextMutedBrush}"/>
@@ -100,14 +102,28 @@
       <Setter Property="LineHeight" Value="18"/>
       <Setter Property="TextAlignment" Value="Center"/>
     </Style>
+
+    <Style Selector="controls|MessagesListBox.MessagesList /template/ ScrollViewer#PART_ScrollViewer">
+      <Setter Property="Background" Value="Transparent"/>
+    </Style>
+    <Style Selector="controls|MessagesListBox.MessagesList ListBoxItem">
+      <Setter Property="Background" Value="Transparent"/>
+    </Style>
+    <Style Selector="controls|MessagesListBox.MessagesList ListBoxItem /template/ Border#PART_Root">
+      <Setter Property="Background" Value="Transparent"/>
+    </Style>
+    <Style Selector="controls|MessagesListBox.MessagesList ListBoxItem:pointerover /template/ Border#PART_Root, controls|MessagesListBox.MessagesList ListBoxItem:selected /template/ Border#PART_Root">
+      <Setter Property="Background" Value="Transparent"/>
+    </Style>
   </UserControl.Styles>
   
-  <Grid x:Name="Root" RowDefinitions="Auto Auto * Auto" DragDrop.AllowDrop="True" Background="{DynamicResource LaneyChatBackgroundBrush}">
+  <Grid x:Name="Root" RowDefinitions="Auto Auto * Auto" DragDrop.AllowDrop="True" Background="{DynamicResource LaneySurfaceRootBrush}">
+    <Border x:Name="ChatBackgroundColor" Grid.Row="2" IsHitTestVisible="False" Background="{DynamicResource LaneyChatBackgroundBrush}"/>
     <Border x:Name="ChatBackgroundImage" Grid.Row="2" IsHitTestVisible="False"/>
     <Border x:Name="ChatBackgroundDim" Grid.Row="2" IsHitTestVisible="False" Background="#000000" Opacity="0"/>
     <Border x:Name="ChatBackgroundBrightness" Grid.Row="2" IsHitTestVisible="False" Background="#FFFFFF" Opacity="0"/>
 
-    <vkui:PanelHeader VerticalAlignment="Top" IsSeparatorVisible="False" Background="{DynamicResource LaneySurfacePanelBrush}" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource LaneyBorderSubtleBrush}">
+    <vkui:PanelHeader VerticalAlignment="Top" IsSeparatorVisible="False" Background="{DynamicResource LaneyGlassPanelBrush}" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource LaneyGlassBorderBrush}">
       <vkui:PanelHeader.LeftButtons>
         <Button x:Name="BackButton">
           <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon28ArrowLeftOutline}"/>
@@ -158,7 +174,7 @@
       </vkui:PanelHeader.RightButtons>
     </vkui:PanelHeader>
     
-    <Border x:Name="PinnedMessageContainer" Grid.Row="1" Background="{DynamicResource LaneySurfacePanelBrush}" IsVisible="{Binding PinnedMessage, Converter={x:Static ObjectConverters.IsNotNull}}" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource LaneyBorderSubtleBrush}">
+    <Border x:Name="PinnedMessageContainer" Grid.Row="1" Background="{DynamicResource LaneyGlassPanelBrush}" IsVisible="{Binding PinnedMessage, Converter={x:Static ObjectConverters.IsNotNull}}" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource LaneyGlassBorderBrush}">
       <Grid ColumnDefinitions="Auto *">
         <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon20PinOutline}" Margin="12,0,0,0" Foreground="{DynamicResource VKIconSecondaryBrush}"/>
         <Button x:Name="PinnedMessageButton" Grid.Column="1" Padding="0" Classes="Tertiary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Click="PinnedMessageButton_Click">
@@ -167,7 +183,7 @@
       </Grid>
     </Border>
 
-    <controls:MessagesListBox x:Name="MessagesList" Classes="MessagesList" Grid.Row="2" VerticalAlignment="Bottom" SelectionMode="Multiple,Toggle" Selection="{Binding SelectedMessages, Mode=TwoWay}" ItemsSource="{Binding DisplayedMessages, Mode=OneWay}">
+    <controls:MessagesListBox x:Name="MessagesList" Classes="MessagesList" Grid.Row="2" VerticalAlignment="Bottom" Background="Transparent" SelectionMode="Multiple,Toggle" Selection="{Binding SelectedMessages, Mode=TwoWay}" ItemsSource="{Binding DisplayedMessages, Mode=OneWay}">
       <controls:MessagesListBox.Styles>
         <Style Selector="ListBoxItem:nth-last-child(1)">
           <Setter Property="Margin" Value="0,0,0,4"/>
@@ -181,7 +197,19 @@
     </controls:MessagesListBox>
     
     <Grid Grid.Row="2" x:Name="EmptyListContainer" IsVisible="{Binding !DisplayedMessages.Count}">
-      <vkui:Spinner x:Name="LoadingSpinner" HorizontalAlignment="Center" Width="32" Height="32" IsVisible="{Binding IsLoading, Mode=OneWay}"/>
+      <StackPanel x:Name="LoadingSkeleton" Margin="18,20,18,0" Spacing="12" VerticalAlignment="Top" IsVisible="{Binding IsLoading, Mode=OneWay}">
+        <Border Classes="GlassRaised" HorizontalAlignment="Center" Padding="12,8" CornerRadius="16">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Ellipse Classes="Skeleton" Width="18" Height="18" Opacity="0.72"/>
+            <TextBlock Classes="Caption1" Foreground="{DynamicResource LaneyTextMutedBrush}" Text="Загружаем сообщения"/>
+          </StackPanel>
+        </Border>
+        <Border Classes="Skeleton" Width="220" Height="42" CornerRadius="14" HorizontalAlignment="Left" Opacity="0.78"/>
+        <Border Classes="Skeleton" Width="298" Height="58" CornerRadius="16" HorizontalAlignment="Left"/>
+        <Border Classes="Skeleton" Width="188" Height="40" CornerRadius="14" HorizontalAlignment="Right" Opacity="0.84"/>
+        <Border Classes="Skeleton" Width="264" Height="52" CornerRadius="16" HorizontalAlignment="Left" Opacity="0.72"/>
+        <Border Classes="Skeleton" Width="236" Height="44" CornerRadius="14" HorizontalAlignment="Right" Opacity="0.78"/>
+      </StackPanel>
       <vkui:Placeholder VerticalAlignment="Center"
                             IsVisible="{Binding Placeholder, Mode=OneWay, FallbackValue=False, Converter={x:Static ObjectConverters.IsNotNull}}"
                             Icon="{Binding Placeholder.Icon, Mode=OneWay}"
@@ -192,14 +220,40 @@
         </vkui:Placeholder.Action>
       </vkui:Placeholder>
     </Grid>
+
+    <Border x:Name="TopHistoryLoadingIndicator" Grid.Row="2" IsHitTestVisible="False"
+            IsVisible="{Binding IsPreviousMessagesLoading, Mode=OneWay}"
+            HorizontalAlignment="Center" VerticalAlignment="Top" Margin="12,44,12,0"
+            Padding="10,8" CornerRadius="16" Classes="GlassRaised">
+      <Grid ColumnDefinitions="Auto *" Width="238">
+        <Ellipse Classes="Skeleton" Width="20" Height="20" VerticalAlignment="Center" Opacity="0.72"/>
+        <StackPanel Grid.Column="1" Margin="10,0,0,0" Spacing="5" VerticalAlignment="Center">
+          <Border Classes="Skeleton" Width="132" Height="8" CornerRadius="4" HorizontalAlignment="Left"/>
+          <Border Classes="Skeleton" Width="190" Height="8" CornerRadius="4" HorizontalAlignment="Left" Opacity="0.68"/>
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <Border x:Name="BottomHistoryLoadingIndicator" Grid.Row="2" IsHitTestVisible="False"
+            IsVisible="{Binding IsNextMessagesLoading, Mode=OneWay}"
+            HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="12,0,12,12"
+            Padding="10,8" CornerRadius="16" Classes="GlassRaised">
+      <Grid ColumnDefinitions="Auto *" Width="238">
+        <Ellipse Classes="Skeleton" Width="20" Height="20" VerticalAlignment="Center" Opacity="0.72"/>
+        <StackPanel Grid.Column="1" Margin="10,0,0,0" Spacing="5" VerticalAlignment="Center">
+          <Border Classes="Skeleton" Width="150" Height="8" CornerRadius="4" HorizontalAlignment="Left"/>
+          <Border Classes="Skeleton" Width="204" Height="8" CornerRadius="4" HorizontalAlignment="Left" Opacity="0.68"/>
+        </StackPanel>
+      </Grid>
+    </Border>
     
-    <Border x:Name="TopDateContainer" IsVisible="False" IsHitTestVisible="False" Background="{DynamicResource LaneySurfaceRaisedBrush}" Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="8" Padding="12,4" CornerRadius="8" BoxShadow="0 4 8 #0A000000, 0 0 4 #0F000000">
+    <Border x:Name="TopDateContainer" Classes="GlassRaised" IsVisible="False" IsHitTestVisible="False" Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="8" Padding="12,4" CornerRadius="12">
       <TextBlock x:Name="TopDate" Classes="Subhead" Foreground="{DynamicResource LaneyTextMutedBrush}"/>
     </Border>
 
     <StackPanel x:Name="OnChatButtons" Grid.Row="2" Margin="12" HorizontalAlignment="Right" VerticalAlignment="Bottom">
       <Grid x:Name="ReactionNavContainer" IsVisible="{Binding UnreadReactions, Converter={x:Static ObjectConverters.IsNotNull}}">
-        <Border Width="40" Height="40" CornerRadius="20" Margin="12" BoxShadow="0 0 2 #15000000, 0 8 24 #15000000"/>
+        <Border Width="40" Height="40" CornerRadius="20" Margin="12"/>
         <Button Classes="OnChat" Command="{Binding GoToLastReactedMessageCommand}">
           <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon20Stars}" Margin="0,4,0,0"/>
         </Button>
@@ -209,8 +263,8 @@
       </Grid>
       
       <Grid x:Name="HopNavContainer">
-        <Border Width="40" Height="40" CornerRadius="20" Margin="12" BoxShadow="0 0 2 #15000000, 0 8 24 #15000000"/>
-        <Button Classes="OnChat" Command="{Binding GoToLastMessageCommand}">
+        <Border Width="40" Height="40" CornerRadius="20" Margin="12"/>
+        <Button x:Name="HopNavButton" Classes="OnChat" Click="HopNavButton_Click">
           <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon20Dropdown}" Margin="0,4,0,0"/>
         </Button>
         <Border x:Name="UnreadMessagesCounterBadge" Classes.Unmuted="{Binding !PushSettings.DisabledForever}" Classes.Muted="{Binding PushSettings.DisabledForever}" IsVisible="{Binding !!UnreadMessagesCount}" MinWidth="18" Height="18" CornerRadius="9" Margin="9" IsHitTestVisible="False" HorizontalAlignment="Right" VerticalAlignment="Top">
@@ -219,7 +273,7 @@
       </Grid>
     </StackPanel>
 
-    <Border x:Name="SuggestedStickersContainer" Grid.Row="2" IsVisible="{Binding !!Composer.SuggestedStickers, Mode=OneWay}" Height="72" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="12" CornerRadius="12" Background="{DynamicResource LaneySurfaceRaisedBrush}" BoxShadow="{StaticResource VKElevation3}">
+    <Border x:Name="SuggestedStickersContainer" Classes="GlassRaised" Grid.Row="2" IsVisible="{Binding !!Composer.SuggestedStickers, Mode=OneWay}" Height="72" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="12" CornerRadius="16">
       <ScrollViewer HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled">
         <ItemsRepeater x:Name="SuggestedStickersList" Margin="4" ItemsSource="{Binding Composer.SuggestedStickers, Mode=OneWay}">
           <ItemsRepeater.Layout>
@@ -236,7 +290,7 @@
       </ScrollViewer>
     </Border>
 
-    <Border x:Name="BottomPanel" Grid.Row="3" Margin="12,0,12,12" CornerRadius="12" MaxWidth="984" Background="{DynamicResource LaneySurfaceRaisedBrush}" BoxShadow="0 0 2 #14000000, 0 4 6 #14000000">
+    <Border x:Name="BottomPanel" Classes="GlassRaised" Grid.Row="3" Margin="12,0,12,12" CornerRadius="18" MaxWidth="984">
       <Grid>
         <Grid x:Name="GenericChatComposerRoot" IsVisible="{Binding !ChatSettings.IsGroupChannel}">
           <Grid x:Name="ComposerContainer" IsVisible="{Binding !SelectedMessagesCount}">
@@ -341,7 +395,7 @@
     </Border>
 
     <Grid x:Name="DropArea" Grid.RowSpan="3" Grid.Row="1" IsVisible="False">
-      <Rectangle Fill="{DynamicResource LaneySurfaceRootBrush}" Grid.RowSpan="2" Opacity="0.85"/>
+      <Rectangle Fill="{DynamicResource LaneyScrimBrush}" Grid.RowSpan="2" Opacity="0.85"/>
       <Grid x:Name="DropAreaRoot" Grid.RowDefinitions="* *" Background="Transparent" Margin="6">
         <Border x:Name="TopDropArea" Classes="DropTarget" Margin="6" DragDrop.AllowDrop="True">
           <StackPanel VerticalAlignment="Center">

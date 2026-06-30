@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
+using Avalonia.Platform;
 using Avalonia.Styling;
 using ELOR.Laney.ViewModels;
 using System;
@@ -27,7 +28,11 @@ namespace ELOR.Laney.Core {
         }
 
         public Color GetActualColor() {
-            return App.Current?.ActualThemeVariant == ThemeVariant.Dark ? darkColor : lightColor;
+            return AppearanceManager.IsDarkTheme() ? darkColor : lightColor;
+        }
+
+        public Color GetActualColor(bool isDarkTheme) {
+            return isDarkTheme ? darkColor : lightColor;
         }
     }
 
@@ -39,6 +44,7 @@ namespace ELOR.Laney.Core {
         public const string DefaultChatFontId = "default";
         public const string DefaultBubbleStyleId = BubbleStyleIds.Vk;
         public const string DefaultBubbleColorId = "default";
+        public const string AppFontFamilyResourceKey = "LaneyAppFontFamily";
         public const string ChatBackgroundResourceKey = "LaneyChatBackgroundBrush";
         public const string MessageOuterMarginResourceKey = "LaneyMessageOuterMargin";
         public const string MessageTextHostMarginResourceKey = "LaneyMessageTextHostMargin";
@@ -119,6 +125,10 @@ namespace ELOR.Laney.Core {
             ["yellow"] = "paper",
             ["orange"] = "paper",
             ["beach"] = "paper",
+            ["brown"] = "paper",
+            ["coffee"] = "paper",
+            ["caramel"] = "paper",
+            ["sepia"] = "paper",
             ["paper"] = "paper"
         };
 
@@ -137,7 +147,7 @@ namespace ELOR.Laney.Core {
             }.Concat(AccentOptions.Where(o => o.Id != DefaultAccentId)).ToList();
 
         public static IReadOnlyList<AppearanceOption> ChatBackgroundOptions { get; } = new List<AppearanceOption> {
-            new AppearanceOption(DefaultChatBackgroundId, "По умолчанию", "Фон текущей темы", "#EDEEF0", "#0A0A0A"),
+            new AppearanceOption(DefaultChatBackgroundId, "Авто", "Под тему приложения и оформление VK-чата", "#F4F6F8", "#0F1115"),
             new AppearanceOption("paper", "Бумага", "Светлее и тише", "#F4F6F8", "#111418"),
             new AppearanceOption("mint", "Мята", "Холодный спокойный фон", "#EAF7F1", "#102018"),
             new AppearanceOption("rose", "Пыльная роза", "Теплый фон без сахарной комы", "#FFF0F3", "#251218"),
@@ -168,14 +178,14 @@ namespace ELOR.Laney.Core {
             new AppearanceOption(InheritChatBackgroundId, "Как обычно", "Сбросить форму пузырей", "#D7DEE7", "#303743"),
             new AppearanceOption(DefaultBubbleStyleId, "VK", "Обычные округлые bubble", "#EDEEF0", "#0A0A0A"),
             new AppearanceOption(BubbleStyleIds.Telegram, "Telegram", "Чище, плотнее и без лишней ваты", "#DBEAFE", "#172554"),
-            new AppearanceOption(BubbleStyleIds.Minimal, "Minimal", "Меньше скруглений, больше текста", "#F1F5F9", "#111827"),
-            new AppearanceOption(BubbleStyleIds.Outline, "Outline", "Контур вместо тяжелого пятна", "#F8FAFC", "#1F2937"),
-            new AppearanceOption(BubbleStyleIds.Flat, "Flat", "Почти без радиуса, максимально сухо", "#E5E7EB", "#111827")
+            new AppearanceOption(BubbleStyleIds.Minimal, "Минимализм", "Меньше скруглений, больше текста", "#F1F5F9", "#111827"),
+            new AppearanceOption(BubbleStyleIds.Outline, "Контур", "Контур вместо тяжелого пятна", "#F8FAFC", "#1F2937"),
+            new AppearanceOption(BubbleStyleIds.Flat, "Плоский", "Почти без радиуса, максимально сухо", "#E5E7EB", "#111827")
         };
 
         public static IReadOnlyList<AppearanceOption> BubbleColorOptionsWithInherit { get; } = new List<AppearanceOption> {
             new AppearanceOption(InheritChatBackgroundId, "Как обычно", "Сбросить цвет исходящих", "#D7DEE7", "#303743"),
-            new AppearanceOption(DefaultBubbleColorId, "VK", "Стандартный цвет исходящих", "#DDEEFF", "#1E2F42"),
+            new AppearanceOption(DefaultBubbleColorId, "VK", "Стандартный цвет исходящих", "#DDEEFF", "#24435F"),
             new AppearanceOption("mint", "Мята", "Зеленоватый акцент", "#DDF8EA", "#174332"),
             new AppearanceOption("amber", "Янтарь", "Теплый спокойный цвет", "#FFF0CC", "#463315"),
             new AppearanceOption("rose", "Роза", "Мягкий розовый тон", "#FFE1EA", "#4A1B2A"),
@@ -185,6 +195,7 @@ namespace ELOR.Laney.Core {
 
         public static void ApplyAppearanceSettings() {
             ApplyAccent(Settings.AccentColor);
+            Application.Current.Resources[AppFontFamilyResourceKey] = CreateAppFontFamily(Settings.AppFontFamily);
             SetResourceBrush(ChatBackgroundResourceKey, GetChatBackgroundBrush(0));
             Application.Current.Resources[MessageOuterMarginResourceKey] = GetMessageOuterMargin(0);
             Application.Current.Resources[MessageTextHostMarginResourceKey] = GetMessageTextHostMargin(0);
@@ -241,13 +252,22 @@ namespace ELOR.Laney.Core {
             return GetChatBackgroundBrushById(backgroundId);
         }
 
+        public static IBrush GetChatBackgroundBrush(ChatViewModel chat, bool isDarkTheme) {
+            string backgroundId = GetEffectiveChatBackgroundId(chat);
+            return GetChatBackgroundBrushById(backgroundId, isDarkTheme);
+        }
+
         private static IBrush GetChatBackgroundBrushById(string backgroundId) {
+            return GetChatBackgroundBrushById(backgroundId, IsDarkTheme());
+        }
+
+        private static IBrush GetChatBackgroundBrushById(string backgroundId, bool isDarkTheme) {
             if (String.IsNullOrWhiteSpace(backgroundId) || backgroundId == DefaultChatBackgroundId) {
-                return App.GetResource<IBrush>("VKBackgroundPageBrush") ?? new SolidColorBrush(Color.Parse("#EDEEF0"));
+                return new SolidColorBrush(GetDefaultChatBackgroundColor(isDarkTheme));
             }
 
             AppearanceOption option = GetChatBackgroundOption(backgroundId);
-            return new SolidColorBrush(option.GetActualColor());
+            return new SolidColorBrush(option.GetActualColor(isDarkTheme));
         }
 
         public static Thickness GetMessageOuterMargin(long peerId) {
@@ -336,11 +356,20 @@ namespace ELOR.Laney.Core {
             return GetOutgoingBubbleBrush(peerId, GetEffectiveChatBackgroundId(chat));
         }
 
+        public static IBrush GetOutgoingBubbleBrush(ChatViewModel chat, bool isDarkTheme) {
+            long peerId = chat?.PeerId ?? 0;
+            return GetOutgoingBubbleBrush(peerId, GetEffectiveChatBackgroundId(chat), isDarkTheme);
+        }
+
         private static IBrush GetOutgoingBubbleBrush(long peerId, string backgroundId) {
+            return GetOutgoingBubbleBrush(peerId, backgroundId, IsDarkTheme());
+        }
+
+        private static IBrush GetOutgoingBubbleBrush(long peerId, string backgroundId, bool isDarkTheme) {
             string colorId = Settings.GetPeerLocalBubbleColor(peerId);
             if (String.IsNullOrWhiteSpace(colorId) || colorId == InheritChatBackgroundId || colorId == DefaultBubbleColorId) {
                 if (Settings.MessageBubbleAutoColor) {
-                    IBrush autoBrush = GetAutoOutgoingBubbleBrush(backgroundId);
+                    IBrush autoBrush = GetAutoOutgoingBubbleBrush(backgroundId, isDarkTheme);
                     if (autoBrush != null) return autoBrush;
                 }
 
@@ -350,27 +379,31 @@ namespace ELOR.Laney.Core {
             }
 
             AppearanceOption option = BubbleColorOptionsWithInherit.FirstOrDefault(o => o.Id == colorId) ?? BubbleColorOptionsWithInherit[1];
-            return new SolidColorBrush(option.GetActualColor());
+            return CreateGlassBubbleBrush(option.GetActualColor(isDarkTheme));
         }
 
-        private static IBrush GetAutoOutgoingBubbleBrush(string backgroundId) {
+        private static IBrush GetAutoOutgoingBubbleBrush(string backgroundId, bool isDarkTheme) {
             string bubbleId = backgroundId switch {
                 "mint" => "mint",
-                "rose" => "rose",
+                "rose" => isDarkTheme ? "graphite" : "rose",
                 "violet" => "violet",
                 "graphite" => "graphite",
-                "paper" => "amber",
+                "paper" => isDarkTheme ? "graphite" : "amber",
                 _ => null
             };
 
             if (String.IsNullOrWhiteSpace(bubbleId)) return null;
 
             AppearanceOption option = BubbleColorOptionsWithInherit.FirstOrDefault(o => o.Id == bubbleId);
-            return option == null ? null : new SolidColorBrush(option.GetActualColor());
+            return option == null ? null : CreateGlassBubbleBrush(option.GetActualColor(isDarkTheme));
+        }
+
+        private static SolidColorBrush CreateGlassBubbleBrush(Color color) {
+            return new SolidColorBrush(color, 0.94);
         }
 
         public static Uri GetChatBackgroundImageUri(long peerId) {
-            return Settings.GetPeerLocalBackgroundImageUri(peerId);
+            return Settings.GetPeerLocalBackgroundImageUri(peerId) ?? Settings.ChatBackgroundImageUri;
         }
 
         public static double GetChatBackgroundImageOpacity(long peerId) {
@@ -382,6 +415,7 @@ namespace ELOR.Laney.Core {
 
             int dim = Settings.GetPeerLocalBackgroundDim(peerId);
             int negativeBrightness = Math.Max(0, -Settings.GetPeerLocalBackgroundBrightness(peerId));
+            if (dim == 0 && negativeBrightness == 0 && IsDarkTheme()) return 0.16;
             return Math.Clamp(dim + negativeBrightness, 0, 90) / 100d;
         }
 
@@ -424,11 +458,89 @@ namespace ELOR.Laney.Core {
 
         private static string GetEffectiveChatBackgroundId(string localBackgroundId, string vkThemeBackgroundId) {
             string backgroundId = localBackgroundId;
-            if (String.IsNullOrWhiteSpace(backgroundId) || backgroundId == InheritChatBackgroundId) {
-                backgroundId = !String.IsNullOrWhiteSpace(vkThemeBackgroundId) ? vkThemeBackgroundId : Settings.ChatBackground;
+            if (String.IsNullOrWhiteSpace(backgroundId) || backgroundId == InheritChatBackgroundId || backgroundId == DefaultChatBackgroundId) {
+                string globalBackgroundId = Settings.ChatBackground;
+                backgroundId = !String.IsNullOrWhiteSpace(vkThemeBackgroundId)
+                    && (String.IsNullOrWhiteSpace(globalBackgroundId) || globalBackgroundId == DefaultChatBackgroundId)
+                    ? vkThemeBackgroundId
+                    : globalBackgroundId;
             }
 
             return String.IsNullOrWhiteSpace(backgroundId) ? DefaultChatBackgroundId : backgroundId;
+        }
+
+        public static bool IsDarkTheme() {
+            if (Settings.AppTheme == 2) return true;
+            if (Settings.AppTheme == 1) return false;
+
+            if (TryIsDarkResource("LaneySurfacePanelBrush", out bool isDark)) return isDark;
+            if (TryIsDarkResource("LaneySurfaceSidebarBrush", out isDark)) return isDark;
+            if (TryIsDarkResource("LaneySurfaceRootBrush", out isDark)) return isDark;
+            if (TryIsDarkResource("VKBackgroundContentBrush", out isDark)) return isDark;
+            if (TryIsDarkResource("VKBackgroundPageBrush", out isDark)) return isDark;
+
+            ThemeVariant requested = App.Current?.RequestedThemeVariant;
+            if (requested == ThemeVariant.Dark) return true;
+            if (requested == ThemeVariant.Light) return false;
+
+            ThemeVariant actual = App.Current?.ActualThemeVariant;
+            if (actual == ThemeVariant.Dark) return true;
+
+            string actualName = actual?.ToString();
+            if (!String.IsNullOrWhiteSpace(actualName) && actualName.Contains("Dark", StringComparison.OrdinalIgnoreCase)) return true;
+
+            PlatformThemeVariant platformTheme = App.Current?.PlatformSettings?.GetColorValues().ThemeVariant ?? PlatformThemeVariant.Light;
+            if (platformTheme == PlatformThemeVariant.Dark) return true;
+
+            return false;
+        }
+
+        public static IBrush GetSkeletonBrush(bool isDarkTheme) {
+            return new SolidColorBrush(Color.Parse(isDarkTheme ? "#28313D" : "#E5ECF3"));
+        }
+
+        public static IBrush GetReadableTextBrush(IBrush background, bool secondary = false) {
+            bool isDarkBackground = true;
+            if (background is ISolidColorBrush solidBrush) {
+                isDarkBackground = GetColorLuminance(solidBrush.Color) < 0.56;
+            }
+
+            string color = isDarkBackground
+                ? secondary ? "#D2DCE8" : "#FFFFFF"
+                : secondary ? "#314C67" : "#07111F";
+            return new SolidColorBrush(Color.Parse(color));
+        }
+
+        public static FontFamily CreateAppFontFamily(string fontFamily) {
+            if (String.IsNullOrWhiteSpace(fontFamily)) return new FontFamily("Segoe UI");
+
+            try {
+                return new FontFamily(fontFamily);
+            } catch {
+                return new FontFamily("Segoe UI");
+            }
+        }
+
+        private static Color GetDefaultChatBackgroundColor(bool isDarkTheme) {
+            return Color.Parse(isDarkTheme ? "#0F1115" : "#F4F6F8");
+        }
+
+        private static bool TryIsDarkResource(string resourceKey, out bool isDark) {
+            return TryIsDarkBrush(App.GetResource<IBrush>(resourceKey), out isDark);
+        }
+
+        public static bool TryIsDarkBrush(IBrush brush, out bool isDark) {
+            isDark = false;
+            if (brush is not ISolidColorBrush solidBrush) return false;
+
+            Color color = solidBrush.Color;
+            double luminance = GetColorLuminance(color);
+            isDark = luminance < 0.45;
+            return true;
+        }
+
+        private static double GetColorLuminance(Color color) {
+            return (0.2126 * color.R + 0.7152 * color.G + 0.0722 * color.B) / 255d;
         }
 
         public static string MapVkChatThemeToBackgroundId(string theme) {

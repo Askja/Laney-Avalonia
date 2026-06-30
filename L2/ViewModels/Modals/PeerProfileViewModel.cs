@@ -21,6 +21,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -122,6 +123,16 @@ namespace ELOR.Laney.ViewModels.Modals {
             "это", "как", "что", "или", "для", "при", "там", "тут", "уже", "еще", "ещё", "все", "всё", "они", "она", "оно", "его", "мне", "тебе", "меня", "тебя",
             "если", "когда", "чтобы", "потому", "просто", "будет", "было", "была", "были", "есть", "нет", "the", "and", "with", "from", "that", "this", "you", "your"
         };
+
+        private static readonly string[] StatsProfanityRoots = {
+            "бля", "бляд", "сука", "хуй", "хуе", "хуи", "пизд", "пздц", "еб", "ёб", "епт", "нах", "мудак", "хер", "говн", "жоп"
+        };
+
+        private sealed class ProfanityStats {
+            public int Messages { get; set; }
+            public int Hits { get; set; }
+            public Dictionary<string, int> Counters { get; } = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        }
 
         private long _id;
         private string _header;
@@ -229,9 +240,10 @@ namespace ELOR.Laney.ViewModels.Modals {
         public ObservableCollection<TwoStringTuple> PeerEmojiPackOptions { get; } = new ObservableCollection<TwoStringTuple> {
             new TwoStringTuple(EmojiPackIds.Inherit, "Наследовать"),
             new TwoStringTuple(EmojiPackIds.System, "Системные"),
-            new TwoStringTuple(EmojiPackIds.TelegramLike, "Telegram-like"),
-            new TwoStringTuple(EmojiPackIds.Fallback, "Fallback"),
-            new TwoStringTuple(EmojiPackIds.Custom, "Кастомный txt")
+            new TwoStringTuple(EmojiPackIds.TelegramLike, "Telegram/Noto Color"),
+            new TwoStringTuple(EmojiPackIds.Twemoji, "Twemoji"),
+            new TwoStringTuple(EmojiPackIds.Fallback, "Запасной набор"),
+            new TwoStringTuple(EmojiPackIds.Custom, "Кастомный manifest")
         };
         public ObservableCollection<TwoStringTuple> PeerBackgroundDimOptions { get; } = new ObservableCollection<TwoStringTuple> {
             new TwoStringTuple("0", "0%"),
@@ -720,7 +732,8 @@ namespace ELOR.Laney.ViewModels.Modals {
         private IBrush GetLocalAppearancePreviewBackground() {
             string backgroundId = GetPreviewBackgroundId();
             if (String.IsNullOrWhiteSpace(backgroundId) || backgroundId == AppearanceManager.DefaultChatBackgroundId) {
-                return App.GetResource<IBrush>("VKBackgroundPageBrush") ?? new SolidColorBrush(Color.Parse("#EDEEF0"));
+                AppearanceOption defaultOption = AppearanceManager.GetChatBackgroundOption(AppearanceManager.DefaultChatBackgroundId);
+                return new SolidColorBrush(defaultOption.GetActualColor());
             }
 
             AppearanceOption option = AppearanceManager.GetChatBackgroundOption(backgroundId);
@@ -764,7 +777,9 @@ namespace ELOR.Laney.ViewModels.Modals {
 
         private string GetPreviewBackgroundId() {
             string backgroundId = _localAppearanceTheme;
-            if (String.IsNullOrWhiteSpace(backgroundId) || backgroundId == AppearanceManager.InheritChatBackgroundId) {
+            if (String.IsNullOrWhiteSpace(backgroundId)
+                || backgroundId == AppearanceManager.InheritChatBackgroundId
+                || backgroundId == AppearanceManager.DefaultChatBackgroundId) {
                 backgroundId = Settings.ChatBackground;
             }
             return String.IsNullOrWhiteSpace(backgroundId) ? AppearanceManager.DefaultChatBackgroundId : backgroundId;
@@ -1840,6 +1855,7 @@ namespace ELOR.Laney.ViewModels.Modals {
                 ChatStatisticTiles.Add(new ChatStatisticTile(VKIconNames.Icon20InfoCircleOutline, "Выборка", "0", chat.LastCMID > 0 ? $"В VK минимум {chat.LastCMID}" : "Нет локальных сообщений"));
                 AddStatistic(VKIconNames.Icon20InfoCircleOutline, "Локальная выборка: нет загруженных сообщений. Открой чат или пролистай историю, и статистика станет жирнее.");
                 if (chat.LastCMID > 0) AddStatistic(VKIconNames.Icon20ArticleOutline, $"По VK известно минимум сообщений: {chat.LastCMID}");
+                AddBackgroundIndexStatistics(chat);
                 RefreshChatStatisticDashboardFlags();
                 return;
             }
@@ -1854,20 +1870,38 @@ namespace ELOR.Laney.ViewModels.Modals {
             int incomingMessages = normalMessages.Count - ownMessages;
             int uniqueSenders = normalMessages.Select(m => m.SenderId).Distinct().Count();
             Dictionary<string, int> attachmentCounters = BuildAttachmentCounters(normalMessages);
+            Dictionary<string, int> wordCounters = BuildWordCounters(normalMessages, true);
+            Dictionary<string, int> emojiCounters = BuildEmojiCounters(normalMessages);
+            Dictionary<string, int> stickerCounters = BuildStickerCounters(normalMessages);
+            ProfanityStats profanityStats = BuildProfanityCounters(normalMessages);
+            int totalWords = wordCounters.Values.Sum();
+            int uniqueWords = wordCounters.Count;
+            int totalEmoji = emojiCounters.Values.Sum();
+            int totalStickers = stickerCounters.Values.Sum();
+            int emojiMessages = normalMessages.Count(m => ContainsEmoji(m.Text));
+            int stickerMessages = normalMessages.Count(HasStickerAttachment);
 
             AddStatistic(VKIconNames.Icon20InfoCircleOutline, $"Локальная выборка: {messages.Count} загружено из минимум {Math.Max(chat.LastCMID, messages.Count)}; период {first:dd.MM.yyyy HH:mm} — {last:dd.MM.yyyy HH:mm}");
             AddStatistic(VKIconNames.Icon20MessageOutline, $"Сообщения: обычных {normalMessages.Count}; с текстом {textMessages}; с вложениями {attachmentMessages}; сервисных/истекших {serviceMessages}");
             AddStatistic(VKIconNames.Icon20UserOutline, $"Участники в выборке: {uniqueSenders}; мои {ownMessages}; чужие {incomingMessages}");
+            AddBackgroundIndexStatistics(chat);
 
             ChatStatisticTiles.Add(new ChatStatisticTile(VKIconNames.Icon20MessageOutline, "Сообщения", FormatCompactNumber(messages.Count), $"из минимум {Math.Max(chat.LastCMID, messages.Count)}"));
             ChatStatisticTiles.Add(new ChatStatisticTile(VKIconNames.Icon20UserOutline, "Участники", FormatCompactNumber(uniqueSenders), $"{ownMessages} моих / {incomingMessages} чужих"));
             ChatStatisticTiles.Add(new ChatStatisticTile(VKIconNames.Icon20PictureOutline, "Вложения", FormatCompactNumber(attachmentCounters.Values.Sum()), $"{attachmentMessages} сообщений с вложениями"));
+            ChatStatisticTiles.Add(new ChatStatisticTile(VKIconNames.Icon20ArticleOutline, "Слова", FormatCompactNumber(totalWords), $"{FormatCompactNumber(uniqueWords)} уникальных"));
+            ChatStatisticTiles.Add(new ChatStatisticTile(VKIconNames.Icon20SmileOutline, "Эмодзи", FormatCompactNumber(totalEmoji), $"{emojiMessages} сообщений"));
+            ChatStatisticTiles.Add(new ChatStatisticTile(VKIconNames.Icon20SmileOutline, "Стикеры", FormatCompactNumber(totalStickers), $"{stickerMessages} сообщений"));
+            ChatStatisticTiles.Add(new ChatStatisticTile(VKIconNames.Icon20ReportOutline, "Мат", FormatCompactNumber(profanityStats.Hits), $"{profanityStats.Messages} сообщений"));
             ChatStatisticTiles.Add(new ChatStatisticTile(VKIconNames.Icon20RecentOutline, "Период", $"{(last - first).TotalDays:0.#} дн.", $"{first:dd.MM HH:mm} - {last:dd.MM HH:mm}"));
 
             AddStatisticBar(ChatStatisticMix, "Текстовые", textMessages, normalMessages.Count);
             AddStatisticBar(ChatStatisticMix, "С вложениями", attachmentMessages, normalMessages.Count);
             AddStatisticBar(ChatStatisticMix, "Мои", ownMessages, normalMessages.Count);
             AddStatisticBar(ChatStatisticMix, "Чужие", incomingMessages, normalMessages.Count);
+            AddStatisticBar(ChatStatisticMix, "С emoji", emojiMessages, normalMessages.Count);
+            AddStatisticBar(ChatStatisticMix, "Со стикерами", stickerMessages, normalMessages.Count);
+            AddStatisticBar(ChatStatisticMix, "С матом", profanityStats.Messages, normalMessages.Count);
             AddStatisticBar(ChatStatisticMix, "Сервисные/истекшие", serviceMessages, messages.Count);
 
             foreach (KeyValuePair<string, int> item in attachmentCounters.OrderByDescending(kv => kv.Value).ThenBy(kv => kv.Key).Take(8)) {
@@ -1879,9 +1913,27 @@ namespace ELOR.Laney.ViewModels.Modals {
             AddReactionStatistics(normalMessages);
             AddMentionStatistics(normalMessages);
             AddActivityStatistics(normalMessages);
-            AddTopWords(normalMessages);
+            AddWordStatistics(normalMessages, wordCounters);
+            AddEmojiStatistics(emojiCounters, emojiMessages);
+            AddStickerStatistics(stickerCounters, stickerMessages);
+            AddProfanityStatistics(profanityStats);
             AddTopDomains(normalMessages);
             RefreshChatStatisticDashboardFlags();
+        }
+
+        private void AddBackgroundIndexStatistics(ChatInfoEx chat) {
+            try {
+                HistoryStatisticsState state = HistoryStatisticsStore.ReadState();
+                PeerHistoryStatistics peer = state?.Peers?.FirstOrDefault(p => p.PeerId == Id);
+                if (peer == null || peer.IndexedMessages == 0) return;
+
+                long estimate = Math.Max(Math.Max(peer.TotalMessagesEstimate, chat.LastCMID), peer.IndexedMessages);
+                string status = peer.IsComplete ? "полный" : "частичный";
+                ChatStatisticTiles.Add(new ChatStatisticTile(VKIconNames.Icon20PollOutline, "Индекс", FormatCompactNumber(peer.IndexedMessages), $"{status}; из {FormatCompactNumber(estimate)}"));
+                AddStatistic(VKIconNames.Icon20PollOutline, $"Фоновый индекс истории: {status}; сообщений {peer.IndexedMessages} из примерно {estimate}; текстовых {peer.TextMessages}; сервисных {peer.ServiceMessages}; вложений {peer.Attachments}; реакций {peer.Reactions}");
+            } catch (Exception ex) {
+                Log.Warning(ex, "Cannot read chat background history statistics.");
+            }
         }
 
         private ChatViewModel GetLocalChatForStatistics() {
@@ -1919,6 +1971,72 @@ namespace ELOR.Laney.ViewModels.Modals {
             }
 
             return counters;
+        }
+
+        private static Dictionary<string, int> BuildWordCounters(List<MessageViewModel> messages, bool includeStopWords) {
+            Dictionary<string, int> counters = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (MessageViewModel message in messages) {
+                foreach (string word in EnumerateWords(message.Text, includeStopWords)) {
+                    counters[word] = counters.TryGetValue(word, out int value) ? value + 1 : 1;
+                }
+            }
+
+            return counters;
+        }
+
+        private static Dictionary<string, int> BuildEmojiCounters(List<MessageViewModel> messages) {
+            Dictionary<string, int> counters = new Dictionary<string, int>(StringComparer.Ordinal);
+
+            foreach (MessageViewModel message in messages) {
+                if (String.IsNullOrWhiteSpace(message.Text)) continue;
+                foreach (Rune rune in message.Text.EnumerateRunes()) {
+                    if (!IsEmojiRune(rune)) continue;
+                    string emoji = rune.ToString();
+                    counters[emoji] = counters.TryGetValue(emoji, out int value) ? value + 1 : 1;
+                }
+            }
+
+            return counters;
+        }
+
+        private static Dictionary<string, int> BuildStickerCounters(List<MessageViewModel> messages) {
+            Dictionary<string, int> counters = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (MessageViewModel message in messages) {
+                if (message.Attachments == null) continue;
+                foreach (Attachment attachment in message.Attachments) {
+                    string key = GetStickerKey(attachment);
+                    if (String.IsNullOrWhiteSpace(key)) continue;
+                    counters[key] = counters.TryGetValue(key, out int value) ? value + 1 : 1;
+                }
+            }
+
+            return counters;
+        }
+
+        private static ProfanityStats BuildProfanityCounters(List<MessageViewModel> messages) {
+            ProfanityStats stats = new ProfanityStats();
+
+            foreach (MessageViewModel message in messages) {
+                if (String.IsNullOrWhiteSpace(message.Text)) continue;
+
+                string text = message.Text.ToLowerInvariant().Replace('ё', 'е');
+                bool hasHit = false;
+                foreach (string rawRoot in StatsProfanityRoots) {
+                    string root = rawRoot.Replace('ё', 'е');
+                    int hits = CountSubstring(text, root);
+                    if (hits == 0) continue;
+
+                    hasHit = true;
+                    stats.Hits += hits;
+                    stats.Counters[root] = stats.Counters.TryGetValue(root, out int value) ? value + hits : hits;
+                }
+
+                if (hasHit) stats.Messages++;
+            }
+
+            return stats;
         }
 
         private void AddAttachmentStatistics(Dictionary<string, int> counters) {
@@ -1986,13 +2104,14 @@ namespace ELOR.Laney.ViewModels.Modals {
             AddStatistic(VKIconNames.Icon16ClockOutline, $"Активность по часам: {hours}");
         }
 
-        private void AddTopWords(List<MessageViewModel> messages) {
-            Dictionary<string, int> counters = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-            foreach (MessageViewModel message in messages) {
-                foreach (string word in EnumerateWords(message.Text)) {
-                    counters[word] = counters.TryGetValue(word, out int value) ? value + 1 : 1;
-                }
-            }
+        private void AddWordStatistics(List<MessageViewModel> messages, Dictionary<string, int> allWords) {
+            int total = allWords.Values.Sum();
+            int textMessages = messages.Count(m => !String.IsNullOrWhiteSpace(m.Text));
+            double average = textMessages > 0 ? total / (double)textMessages : 0;
+
+            AddStatistic(VKIconNames.Icon20ArticleOutline, $"Слова: всего {total}; уникальных {allWords.Count}; в среднем {average:0.#} на текстовое сообщение");
+
+            Dictionary<string, int> counters = BuildWordCounters(messages, false);
 
             string top = FormatTop(
                 counters.Where(kv => kv.Value > 1)
@@ -2001,6 +2120,47 @@ namespace ELOR.Laney.ViewModels.Modals {
                 kv => $"{kv.Key} — {kv.Value}",
                 10);
             AddStatistic(VKIconNames.Icon20ArticleOutline, String.IsNullOrWhiteSpace(top) ? "Топ слов: мало текста для нормальной выборки" : $"Топ слов: {top}");
+        }
+
+        private void AddEmojiStatistics(Dictionary<string, int> counters, int messagesWithEmoji) {
+            int total = counters.Values.Sum();
+            if (total == 0) {
+                AddStatistic(VKIconNames.Icon20SmileOutline, "Эмодзи: в локальной выборке не найдены");
+                return;
+            }
+
+            string top = FormatTop(
+                counters.OrderByDescending(kv => kv.Value).ThenBy(kv => kv.Key),
+                kv => $"{kv.Key} — {kv.Value}",
+                12);
+            AddStatistic(VKIconNames.Icon20SmileOutline, $"Эмодзи: всего {total}; сообщений {messagesWithEmoji}; топ {top}");
+        }
+
+        private void AddStickerStatistics(Dictionary<string, int> counters, int messagesWithStickers) {
+            int total = counters.Values.Sum();
+            if (total == 0) {
+                AddStatistic(VKIconNames.Icon20SmileOutline, "Стикеры: в локальной выборке не найдены");
+                return;
+            }
+
+            string top = FormatTop(
+                counters.OrderByDescending(kv => kv.Value).ThenBy(kv => kv.Key),
+                kv => $"{kv.Key} — {kv.Value}",
+                8);
+            AddStatistic(VKIconNames.Icon20SmileOutline, $"Стикеры: всего {total}; сообщений {messagesWithStickers}; топ {top}");
+        }
+
+        private void AddProfanityStatistics(ProfanityStats stats) {
+            if (stats.Hits == 0) {
+                AddStatistic(VKIconNames.Icon20ReportOutline, "Мат: в локальной выборке не найден");
+                return;
+            }
+
+            string top = FormatTop(
+                stats.Counters.OrderByDescending(kv => kv.Value).ThenBy(kv => kv.Key),
+                kv => $"{kv.Key} — {kv.Value}",
+                8);
+            AddStatistic(VKIconNames.Icon20ReportOutline, $"Мат: сообщений {stats.Messages}; совпадений {stats.Hits}; топ {top}");
         }
 
         private void AddTopDomains(List<MessageViewModel> messages) {
@@ -2036,7 +2196,7 @@ namespace ELOR.Laney.ViewModels.Modals {
             OnPropertyChanged(nameof(HasChatStatisticAttachments));
         }
 
-        private static string FormatCompactNumber(int value) {
+        private static string FormatCompactNumber(long value) {
             if (value >= 1_000_000) return $"{Math.Round(value / 1_000_000d, 1)}M";
             if (value >= 10_000) return $"{Math.Round(value / 1_000d, 1)}K";
             return value.ToString();
@@ -2070,6 +2230,22 @@ namespace ELOR.Laney.ViewModels.Modals {
             return host.StartsWith("www.") ? host.Substring(4) : host;
         }
 
+        private static bool HasStickerAttachment(MessageViewModel message) {
+            return message?.Attachments != null && message.Attachments.Any(a => a?.Type == AttachmentType.Sticker || a?.Type == AttachmentType.UGCSticker);
+        }
+
+        private static string GetStickerKey(Attachment attachment) {
+            if (attachment == null) return null;
+
+            return attachment.Type switch {
+                AttachmentType.Sticker when attachment.Sticker?.StickerId > 0 => $"VK #{attachment.Sticker.StickerId}",
+                AttachmentType.Sticker => "VK sticker",
+                AttachmentType.UGCSticker when attachment.UGCSticker?.Id > 0 => $"UGC #{attachment.UGCSticker.Id}",
+                AttachmentType.UGCSticker => "UGC sticker",
+                _ => null
+            };
+        }
+
         private bool MentionsCurrentUser(string text) {
             if (String.IsNullOrWhiteSpace(text) || session.UserId <= 0) return false;
 
@@ -2086,7 +2262,21 @@ namespace ELOR.Laney.ViewModels.Modals {
                     || text.IndexOf('@') >= 0);
         }
 
-        private static IEnumerable<string> EnumerateWords(string text) {
+        private static bool ContainsEmoji(string text) {
+            if (String.IsNullOrWhiteSpace(text)) return false;
+            return text.EnumerateRunes().Any(IsEmojiRune);
+        }
+
+        private static bool IsEmojiRune(Rune rune) {
+            int value = rune.Value;
+            if (value >= 0x1F000 && value <= 0x1FAFF) return true;
+            if (value >= 0x2600 && value <= 0x27BF) return true;
+
+            UnicodeCategory category = Rune.GetUnicodeCategory(rune);
+            return category == UnicodeCategory.OtherSymbol && value > 0x7F;
+        }
+
+        private static IEnumerable<string> EnumerateWords(string text, bool includeStopWords = false) {
             if (String.IsNullOrWhiteSpace(text)) yield break;
 
             StringBuilder word = new StringBuilder(24);
@@ -2096,21 +2286,35 @@ namespace ELOR.Laney.ViewModels.Modals {
                     continue;
                 }
 
-                string current = FlushWord(word);
+                string current = FlushWord(word, includeStopWords);
                 if (current != null) yield return current;
             }
 
-            string last = FlushWord(word);
+            string last = FlushWord(word, includeStopWords);
             if (last != null) yield return last;
         }
 
-        private static string FlushWord(StringBuilder word) {
+        private static string FlushWord(StringBuilder word, bool includeStopWords) {
             if (word.Length == 0) return null;
 
             string value = word.ToString();
             word.Clear();
+            if (includeStopWords) return value;
             if (value.Length < 4 || StatsStopWords.Contains(value)) return null;
             return value;
+        }
+
+        private static int CountSubstring(string text, string value) {
+            if (String.IsNullOrWhiteSpace(text) || String.IsNullOrWhiteSpace(value)) return 0;
+
+            int count = 0;
+            int index = 0;
+            while ((index = text.IndexOf(value, index, StringComparison.OrdinalIgnoreCase)) >= 0) {
+                count++;
+                index += value.Length;
+            }
+
+            return count;
         }
 
         private static string FormatTop<T>(IEnumerable<T> items, Func<T, string> formatter, int limit) {

@@ -29,9 +29,9 @@
               <Setter Property="Foreground" Value="{DynamicResource VKDestructiveBrush}"/>
             </Style>
           </Button.Styles>
-          <Grid ColumnDefinitions="Auto * Auto" Margin="10,2">
-            <ContentPresenter x:Name="BeforeContainer" VerticalAlignment="Center" Margin="0,0,12,0" IsVisible="False"/>
-            <StackPanel Grid.Column="1" Margin="0,6" VerticalAlignment="Center">
+          <Grid ColumnDefinitions="32 * Auto" Margin="10,2">
+            <ContentPresenter x:Name="BeforeContainer" Width="32" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="False"/>
+            <StackPanel Grid.Column="1" Margin="8,6,0,6" VerticalAlignment="Center">
               <TextBlock x:Name="HeaderText" Classes="Default" FontWeight="Regular" FontSize="15" Foreground="{DynamicResource VKTextPrimaryBrush}" TextTrimming="CharacterEllipsis" Text="{TemplateBinding Header}"/>
               <TextBlock x:Name="SubtitleText" Classes="Caption1" FontWeight="Regular" Foreground="{DynamicResource VKTextSecondaryBrush}" IsVisible="{TemplateBinding Subtitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" MaxLines="1" TextTrimming="CharacterEllipsis" Text="{TemplateBinding Subtitle}"/>
             </StackPanel>

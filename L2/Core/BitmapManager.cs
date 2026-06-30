@@ -50,6 +50,7 @@ namespace ELOR.Laney.Core {
 
         private static long cachedBytes = 0;
         private static DateTime lastExpirationScanUtc = DateTime.MinValue;
+        private static DateTime lastPressureTrimUtc = DateTime.MinValue;
 
         public static void ClearCachedImages() {
             long ramBefore = System.Diagnostics.Process.GetCurrentProcess().PrivateMemorySize64;
@@ -113,6 +114,33 @@ namespace ELOR.Laney.Core {
                     cachedBytes,
                     GetCacheLimitBytes());
             }
+        }
+
+        public static bool TrimForMemoryPressure(TimeSpan? minInterval = null) {
+            if (!MediaMemoryGovernor.IsProcessMemoryPressureHigh()) return false;
+
+            TimeSpan throttle = minInterval ?? TimeSpan.FromSeconds(5);
+            DateTime utcNow = DateTime.UtcNow;
+            List<Bitmap> bitmapsToDispose = new List<Bitmap>();
+
+            lock (cacheLock) {
+                if (utcNow - lastPressureTrimUtc < throttle) return false;
+
+                lastPressureTrimUtc = utcNow;
+                TrimExpiredEntries(bitmapsToDispose, utcNow);
+                TrimCache(bitmapsToDispose, GetCacheLimitBytes());
+                TrimForProcessPressure(bitmapsToDispose);
+            }
+
+            foreach (var bitmap in bitmapsToDispose) {
+                bitmap.Dispose();
+            }
+
+            if (bitmapsToDispose.Count > 0) {
+                GC.Collect(2, GCCollectionMode.Optimized, false, false);
+            }
+
+            return bitmapsToDispose.Count > 0;
         }
 
         public static Task<Bitmap> GetBitmapAsync(Uri source, double decodeWidth, double decodeHeight, BitmapCacheKind cacheKind, CancellationToken cancellationToken = default) {
@@ -193,8 +221,38 @@ namespace ELOR.Laney.Core {
         }
 
         private static async Task<Bitmap> LoadAndCacheBitmapAsync(ImageRequest request) {
-            Bitmap bitmap = await LoadNetworkBitmapAsync(request);
+            Bitmap bitmap = request.Uri.IsFile
+                ? await LoadFileBitmapAsync(request)
+                : await LoadNetworkBitmapAsync(request);
             AddToCache(request.Key, bitmap, request.CacheKind);
+            return bitmap;
+        }
+
+        private static async Task<Bitmap> LoadFileBitmapAsync(ImageRequest request) {
+            string path = request.Uri.LocalPath;
+            if (String.IsNullOrWhiteSpace(path) || !File.Exists(path)) throw new FileNotFoundException("Bitmap file not found.", path);
+
+            await using FileStream stream = new FileStream(
+                path,
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.ReadWrite | FileShare.Delete,
+                81920,
+                FileOptions.Asynchronous | FileOptions.SequentialScan);
+
+            Bitmap bitmap = DecodeBitmap(stream, request.DecodeWidth, request.DecodeHeight);
+
+            if (Settings.BitmapManagerLogs) {
+                Log.Information(
+                    "Loaded local bitmap {Source}, requested {Width}x{Height}, decoded {DecodedWidth}x{DecodedHeight}, cache {CacheMb} Mb.",
+                    request.Uri.AbsoluteUri,
+                    request.DecodeWidth,
+                    request.DecodeHeight,
+                    bitmap.PixelSize.Width,
+                    bitmap.PixelSize.Height,
+                    Math.Round((double)cachedBytes / 1048576, 1));
+            }
+
             return bitmap;
         }
 
@@ -302,11 +360,16 @@ namespace ELOR.Laney.Core {
                 }
 
                 TrimExpiredEntries(bitmapsToDispose, DateTime.UtcNow);
-                TrimCache(bitmapsToDispose);
+                TrimCache(bitmapsToDispose, GetCacheLimitBytes());
+                TrimForProcessPressure(bitmapsToDispose);
             }
 
             foreach (var bitmapToDispose in bitmapsToDispose) {
                 bitmapToDispose.Dispose();
+            }
+
+            if (bitmapsToDispose.Count > 0 && MediaMemoryGovernor.IsProcessMemoryPressureHigh()) {
+                GC.Collect(2, GCCollectionMode.Optimized, false, false);
             }
         }
 
@@ -331,8 +394,7 @@ namespace ELOR.Laney.Core {
             }
         }
 
-        private static void TrimCache(List<Bitmap> bitmapsToDispose) {
-            long cacheLimitBytes = GetCacheLimitBytes();
+        private static void TrimCache(List<Bitmap> bitmapsToDispose, long cacheLimitBytes) {
             while (cachedBytes > cacheLimitBytes && lruKeys.Count > 1) {
                 string key = lruKeys.First.Value;
                 if (!cachedImages.TryGetValue(key, out CacheEntry cacheEntry)) {
@@ -346,6 +408,22 @@ namespace ELOR.Laney.Core {
                 if (Settings.BitmapManagerLogs) {
                     Log.Information("Bitmap cache evicted {Key}. Cache size: {CacheMb} Mb.", key, Math.Round((double)cachedBytes / 1048576, 1));
                 }
+            }
+        }
+
+        private static void TrimForProcessPressure(List<Bitmap> bitmapsToDispose) {
+            if (!MediaMemoryGovernor.IsProcessMemoryPressureHigh()) return;
+
+            long emergencyLimitBytes = MediaMemoryGovernor.GetEmergencyBitmapCacheBudgetBytes();
+            long beforeBytes = cachedBytes;
+            TrimCache(bitmapsToDispose, emergencyLimitBytes);
+
+            if (Settings.BitmapManagerLogs && cachedBytes < beforeBytes) {
+                Log.Information(
+                    "Bitmap cache emergency trim. Before: {BeforeMb} Mb, after: {AfterMb} Mb, limit: {LimitMb} Mb.",
+                    Math.Round((double)beforeBytes / 1048576, 1),
+                    Math.Round((double)cachedBytes / 1048576, 1),
+                    Math.Round((double)emergencyLimitBytes / 1048576, 1));
             }
         }
 

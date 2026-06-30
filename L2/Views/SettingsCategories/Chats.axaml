@@ -14,17 +14,17 @@
           <Grid Classes="GroupHeader">
             <TextBlock Text="Панели чата"/>
           </Grid>
-          <vkui:Cell Header="Header: поиск">
+          <vkui:Cell Header="Заголовок: поиск">
             <vkui:Cell.After>
               <ToggleSwitch IsChecked="{Binding ChatHeaderActionSearch, Mode=TwoWay}"/>
             </vkui:Cell.After>
           </vkui:Cell>
-          <vkui:Cell Header="Header: профиль" Subtitle="Отдельная кнопка профиля рядом с заголовком.">
+          <vkui:Cell Header="Заголовок: профиль" Subtitle="Отдельная кнопка профиля рядом с заголовком.">
             <vkui:Cell.After>
               <ToggleSwitch IsChecked="{Binding ChatHeaderActionProfile, Mode=TwoWay}"/>
             </vkui:Cell.After>
           </vkui:Cell>
-          <vkui:Cell Header="Header: меню действий" Subtitle="Тема, вложения, E2E, архив и прочее без правого клика.">
+          <vkui:Cell Header="Заголовок: меню действий" Subtitle="Тема, вложения, E2E, архив и прочее без правого клика.">
             <vkui:Cell.After>
               <ToggleSwitch IsChecked="{Binding ChatHeaderActionMore, Mode=TwoWay}"/>
             </vkui:Cell.After>
@@ -48,7 +48,7 @@
               </ComboBox>
             </vkui:Cell.After>
           </vkui:Cell>
-          <vkui:Cell Header="Макет списка" Subtitle="Classic, compact, Telegram-like, media-rich или split-folder.">
+          <vkui:Cell Header="Макет списка" Subtitle="Классический, плотный, в стиле Telegram, медиа или папки.">
             <vkui:Cell.After>
               <ComboBox Classes="Alternate" ItemsSource="{Binding ChatListLayoutOptions}" SelectedItem="{Binding CurrentChatListLayout, Mode=TwoWay}">
                 <ComboBox.ItemTemplate>
@@ -122,7 +122,12 @@
           </vkui:Cell>
           <vkui:Cell Header="Tesseract" Subtitle="Путь к tesseract.exe или пусто для PATH.">
             <vkui:Cell.After>
-              <TextBox Width="260" Text="{Binding LocalOcrTesseractPath, Mode=TwoWay}" PlaceholderText="C:\Program Files\Tesseract-OCR\tesseract.exe"/>
+              <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <TextBlock Width="260" Classes="Subhead" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="{Binding LocalOcrTesseractPathSummary}" TextTrimming="CharacterEllipsis"/>
+                <Button Classes="Secondary" Click="SelectTesseract_Click">
+                  <TextBlock Text="Выбрать"/>
+                </Button>
+              </StackPanel>
             </vkui:Cell.After>
           </vkui:Cell>
           <vkui:Cell Header="Язык OCR" Subtitle="Например: rus+eng, eng.">

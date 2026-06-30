@@ -38,15 +38,12 @@ namespace ELOR.Laney.ViewModels.Controls {
         }
 
         private void AddLocalStickersTab() {
-            var stickers = LocalStickerStore.Search(LocalStickerQuery);
-            if (stickers.Count == 0) return;
-
             RefreshRecentLocalStickers();
             if (RecentLocalStickers.Count > 0) {
                 Tabs.Add(new TabItem<object>("Недавние локальные", RecentLocalStickers, VKIconNames.Icon20RecentOutline));
             }
 
-            foreach (LocalSticker sticker in stickers) FilteredLocalStickers.Add(sticker);
+            RefreshLocalStickers();
             TabItem<object> localTab = new TabItem<object>("Локальные", FilteredLocalStickers, VKIconNames.Icon20ListBulletOutline);
             Tabs.Add(localTab);
         }

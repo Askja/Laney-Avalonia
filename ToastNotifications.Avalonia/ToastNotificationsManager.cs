@@ -5,6 +5,7 @@ namespace ToastNotifications.Avalonia {
     public class ToastNotificationsManager : WindowNotificationManager {
         internal static ToastsContainer Container { get; private set; }
         public static double ExpirationMilliseconds { get; set; } = 7000;
+        public static ToastNotificationOptions Options { get; private set; } = new ToastNotificationOptions();
         internal Bitmap AppLogo { get; private set; }
         internal Action<string> Log { get; private set; }
 
@@ -13,20 +14,32 @@ namespace ToastNotifications.Avalonia {
             Log = log;
         }
 
-        public new void Show(INotification notification) {
-            if (ExpirationMilliseconds < 1000 || ExpirationMilliseconds > 15000)
-                throw new ArgumentException($"{ExpirationMilliseconds} should be between 1000 and 15000!");
+        public static void Configure(ToastNotificationOptions options) {
+            Options = NormalizeOptions(options);
+            ExpirationMilliseconds = Options.Expiration.TotalMilliseconds;
+            Container?.ApplyOptions(Options);
+        }
 
+        public new void Show(INotification notification) {
             if (Container == null) {
                 Container = new ToastsContainer(Log);
+                Container.ApplyOptions(Options);
             }
 
             if (notification is ToastNotification tn) {
-                if (tn.Expiration.TotalMilliseconds == 0) tn.Expiration = TimeSpan.FromMilliseconds(ExpirationMilliseconds);
+                tn.Expiration = Options.Expiration;
                 Container.AddToastToContainer(tn, AppLogo);
             } else {
                 throw new ArgumentException($"ToastNotification required!");
             }
+        }
+
+        private static ToastNotificationOptions NormalizeOptions(ToastNotificationOptions options) {
+            options ??= new ToastNotificationOptions();
+            options.StackLimit = Math.Clamp(options.StackLimit, 1, 10);
+            double seconds = Math.Clamp(options.Expiration.TotalSeconds, 2, 60);
+            options.Expiration = TimeSpan.FromSeconds(seconds);
+            return options;
         }
     }
 }

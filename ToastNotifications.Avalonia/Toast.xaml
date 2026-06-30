@@ -25,7 +25,7 @@
                 Padding="{TemplateBinding Padding}"
                 CornerRadius="{TemplateBinding CornerRadius}"
                 BoxShadow="{StaticResource VKElevation3}">
-          <Grid ColumnDefinitions="Auto *" RowDefinitions="Auto Auto Auto Auto">
+          <Grid ColumnDefinitions="Auto *" RowDefinitions="Auto Auto Auto Auto Auto">
             <Grid Grid.ColumnSpan="2" ColumnDefinitions="Auto * Auto" Margin="-12,-12,-12,0" Height="40">
               <Rectangle x:Name="AppLogoArea" IsVisible="False" Margin="12,8,0,8" Width="16" Height="16" RadiusX="4" RadiusY="4" Fill="#007acc"/>
               <TextBlock Grid.Column="1" Margin="12,11,0,0" Foreground="{DynamicResource VKTextSubheadBrush}" Classes="Subhead" Text="{TemplateBinding Header}"/>
@@ -63,7 +63,9 @@
 
             <Image x:Name="ImageArea" Grid.Row="2" Grid.ColumnSpan="2" IsVisible="False" Margin="0,12,0,0" MaxHeight="180" Stretch="Uniform" HorizontalAlignment="Center" StretchDirection="Both"/>
             
-            <Grid x:Name="WriteBar" Grid.Row="3" Grid.ColumnSpan="2" Margin="0,12,0,0" ColumnDefinitions="* Auto" IsVisible="{TemplateBinding IsWriteBarVisible}">
+            <StackPanel x:Name="ActionsPanel" Grid.Row="3" Grid.ColumnSpan="2" Orientation="Horizontal" Spacing="6" Margin="0,10,0,0" IsVisible="False"/>
+
+            <Grid x:Name="WriteBar" Grid.Row="4" Grid.ColumnSpan="2" Margin="0,12,0,0" ColumnDefinitions="* Auto" IsVisible="{TemplateBinding IsWriteBarVisible}">
               <TextBox x:Name="TextArea" Classes="WriteBar" TextWrapping="Wrap" MaxHeight="70" PlaceholderText="{TemplateBinding InputWatermark}"/>
               <Button x:Name="SendButton" Classes="Tertiary" VerticalAlignment="Bottom" Grid.Column="1" Padding="4" Margin="12,0,0,0">
                 <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon28Send}"/>

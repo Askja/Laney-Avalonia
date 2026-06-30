@@ -13,14 +13,14 @@
       <SolidColorBrush x:Key="VKAttachPickerTabInactiveBackgroundBrush" Color="{StaticResource VKGray40Color}"/>
       <SolidColorBrush x:Key="VKAttachPickerTabInactiveIconBrush" Color="{StaticResource VKSteelGray400Color}"/>
       <SolidColorBrush x:Key="VKAttachPickerTabInactiveTextBrush" Color="{StaticResource VKSteelGray400Color}"/>
-      <SolidColorBrush x:Key="VKBackgroundContentBrush" Color="{StaticResource VKWhiteColor}"/>
-      <SolidColorBrush x:Key="VKBackgroundContrastBrush" Color="{StaticResource VKWhiteColor}"/> <!-- Custom -->
+      <SolidColorBrush x:Key="VKBackgroundContentBrush" Color="#FFFFFF"/>
+      <SolidColorBrush x:Key="VKBackgroundContrastBrush" Color="#FFFFFF"/> <!-- Custom -->
       <SolidColorBrush x:Key="VKBackgroundHoverBrush" Color="{StaticResource VKBlackColor}" Opacity="0.04"/>
       <SolidColorBrush x:Key="VKBackgroundHighlightedBrush" Color="{StaticResource VKBlackAlpha8Color}"/>
       <SolidColorBrush x:Key="VKBackgroundKeyboardBrush" Color="{StaticResource VKGray100Color}"/>
       <SolidColorBrush x:Key="VKBackgroundLightBrush" Color="{StaticResource VKGray20Color}"/>
-      <SolidColorBrush x:Key="VKBackgroundPageBrush" Color="{StaticResource VKGray50Color}"/>
-      <SolidColorBrush x:Key="VKBackgroundSuggestionsBrush" Color="{StaticResource VKWhiteColor}"/>
+      <SolidColorBrush x:Key="VKBackgroundPageBrush" Color="#F4F7FB"/>
+      <SolidColorBrush x:Key="VKBackgroundSuggestionsBrush" Color="#FFFFFF"/>
       <SolidColorBrush x:Key="VKButtonBotShadowBrush" Color="{StaticResource VKGray200Color}"/>
       <SolidColorBrush x:Key="VKButtonCommerceBackgroundBrush" Color="{StaticResource VKGreenColor}"/>
       <SolidColorBrush x:Key="VKButtonCommerceForegroundBrush" Color="{StaticResource VKWhiteColor}"/>
@@ -30,12 +30,12 @@
       <SolidColorBrush x:Key="VKButtonOutlineForegroundBrush" Color="{StaticResource VKAzure300Color}"/>
       <SolidColorBrush x:Key="VKButtonPrimaryBackgroundBrush" Color="{StaticResource VKAzureA400Color}"/>
       <SolidColorBrush x:Key="VKButtonPrimaryForegroundBrush" Color="{StaticResource VKWhiteColor}"/>
-      <SolidColorBrush x:Key="VKButtonSecondaryBackgroundBrush" Color="{StaticResource VKBlackBlue24Color}" Opacity="0.05"/>
-      <SolidColorBrush x:Key="VKButtonSecondaryBackgroundHighlightedBrush" Color="{StaticResource VKBlackBlue24Color}" Opacity="0.03"/>
+      <SolidColorBrush x:Key="VKButtonSecondaryBackgroundBrush" Color="#EEF4FB"/>
+      <SolidColorBrush x:Key="VKButtonSecondaryBackgroundHighlightedBrush" Color="#FFFFFF"/>
       <SolidColorBrush x:Key="VKButtonSecondaryForegroundBrush" Color="{StaticResource VKAzure300Color}"/>
       <SolidColorBrush x:Key="VKButtonSecondaryForegroundHighlightedBrush" Color="{StaticResource VKAzure300Color}" Opacity="0.6"/>
-      <SolidColorBrush x:Key="VKButtonSecondaryDestructiveBackgroundBrush" Color="{StaticResource VKBlackBlue24Color}" Opacity="0.05"/>
-      <SolidColorBrush x:Key="VKButtonSecondaryDestructiveBackgroundHighlightedBrush" Color="{StaticResource VKBlackBlue24Color}" Opacity="0.03"/>
+      <SolidColorBrush x:Key="VKButtonSecondaryDestructiveBackgroundBrush" Color="#EEF4FB"/>
+      <SolidColorBrush x:Key="VKButtonSecondaryDestructiveBackgroundHighlightedBrush" Color="#FFFFFF"/>
       <SolidColorBrush x:Key="VKButtonSecondaryDestructiveForegroundBrush" Color="{StaticResource VKRedColor}"/>
       <SolidColorBrush x:Key="VKButtonSecondaryDestructiveForegroundHighlightedBrush" Color="{StaticResource VKRedColor}" Opacity="0.6"/>
       <SolidColorBrush x:Key="VKButtonTertiaryBackgroundBrush" Color="{StaticResource VKClearColor}"/>
@@ -58,8 +58,8 @@
       <SolidColorBrush x:Key="VKCounterSecondaryTextBrush" Color="{StaticResource VKWhiteColor}"/>
       <SolidColorBrush x:Key="VKContentWarningBackgroundBrush" Color="{StaticResource VKYellowOverlightColor}"/>
       <SolidColorBrush x:Key="VKDestructiveBrush" Color="{StaticResource VKRedColor}"/>
-      <SolidColorBrush x:Key="VKFieldBackgroundBrush" Color="{StaticResource VKGray40Color}"/>
-      <SolidColorBrush x:Key="VKFieldBorderBrush" Color="{StaticResource VKBlackAlpha12Color}"/>
+      <SolidColorBrush x:Key="VKFieldBackgroundBrush" Color="#FFFFFF"/>
+      <SolidColorBrush x:Key="VKFieldBorderBrush" Color="#D7E0EA"/>
       <SolidColorBrush x:Key="VKFieldErrorBackgroundBrush" Color="{StaticResource VKPinkLightColor}"/>
       <SolidColorBrush x:Key="VKFieldErrorBorderBrush" Color="{StaticResource VKRedColor}"/>
       <SolidColorBrush x:Key="VKFieldValidBorderBrush" Color="{StaticResource VKGreenColor}"/>
@@ -68,14 +68,14 @@
       <SolidColorBrush x:Key="VKFloatButtonBackgroundHighlightedBrush" Color="{StaticResource VKGray50Color}"/>
       <SolidColorBrush x:Key="VKFloatButtonForegroundBrush" Color="{StaticResource VKSteelGray300Color}"/>
       <SolidColorBrush x:Key="VKFloatButtonBorderBrush" Color="{StaticResource VKBlackAlpha05Color}"/>
-      <SolidColorBrush x:Key="VKHeaderAlternateBackgroundBrush" Color="{StaticResource VKWhiteColor}"/>
+      <SolidColorBrush x:Key="VKHeaderAlternateBackgroundBrush" Color="#FFFFFF"/>
       <SolidColorBrush x:Key="VKHeaderAlternateTabActiveIndicatorBrush" Color="{StaticResource VKAzure300Color}"/>
       <SolidColorBrush x:Key="VKHeaderAlternateTabActiveTextBrush" Color="{StaticResource VKBlackColor}"/>
       <SolidColorBrush x:Key="VKHeaderAlternateTabInactiveTextBrush" Color="{StaticResource VKSteelGray300Color}"/>
-      <SolidColorBrush x:Key="VKHeaderBackgroundBrush" Color="{StaticResource VKWhiteColor}"/>
-      <SolidColorBrush x:Key="VKHeaderBackgroundBeforeBlurBrush" Color="{StaticResource VKWhiteColor}"/>
-      <SolidColorBrush x:Key="VKHeaderBackgroundBeforeBlurAlternateBrush" Color="{StaticResource VKWhiteColor}"/>
-      <SolidColorBrush x:Key="VKHeaderSearchFieldBackgroundBrush" Color="{StaticResource VKGray50Color}"/>
+      <SolidColorBrush x:Key="VKHeaderBackgroundBrush" Color="#FFFFFF"/>
+      <SolidColorBrush x:Key="VKHeaderBackgroundBeforeBlurBrush" Color="#FFFFFF"/>
+      <SolidColorBrush x:Key="VKHeaderBackgroundBeforeBlurAlternateBrush" Color="#FFFFFF"/>
+      <SolidColorBrush x:Key="VKHeaderSearchFieldBackgroundBrush" Color="#EEF2F6"/>
       <SolidColorBrush x:Key="VKHeaderSearchFieldTintBrush" Color="{StaticResource VKSteelGray400Color}"/>
       <SolidColorBrush x:Key="VKHeaderTabActiveBackgroundBrush" Color="{StaticResource VKClearColor}"/>
       <SolidColorBrush x:Key="VKHeaderTabActiveTextBrush" Color="{StaticResource VKBlackColor}"/>
@@ -157,8 +157,8 @@
       <SolidColorBrush x:Key="VKLoaderTrackValueFillBrush" Color="{StaticResource VKBlue300Color}"/>
       <SolidColorBrush x:Key="VKMediaOverlayButtonBackgroundBrush" Color="{StaticResource VKWhiteColor}"/>
       <SolidColorBrush x:Key="VKMediaOverlayButtonForegroundBrush" Color="{StaticResource VKGray800Color}"/>
-      <SolidColorBrush x:Key="VKModalCardBackgroundBrush" Color="{StaticResource VKWhiteColor}"/>
-      <SolidColorBrush x:Key="VKModalCardBorderBrush" Color="{StaticResource VKClearColor}"/>
+      <SolidColorBrush x:Key="VKModalCardBackgroundBrush" Color="#FFFFFF"/>
+      <SolidColorBrush x:Key="VKModalCardBorderBrush" Color="#D7E0EA"/>
       <SolidColorBrush x:Key="VKModalCardHeaderCloseBrush" Color="{StaticResource VKBlackColor}"/>
       <SolidColorBrush x:Key="VKMusicPlaybackIconBrush" Color="{StaticResource VKBlackColor}"/>
       <SolidColorBrush x:Key="VKFeedRecommendedFriendPromoBackgroundBrush" Color="{StaticResource VKBlue300Color}"/>
@@ -171,8 +171,8 @@
       <SolidColorBrush x:Key="VKPlaceholderIconForegroundSecondaryBrush" Color="{StaticResource VKSteelGray200Color}"/>
       <SolidColorBrush x:Key="VKPlaceholderIconTintBrush" Color="{StaticResource VKBlackBlue24Color}"/>
       <SolidColorBrush x:Key="VKPollOptionBackgroundBrush" Color="{StaticResource VKBlue600Color}"/>
-      <SolidColorBrush x:Key="VKSearchBarBackgroundBrush" Color="{StaticResource VKWhiteColor}"/>
-      <SolidColorBrush x:Key="VKSearchBarFieldBackgroundBrush" Color="{StaticResource VKGray50Color}"/>
+      <SolidColorBrush x:Key="VKSearchBarBackgroundBrush" Color="#FFFFFF"/>
+      <SolidColorBrush x:Key="VKSearchBarFieldBackgroundBrush" Color="#EEF2F6"/>
       <SolidColorBrush x:Key="VKSearchBarFieldTintBrush" Color="{StaticResource VKSteelGray400Color}"/>
       <SolidColorBrush x:Key="VKSearchBarSegmentedControlTintBrush" Color="{StaticResource VKSteelGray400Color}"/>
       <SolidColorBrush x:Key="VKSegmentedControlBarBackgroundBrush" Color="{StaticResource VKClearColor}"/>
@@ -280,14 +280,14 @@
       <SolidColorBrush x:Key="VKAttachPickerTabInactiveBackgroundBrush" Color="{StaticResource VKGray800Color}"/>
       <SolidColorBrush x:Key="VKAttachPickerTabInactiveIconBrush" Color="{StaticResource VKGray100Color}"/>
       <SolidColorBrush x:Key="VKAttachPickerTabInactiveTextBrush" Color="{StaticResource VKGray500Color}"/>
-      <SolidColorBrush x:Key="VKBackgroundContentBrush" Color="{StaticResource VKGray900Color}"/>
-      <SolidColorBrush x:Key="VKBackgroundContrastBrush" Color="{StaticResource VKGray800Color}"/> <!-- Custom -->
+      <SolidColorBrush x:Key="VKBackgroundContentBrush" Color="#171B22"/>
+      <SolidColorBrush x:Key="VKBackgroundContrastBrush" Color="#202630"/> <!-- Custom -->
       <SolidColorBrush x:Key="VKBackgroundHoverBrush" Color="{StaticResource VKWhiteColor}" Opacity="0.04"/>
       <SolidColorBrush x:Key="VKBackgroundHighlightedBrush" Color="{StaticResource VKWhiteAlpha8Color}"/>
       <SolidColorBrush x:Key="VKBackgroundKeyboardBrush" Color="{StaticResource VKGray800Color}"/>
       <SolidColorBrush x:Key="VKBackgroundLightBrush" Color="{StaticResource VKGray850Color}"/>
-      <SolidColorBrush x:Key="VKBackgroundPageBrush" Color="{StaticResource VKGray1000Color}"/>
-      <SolidColorBrush x:Key="VKBackgroundSuggestionsBrush" Color="{StaticResource VKGray800Color}"/>
+      <SolidColorBrush x:Key="VKBackgroundPageBrush" Color="#0F1115"/>
+      <SolidColorBrush x:Key="VKBackgroundSuggestionsBrush" Color="#171B22"/>
       <SolidColorBrush x:Key="VKButtonBotShadowBrush" Color="{StaticResource VKGray900Color}"/>
       <SolidColorBrush x:Key="VKButtonCommerceBackgroundBrush" Color="{StaticResource VKGreenColor}"/>
       <SolidColorBrush x:Key="VKButtonCommerceForegroundBrush" Color="{StaticResource VKWhiteColor}"/>
@@ -297,12 +297,12 @@
       <SolidColorBrush x:Key="VKButtonOutlineForegroundBrush" Color="{StaticResource VKGray100Color}"/>
       <SolidColorBrush x:Key="VKButtonPrimaryBackgroundBrush" Color="{StaticResource VKGray100Color}"/>
       <SolidColorBrush x:Key="VKButtonPrimaryForegroundBrush" Color="{StaticResource VKGray900Color}"/>
-      <SolidColorBrush x:Key="VKButtonSecondaryBackgroundBrush" Color="{StaticResource VKGray700Color}"/>
-      <SolidColorBrush x:Key="VKButtonSecondaryBackgroundHighlightedBrush" Color="{StaticResource VKGray700Color}" Opacity="0.6"/>
+      <SolidColorBrush x:Key="VKButtonSecondaryBackgroundBrush" Color="#26303D"/>
+      <SolidColorBrush x:Key="VKButtonSecondaryBackgroundHighlightedBrush" Color="#303B4A"/>
       <SolidColorBrush x:Key="VKButtonSecondaryForegroundBrush" Color="{StaticResource VKGray100Color}"/>
       <SolidColorBrush x:Key="VKButtonSecondaryForegroundHighlightedBrush" Color="{StaticResource VKGray100Color}" Opacity="0.6"/>
-      <SolidColorBrush x:Key="VKButtonSecondaryDestructiveBackgroundBrush" Color="{StaticResource VKGray700Color}"/>
-      <SolidColorBrush x:Key="VKButtonSecondaryDestructiveBackgroundHighlightedBrush" Color="{StaticResource VKGray700Color}" Opacity="0.6"/>
+      <SolidColorBrush x:Key="VKButtonSecondaryDestructiveBackgroundBrush" Color="#26303D"/>
+      <SolidColorBrush x:Key="VKButtonSecondaryDestructiveBackgroundHighlightedBrush" Color="#303B4A"/>
       <SolidColorBrush x:Key="VKButtonSecondaryDestructiveForegroundBrush" Color="{StaticResource VKRedLightColor}"/>
       <SolidColorBrush x:Key="VKButtonSecondaryDestructiveForegroundHighlightedBrush" Color="{StaticResource VKRedLightColor}" Opacity="0.6"/>
       <SolidColorBrush x:Key="VKButtonTertiaryBackgroundBrush" Color="{StaticResource VKClearColor}"/>
@@ -325,8 +325,8 @@
       <SolidColorBrush x:Key="VKCounterSecondaryTextBrush" Color="{StaticResource VKGray900Color}"/>
       <SolidColorBrush x:Key="VKContentWarningBackgroundBrush" Color="{StaticResource VKGold500Color}"/>
       <SolidColorBrush x:Key="VKDestructiveBrush" Color="{StaticResource VKRedLightColor}"/>
-      <SolidColorBrush x:Key="VKFieldBackgroundBrush" Color="{StaticResource VKGray850Color}"/>
-      <SolidColorBrush x:Key="VKFieldBorderBrush" Color="{StaticResource VKWhiteAlpha12Color}"/>
+      <SolidColorBrush x:Key="VKFieldBackgroundBrush" Color="#202734"/>
+      <SolidColorBrush x:Key="VKFieldBorderBrush" Color="#343C48"/>
       <SolidColorBrush x:Key="VKFieldErrorBackgroundBrush" Color="{StaticResource VKRedDarkColor}"/>
       <SolidColorBrush x:Key="VKFieldErrorBorderBrush" Color="{StaticResource VKRedLightColor}"/>
       <SolidColorBrush x:Key="VKFieldValidBorderBrush" Color="{StaticResource VKGreenColor}"/>
@@ -335,14 +335,14 @@
       <SolidColorBrush x:Key="VKFloatButtonBackgroundHighlightedBrush" Color="{StaticResource VKGray600Color}"/>
       <SolidColorBrush x:Key="VKFloatButtonForegroundBrush" Color="{StaticResource VKGray300Color}"/>
       <SolidColorBrush x:Key="VKFloatButtonBorderBrush" Color="{StaticResource VKBlackAlpha12Color}"/>
-      <SolidColorBrush x:Key="VKHeaderAlternateBackgroundBrush" Color="{StaticResource VKGray800Color}"/>
+      <SolidColorBrush x:Key="VKHeaderAlternateBackgroundBrush" Color="#171B22"/>
       <SolidColorBrush x:Key="VKHeaderAlternateTabActiveIndicatorBrush" Color="{StaticResource VKGray100Color}"/>
       <SolidColorBrush x:Key="VKHeaderAlternateTabActiveTextBrush" Color="{StaticResource VKGray100Color}"/>
       <SolidColorBrush x:Key="VKHeaderAlternateTabInactiveTextBrush" Color="{StaticResource VKGray500Color}"/>
-      <SolidColorBrush x:Key="VKHeaderBackgroundBrush" Color="{StaticResource VKGray900Color}"/>
-      <SolidColorBrush x:Key="VKHeaderBackgroundBeforeBlurBrush" Color="{StaticResource VKGrayA970Color}"/>
-      <SolidColorBrush x:Key="VKHeaderBackgroundBeforeBlurAlternateBrush" Color="{StaticResource VKGrayA970Color}"/>
-      <SolidColorBrush x:Key="VKHeaderSearchFieldBackgroundBrush" Color="{StaticResource VKGray750Color}"/>
+      <SolidColorBrush x:Key="VKHeaderBackgroundBrush" Color="#171B22"/>
+      <SolidColorBrush x:Key="VKHeaderBackgroundBeforeBlurBrush" Color="#171B22"/>
+      <SolidColorBrush x:Key="VKHeaderBackgroundBeforeBlurAlternateBrush" Color="#171B22"/>
+      <SolidColorBrush x:Key="VKHeaderSearchFieldBackgroundBrush" Color="#202734"/>
       <SolidColorBrush x:Key="VKHeaderSearchFieldTintBrush" Color="{StaticResource VKGray300Color}"/>
       <SolidColorBrush x:Key="VKHeaderTabActiveBackgroundBrush" Color="{StaticResource VKGray600Color}"/>
       <SolidColorBrush x:Key="VKHeaderTabActiveTextBrush" Color="{StaticResource VKGray100Color}"/>
@@ -424,8 +424,8 @@
       <SolidColorBrush x:Key="VKLoaderTrackValueFillBrush" Color="{StaticResource VKWhiteColor}"/>
       <SolidColorBrush x:Key="VKMediaOverlayButtonBackgroundBrush" Color="{StaticResource VKWhiteColor}"/>
       <SolidColorBrush x:Key="VKMediaOverlayButtonForegroundBrush" Color="{StaticResource VKGray800Color}"/>
-      <SolidColorBrush x:Key="VKModalCardBackgroundBrush" Color="{StaticResource VKGray850Color}"/>
-      <SolidColorBrush x:Key="VKModalCardBorderBrush" Color="{StaticResource VKWhiteAlpha12Color}"/>
+      <SolidColorBrush x:Key="VKModalCardBackgroundBrush" Color="#202630"/>
+      <SolidColorBrush x:Key="VKModalCardBorderBrush" Color="#343C48"/>
       <SolidColorBrush x:Key="VKModalCardHeaderCloseBrush" Color="{StaticResource VKWhiteColor}"/>
       <SolidColorBrush x:Key="VKMusicPlaybackIconBrush" Color="{StaticResource VKWhiteColor}"/>
       <SolidColorBrush x:Key="VKFeedRecommendedFriendPromoBackgroundBrush" Color="{StaticResource VKSteelGray500Color}"/>
@@ -438,8 +438,8 @@
       <SolidColorBrush x:Key="VKPlaceholderIconForegroundSecondaryBrush" Color="{StaticResource VKGray600Color}"/>
       <SolidColorBrush x:Key="VKPlaceholderIconTintBrush" Color="{StaticResource VKWhiteColor}"/>
       <SolidColorBrush x:Key="VKPollOptionBackgroundBrush" Color="{StaticResource VKWhiteColor}"/>
-      <SolidColorBrush x:Key="VKSearchBarBackgroundBrush" Color="{StaticResource VKGray900Color}"/>
-      <SolidColorBrush x:Key="VKSearchBarFieldBackgroundBrush" Color="{StaticResource VKGray750Color}"/>
+      <SolidColorBrush x:Key="VKSearchBarBackgroundBrush" Color="#171B22"/>
+      <SolidColorBrush x:Key="VKSearchBarFieldBackgroundBrush" Color="#202734"/>
       <SolidColorBrush x:Key="VKSearchBarFieldTintBrush" Color="{StaticResource VKGray300Color}"/>
       <SolidColorBrush x:Key="VKSearchBarSegmentedControlTintBrush" Color="{StaticResource VKGray400Color}"/>
       <SolidColorBrush x:Key="VKSegmentedControlBarBackgroundBrush" Color="{StaticResource VKGray900Color}"/>

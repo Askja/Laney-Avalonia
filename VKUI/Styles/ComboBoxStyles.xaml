@@ -25,12 +25,12 @@
     </Design.PreviewWith>
 
   <Style Selector="ComboBox">
-    <Setter Property="Background" Value="{DynamicResource VKFieldBackgroundBrush}"/>
-    <Setter Property="BorderBrush" Value="{DynamicResource VKFieldBorderBrush}"/>
+    <Setter Property="Background" Value="{DynamicResource LaneyFieldBackgroundBrush}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource LaneyFieldBorderBrush}"/>
     <Setter Property="BorderThickness" Value="1"/>
-    <Setter Property="CornerRadius" Value="8"/>
+    <Setter Property="CornerRadius" Value="10"/>
     <Setter Property="Padding" Value="12,8,0,8"/>
-    <Setter Property="MinHeight" Value="36"/>
+    <Setter Property="MinHeight" Value="38"/>
     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
     <Setter Property="VerticalContentAlignment" Value="Center" />
     <Setter Property="PlaceholderForeground" Value="{DynamicResource VKFieldTextPlaceholderBrush}" />
@@ -62,7 +62,7 @@
                           Background="Transparent"
                           BorderThickness="0"
                           CornerRadius="{TemplateBinding CornerRadius}"
-                          Padding="10,0"
+                          Padding="12,0"
                           ClickMode="Press"
                           Focusable="False"
                           IsChecked="{TemplateBinding IsDropDownOpen,
@@ -77,12 +77,11 @@
                    IsOpen="{TemplateBinding IsDropDownOpen,
                                             Mode=TwoWay}"
                    PlacementTarget="{TemplateBinding}">
-              <Border Background="{DynamicResource VKModalCardBackgroundBrush}"
-                      CornerRadius="8"
+              <Border Background="{DynamicResource LaneyGlassOverlayBrush}"
+                      CornerRadius="12"
                       BorderThickness="1"
-                      Padding="4"
-                      BorderBrush="{DynamicResource VKModalCardBorderBrush}"
-                      BoxShadow="0 0 2 #1F000000, 0 14 36 #26000000">
+                      Padding="8"
+                      BorderBrush="{DynamicResource LaneyGlassBorderBrush}">
                 <ScrollViewer HorizontalScrollBarVisibility="{TemplateBinding ScrollViewer.HorizontalScrollBarVisibility}"
                               VerticalScrollBarVisibility="{TemplateBinding ScrollViewer.VerticalScrollBarVisibility}">
                   <ItemsPresenter Name="PART_ItemsPresenter"
@@ -96,7 +95,8 @@
     </Setter>
   </Style>
   <Style Selector="ComboBox:pointerover /template/ Border#border">
-    <Setter Property="BorderBrush" Value="{DynamicResource VKIconTertiaryAlphaBrush}" />
+    <Setter Property="Background" Value="{DynamicResource LaneyFieldHoverBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LaneyBorderStrongBrush}" />
   </Style>
   <Style Selector="ComboBox:disabled /template/ Border#border">
     <Setter Property="Opacity" Value="0.6" />
@@ -106,22 +106,28 @@
   </Style>
 
   <Style Selector="ComboBox.Alternate">
-    <Setter Property="Background" Value="Transparent"/>
-    <Setter Property="BorderThickness" Value="0"/>
-    <Setter Property="CornerRadius" Value="8"/>
-    <Setter Property="Padding" Value="0"/>
-    <Setter Property="MinHeight" Value="28"/>
+    <Setter Property="Background" Value="{DynamicResource LaneyFieldBackgroundBrush}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource LaneyFieldBorderBrush}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="10"/>
+    <Setter Property="Padding" Value="12,7,0,7"/>
+    <Setter Property="MinHeight" Value="36"/>
   </Style>
 
   <Style Selector="ComboBox.Alternate /template/ ToggleButton#toggle">
-    <Setter Property="Padding" Value="6,0,0,0"/>
+    <Setter Property="Padding" Value="10,0"/>
+  </Style>
+
+  <Style Selector="ComboBox.Alternate:pointerover /template/ Border#border">
+    <Setter Property="Background" Value="{DynamicResource LaneyFieldHoverBrush}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource LaneyBorderStrongBrush}"/>
   </Style>
   
   <Style Selector="ComboBoxItem">
     <Setter Property="Background" Value="Transparent" />
-    <Setter Property="Padding" Value="12,8" />
-    <Setter Property="CornerRadius" Value="8" />
-    <Setter Property="MinHeight" Value="36" />
+    <Setter Property="Padding" Value="16,11" />
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="MinHeight" Value="44" />
     <Setter Property="HorizontalAlignment" Value="Stretch" />
     <Setter Property="HorizontalContentAlignment" Value="Left" />
     <Setter Property="Foreground" Value="{DynamicResource VKTextPrimaryBrush}" />
@@ -129,8 +135,8 @@
     <Setter Property="Template">
       <ControlTemplate>
         <Grid ColumnDefinitions="Auto *">
-          <Border Name="PART_Selection" Grid.ColumnSpan="2" CornerRadius="{TemplateBinding CornerRadius}" Margin="2,1" Background="{TemplateBinding Background}"/>
-          <Border Name="PART_SelectedRail" Width="3" CornerRadius="2" Margin="6,8,0,8" Background="{DynamicResource VKAccentBrush}" IsVisible="False"/>
+          <Border Name="PART_Selection" Grid.ColumnSpan="2" CornerRadius="{TemplateBinding CornerRadius}" Margin="2" Background="{TemplateBinding Background}"/>
+          <Border Name="PART_SelectedRail" Width="3" CornerRadius="2" Margin="7,10,0,10" Background="{DynamicResource LaneyAccentBrush}" IsVisible="False"/>
           <ContentPresenter Name="PART_ContentPresenter"
                           Grid.ColumnSpan="2"
                           Padding="{TemplateBinding Padding}"
@@ -144,14 +150,14 @@
     </Setter>
   </Style>
   <Style Selector="ComboBoxItem:pointerover /template/ Border#PART_Selection">
-    <Setter Property="Background" Value="{DynamicResource VKBackgroundHoverBrush}" />
+    <Setter Property="Background" Value="{DynamicResource LaneyChatListHoverBrush}" />
     <Setter Property="Opacity" Value="1" />
   </Style>
   <Style Selector="ComboBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="Background" Value="Transparent" />
   </Style>
   <Style Selector="ComboBoxItem:selected /template/ Border#PART_Selection">
-    <Setter Property="Background" Value="{DynamicResource VKBackgroundHoverBrush}" />
+    <Setter Property="Background" Value="{DynamicResource LaneyChatListSelectedBrush}" />
     <Setter Property="Opacity" Value="1" />
   </Style>
   <Style Selector="ComboBoxItem:selected /template/ Border#PART_SelectedRail">
@@ -162,7 +168,7 @@
     <Setter Property="Foreground" Value="{DynamicResource VKTextPrimaryBrush}" />
   </Style>
   <Style Selector="ComboBoxItem:selected:pointerover /template/ Border#PART_Selection">
-    <Setter Property="Background" Value="{DynamicResource VKBackgroundHoverBrush}" />
+    <Setter Property="Background" Value="{DynamicResource LaneyChatListSelectedBrush}" />
     <Setter Property="Opacity" Value="1" />
   </Style>
 </Styles>

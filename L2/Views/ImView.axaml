@@ -245,14 +245,43 @@
     </DataTemplate>
   </vkui:Page.Resources>
 
-  <Grid RowDefinitions="Auto Auto *" Background="{DynamicResource LaneySurfaceSidebarBrush}">
+  <Grid RowDefinitions="Auto *" Background="{DynamicResource LaneyGlassPanelBrush}">
     <Grid.Styles>
       <Style Selector="TextBlock.MentionedPreview">
         <Setter Property="Foreground" Value="{DynamicResource LaneyAccentBrush}"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
       </Style>
+      <Style Selector="ComboBox.ChatFilterPill">
+        <Setter Property="MinHeight" Value="34"/>
+        <Setter Property="MinWidth" Value="116"/>
+        <Setter Property="Padding" Value="14,6,0,6"/>
+        <Setter Property="Background" Value="{DynamicResource LaneyGlassRaisedBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource LaneyGlassBorderBrush}"/>
+      </Style>
+      <Style Selector="ComboBox.ChatFilterPill /template/ ToggleButton#toggle">
+        <Setter Property="Padding" Value="8,0"/>
+      </Style>
+      <Style Selector="Button.StoryRailItem">
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="Width" Value="74"/>
+        <Setter Property="MinWidth" Value="74"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+      </Style>
     </Grid.Styles>
-    <vkui:PanelHeader VerticalAlignment="Top" Content="{x:Static i18n:Resources.chats}" Background="{DynamicResource LaneySurfaceSidebarBrush}" BorderBrush="{DynamicResource LaneyBorderSubtleBrush}">
+    <vkui:PanelHeader VerticalAlignment="Top" Background="{DynamicResource LaneyGlassPanelBrush}" BorderBrush="{DynamicResource LaneyGlassBorderBrush}">
+      <vkui:PanelHeader.Content>
+        <Grid ColumnDefinitions="Auto Auto *" VerticalAlignment="Center" Height="52" MinWidth="210">
+          <TextBlock Classes="Display PanelHeaderTextStyle" VerticalAlignment="Center" FontWeight="Bold" LineHeight="30" Text="{x:Static i18n:Resources.chats}"/>
+          <ComboBox x:Name="ChatsFilterBox" Grid.Column="1" Classes="Alternate ChatFilterPill" Margin="12,0,0,0" Width="136" HorizontalAlignment="Left" VerticalAlignment="Center" MaxDropDownHeight="320" ItemsSource="{Binding ImViewModel.ChatFilters}" SelectedItem="{Binding ImViewModel.CurrentChatFilter, Mode=TwoWay}">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="mdl:TwoStringTuple">
+                <TextBlock Text="{Binding Item2}"/>
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+        </Grid>
+      </vkui:PanelHeader.Content>
       <vkui:PanelHeader.LeftButtons>
         <Button x:Name="AvatarButton">
           <vkui:Avatar Width="32" Height="32" Initials="{Binding DisplayInitials}" Background="{Binding DisplayAvatarSeed, Converter={StaticResource agc}}" Foreground="White" controls:ImageLoader.Image="{Binding DisplayAvatar}"/>
@@ -268,18 +297,57 @@
       </vkui:PanelHeader.RightButtons>
     </vkui:PanelHeader>
 
-    <Border Grid.Row="1" Padding="12,8" BorderBrush="{DynamicResource LaneyBorderSubtleBrush}" BorderThickness="0,0,0,1">
-      <ComboBox x:Name="ChatsFilterBox" Classes="Alternate" Width="240" HorizontalAlignment="Left" MaxDropDownHeight="280" ItemsSource="{Binding ImViewModel.ChatFilters}" SelectedItem="{Binding ImViewModel.CurrentChatFilter, Mode=TwoWay}">
-        <ComboBox.ItemTemplate>
-          <DataTemplate x:DataType="mdl:TwoStringTuple">
-            <TextBlock Text="{Binding Item2}"/>
-          </DataTemplate>
-        </ComboBox.ItemTemplate>
-      </ComboBox>
-    </Border>
+    <Grid x:Name="ChatsListRoot" Grid.Row="1" RowDefinitions="Auto *" Background="{DynamicResource LaneyGlassPanelBrush}">
+      <Border x:Name="StoriesRail" IsVisible="{Binding ImViewModel.HasStoriesRail}" BorderBrush="{DynamicResource LaneyGlassBorderBrush}" BorderThickness="0,0,0,1" Background="{DynamicResource LaneyGlassPanelBrush}">
+        <Grid MinHeight="102">
+          <ScrollViewer IsVisible="{Binding !ImViewModel.IsStoriesLoading}" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled">
+            <ItemsRepeater ItemsSource="{Binding ImViewModel.Stories}" Margin="12,9,12,8">
+              <ItemsRepeater.Layout>
+                <StackLayout Orientation="Horizontal" Spacing="10"/>
+              </ItemsRepeater.Layout>
+              <ItemsRepeater.ItemTemplate>
+                <DataTemplate x:DataType="vm:StoryRailItemViewModel">
+                  <Button Classes="Tertiary StoryRailItem" Click="StoryRailItem_Click">
+                    <StackPanel Spacing="5">
+                      <Grid Width="66" Height="66" HorizontalAlignment="Center">
+                        <Border Width="66" Height="66" CornerRadius="18" Background="{DynamicResource LaneyMutedSurfaceBrush}" ClipToBounds="True" controls:ImageLoader.BackgroundSource="{Binding PreviewUri}"/>
+                        <Border Width="66" Height="66" CornerRadius="18" Background="#45000000" IsVisible="{Binding IsUnavailable}"/>
+                        <Border Width="66" Height="66" CornerRadius="18" BorderThickness="2" BorderBrush="{DynamicResource LaneyAccentBrush}" IsVisible="{Binding !IsSeen}"/>
+                        <vkui:Avatar Width="24" Height="24" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="4" Initials="{Binding Initials}" Background="{Binding OwnerId, Converter={StaticResource agc}}" Foreground="White" controls:ImageLoader.Image="{Binding AvatarUri}"/>
+                        <Border HorizontalAlignment="Right" VerticalAlignment="Top" Margin="4" CornerRadius="8" Padding="5,2" Background="#99000000" IsVisible="{Binding IsVideo}">
+                          <TextBlock Text="▶" FontSize="9" Foreground="White" LineHeight="10"/>
+                        </Border>
+                      </Grid>
+                      <TextBlock Text="{Binding Title}" MaxLines="1" TextTrimming="CharacterEllipsis" TextAlignment="Center" FontSize="12" LineHeight="14" Foreground="{DynamicResource VKTextPrimaryBrush}"/>
+                    </StackPanel>
+                  </Button>
+                </DataTemplate>
+              </ItemsRepeater.ItemTemplate>
+            </ItemsRepeater>
+          </ScrollViewer>
 
-    <Grid x:Name="ChatsListRoot" Grid.Row="2" Background="{DynamicResource LaneySurfaceSidebarBrush}">
-      <ListBox x:Name="ChatsList" Classes="FixMargin" SelectionMode="Toggle" AutoScrollToSelectedItem="True" ItemsSource="{Binding ImViewModel.SortedChats}">
+          <StackPanel Orientation="Horizontal" Spacing="10" Margin="12,9,12,8" IsVisible="{Binding ImViewModel.IsStoriesLoading}">
+            <StackPanel Width="74" Spacing="5">
+              <Border Classes="Skeleton" Width="66" Height="66" CornerRadius="18" HorizontalAlignment="Center"/>
+              <Border Classes="Skeleton" Width="48" Height="10" CornerRadius="5" HorizontalAlignment="Center"/>
+            </StackPanel>
+            <StackPanel Width="74" Spacing="5">
+              <Border Classes="Skeleton" Width="66" Height="66" CornerRadius="18" HorizontalAlignment="Center"/>
+              <Border Classes="Skeleton" Width="54" Height="10" CornerRadius="5" HorizontalAlignment="Center"/>
+            </StackPanel>
+            <StackPanel Width="74" Spacing="5">
+              <Border Classes="Skeleton" Width="66" Height="66" CornerRadius="18" HorizontalAlignment="Center"/>
+              <Border Classes="Skeleton" Width="42" Height="10" CornerRadius="5" HorizontalAlignment="Center"/>
+            </StackPanel>
+            <StackPanel Width="74" Spacing="5">
+              <Border Classes="Skeleton" Width="66" Height="66" CornerRadius="18" HorizontalAlignment="Center"/>
+              <Border Classes="Skeleton" Width="58" Height="10" CornerRadius="5" HorizontalAlignment="Center"/>
+            </StackPanel>
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <ListBox x:Name="ChatsList" Grid.Row="1" Classes="FixMargin" SelectionMode="Toggle" AutoScrollToSelectedItem="True" ItemsSource="{Binding ImViewModel.SortedChats}">
         <ListBox.ItemsPanel>
           <ItemsPanelTemplate>
             <VirtualizingStackPanel/>
@@ -289,11 +357,46 @@
           <Style Selector="ListBoxItem">
             <Setter Property="Padding" Value="0"/>
           </Style>
+          <Style Selector="ListBoxItem:pointerover /template/ Border#PART_Root">
+            <Setter Property="Background" Value="{DynamicResource LaneyChatListHoverBrush}"/>
+          </Style>
+          <Style Selector="ListBoxItem:selected /template/ Border#PART_Root">
+            <Setter Property="Background" Value="{DynamicResource LaneyChatListSelectedBrush}"/>
+          </Style>
         </ListBox.Styles>
       </ListBox>
 
       <Grid Grid.Row="1" x:Name="EmptyListContainer" DataContext="{Binding ImViewModel}" IsVisible="{Binding IsEmpty, Mode=OneWay}">
-        <vkui:Spinner HorizontalAlignment="Center" Width="32" Height="32" IsVisible="{Binding IsLoading, Mode=OneWay}"/>
+        <StackPanel Margin="16,12" Spacing="14" VerticalAlignment="Top" IsVisible="{Binding IsLoading, Mode=OneWay}">
+          <Grid ColumnDefinitions="Auto *">
+            <Border Classes="Skeleton" Width="44" Height="44" CornerRadius="22" Margin="0,4,12,4"/>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="8">
+              <Border Classes="Skeleton" Height="12" Width="172" CornerRadius="6" HorizontalAlignment="Left"/>
+              <Border Classes="Skeleton" Height="10" Width="236" CornerRadius="5" HorizontalAlignment="Left" Opacity="0.72"/>
+            </StackPanel>
+          </Grid>
+          <Grid ColumnDefinitions="Auto *">
+            <Border Classes="Skeleton" Width="44" Height="44" CornerRadius="22" Margin="0,4,12,4"/>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="8">
+              <Border Classes="Skeleton" Height="12" Width="146" CornerRadius="6" HorizontalAlignment="Left"/>
+              <Border Classes="Skeleton" Height="10" Width="210" CornerRadius="5" HorizontalAlignment="Left" Opacity="0.72"/>
+            </StackPanel>
+          </Grid>
+          <Grid ColumnDefinitions="Auto *">
+            <Border Classes="Skeleton" Width="44" Height="44" CornerRadius="22" Margin="0,4,12,4"/>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="8">
+              <Border Classes="Skeleton" Height="12" Width="188" CornerRadius="6" HorizontalAlignment="Left"/>
+              <Border Classes="Skeleton" Height="10" Width="248" CornerRadius="5" HorizontalAlignment="Left" Opacity="0.72"/>
+            </StackPanel>
+          </Grid>
+          <Grid ColumnDefinitions="Auto *">
+            <Border Classes="Skeleton" Width="44" Height="44" CornerRadius="22" Margin="0,4,12,4"/>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="8">
+              <Border Classes="Skeleton" Height="12" Width="132" CornerRadius="6" HorizontalAlignment="Left"/>
+              <Border Classes="Skeleton" Height="10" Width="198" CornerRadius="5" HorizontalAlignment="Left" Opacity="0.72"/>
+            </StackPanel>
+          </Grid>
+        </StackPanel>
         <vkui:Placeholder VerticalAlignment="Center"
                               IsVisible="{Binding Placeholder, Mode=OneWay, FallbackValue=False, Converter={x:Static ObjectConverters.IsNotNull}}"
                               Icon="{Binding Placeholder.Icon, Mode=OneWay}"

@@ -8,11 +8,11 @@
         xmlns:vkw="using:VKUI.Windows"
         xmlns:vkui="using:VKUI.Controls"
         xmlns:vm="using:ELOR.Laney.ViewModels"
-        mc:Ignorable="d" d:DesignWidth="720" d:DesignHeight="640"
+        mc:Ignorable="d" d:DesignWidth="920" d:DesignHeight="700"
         x:Class="ELOR.Laney.Views.SettingsWindow" x:DataType="vm:SettingsViewModel"
-        Width="720" Height="640"
+        Width="920" Height="700"
         WindowDecorations="None"
-        Background="{DynamicResource VKBackgroundPageBrush}"
+        Background="{DynamicResource LaneySurfaceRootBrush}"
         Title="{x:Static i18n:Resources.settings}">
   <vkw:DialogWindow.Resources>
     <DataTemplate x:Key="SettingsSearchResultTemplate" x:DataType="mdl:SettingsSearchResult">
@@ -27,13 +27,13 @@
     </DataTemplate>
   </vkw:DialogWindow.Resources>
 
-  <Border BorderBrush="{DynamicResource LaneyBorderSubtleBrush}" BorderThickness="1" Background="{DynamicResource VKBackgroundPageBrush}">
-  <Grid RowDefinitions="Auto Auto *" ColumnDefinitions="240 *">
+  <Border BorderBrush="{DynamicResource LaneyGlassBorderBrush}" BorderThickness="1" Background="{DynamicResource LaneySurfaceRootBrush}">
+  <Grid RowDefinitions="Auto Auto *" ColumnDefinitions="264 *">
     <Grid Grid.Row="1" Margin="12,0,8,8">
       <TextBox x:Name="SettingsSearchBox" Classes="Search" Text="{Binding SearchQuery, Mode=TwoWay}"/>
     </Grid>
 
-    <Grid x:Name="CategoriesPanel" Grid.Row="2">
+    <Grid x:Name="CategoriesPanel" Grid.Row="2" Background="{DynamicResource LaneyGlassPanelBrush}">
       <Grid.Styles>
         <Style Selector="ListBoxItem">
           <Setter Property="Padding" Value="0"/>
@@ -53,14 +53,18 @@
     </Grid>
     <ContentControl x:Name="ContentPanel" Grid.Column="1" Grid.Row="2">
       <ContentControl.Styles>
+        <Style Selector="vkui|Cell">
+          <Setter Property="AutoBeforeIcon" Value="True"/>
+        </Style>
+
         <Style Selector="vkui|Cell /template/ ContentPresenter#AfterControl > ToggleSwitch">
-          <Setter Property="VerticalAlignment" Value="Top"/>
-          <Setter Property="Margin" Value="-2,2,-2,0"/>
+          <Setter Property="VerticalAlignment" Value="Center"/>
+          <Setter Property="Margin" Value="-2,0,-2,0"/>
         </Style>
 
         <Style Selector="vkui|Cell /template/ ContentPresenter#AfterControl > ComboBox.Alternate">
-          <Setter Property="VerticalAlignment" Value="Top"/>
-          <Setter Property="Margin" Value="0,2,0,0"/>
+          <Setter Property="VerticalAlignment" Value="Center"/>
+          <Setter Property="Margin" Value="0"/>
           <Setter Property="Foreground" Value="{DynamicResource VKTextLinkBrush}"/>
         </Style>
 

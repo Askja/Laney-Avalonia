@@ -14,28 +14,43 @@
         WindowDecorations="None"
         Icon="avares://laney/Assets/Logo/icon.ico"
         Background="{DynamicResource LaneySurfaceRootBrush}">
-  <Border x:Name="WindowFrame" BorderBrush="{DynamicResource LaneyBorderSubtleBrush}" BorderThickness="1" Background="{DynamicResource LaneySurfaceRootBrush}">
+  <Border x:Name="WindowFrame" BorderBrush="{DynamicResource LaneyGlassBorderBrush}" BorderThickness="1" Background="{DynamicResource LaneySurfaceRootBrush}">
     <Grid x:Name="Root" RowDefinitions="Auto * Auto" Background="{DynamicResource LaneySurfaceRootBrush}">
       <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="Auto"/>
       <ColumnDefinition Width="380" MinWidth="280" MaxWidth="560"/>
       <ColumnDefinition Width="6"/>
       <ColumnDefinition Width="*"/>
     </Grid.ColumnDefinitions>
 
-    <vkui:WindowTitleBar x:Name="TitleBar" Grid.ColumnSpan="3" CanShowTitle="True" CanMove="True"/>
-    <vkui:NavigationControl x:Name="LeftNav" Grid.Row="1" Background="{DynamicResource LaneySurfaceSidebarBrush}"/>
-    <StackPanel x:Name="MainMAPC" Grid.Row="2" IsVisible="False">
+    <vkui:WindowTitleBar x:Name="TitleBar" Grid.ColumnSpan="4" CanShowTitle="True" CanMove="True"/>
+    <Border x:Name="AccountRail" Grid.Row="1" Grid.RowSpan="2" Width="56" Background="{DynamicResource LaneyGlassPanelBrush}"
+            BorderBrush="{DynamicResource LaneyGlassBorderBrush}" BorderThickness="0,0,1,0" IsVisible="False">
+      <ScrollViewer VerticalScrollBarVisibility="Disabled" HorizontalScrollBarVisibility="Disabled">
+        <ItemsControl x:Name="AccountRailList" Margin="6,8">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="core:VKSession">
+              <Button Classes="Tertiary" Width="44" Height="44" Padding="0" Margin="0,0,0,6" Click="AccountRailButton_Click" ToolTip.Tip="{Binding DisplayName}">
+                <vkui:Avatar Width="32" Height="32" Initials="{Binding DisplayInitials}" Background="{Binding DisplayAvatarSeed, Converter={StaticResource agc}}" Foreground="White" ctrls:ImageLoader.Image="{Binding DisplayAvatar}"/>
+              </Button>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+    </Border>
+    <vkui:NavigationControl x:Name="LeftNav" Grid.Column="1" Grid.Row="1" Background="{DynamicResource LaneyGlassPanelBrush}"/>
+    <StackPanel x:Name="MainMAPC" Grid.Column="1" Grid.Row="2" IsVisible="False">
       <Separator Margin="0"/>
       <ctrls:MiniAudioPlayer x:Name="MainMAP" DataContext="{x:Static vm:AudioPlayerViewModel.MainInstance}" Click="MainMAP_Click" CloseButtonClick="MainMAP_CloseButtonClick"/>
     </StackPanel>
     
-    <Border x:Name="Separator" Grid.Column="1" Grid.Row="1" Grid.RowSpan="2" Width="6" Background="Transparent"
+    <Border x:Name="Separator" Grid.Column="2" Grid.Row="1" Grid.RowSpan="2" Width="6" Background="Transparent"
             PointerPressed="ChatListSplitter_PointerPressed"
             PointerMoved="ChatListSplitter_PointerMoved"
             PointerReleased="ChatListSplitter_PointerReleased">
-      <Rectangle HorizontalAlignment="Center" Width="1" VerticalAlignment="Stretch" Fill="{DynamicResource LaneyBorderSubtleBrush}"/>
+      <Rectangle HorizontalAlignment="Center" Width="1" VerticalAlignment="Stretch" Fill="{DynamicResource LaneyGlassBorderBrush}"/>
     </Border>
-    <Grid x:Name="ChatViewContainer" Grid.Column="2" Grid.Row="1" Grid.RowSpan="2">
+    <Grid x:Name="ChatViewContainer" Grid.Column="3" Grid.Row="1" Grid.RowSpan="2">
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="*"/>
         <ColumnDefinition Width="Auto"/>
@@ -43,18 +58,18 @@
       </Grid.ColumnDefinitions>
       <views:ChatView x:Name="ChatView" Grid.Column="0" IsVisible="{Binding DataContext, Mode=OneWay, ElementName=ChatView, Converter={x:Static ObjectConverters.IsNotNull}}" DataContext="{Binding CurrentOpenedChat}"/>
       <TextBlock x:Name="NonSelectedChatInfo" Grid.Column="0" IsVisible="{Binding CurrentOpenedChat, Converter={x:Static ObjectConverters.IsNull}}" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource LaneyTextMutedBrush}" Text="{x:Static i18n:Resources.chatview_placeholder}"/>
-      <Rectangle x:Name="SplitViewSeparator" Grid.Column="1" Width="1" VerticalAlignment="Stretch" Fill="{DynamicResource LaneyBorderSubtleBrush}" IsVisible="{Binding IsSplitViewOpen}"/>
+      <Rectangle x:Name="SplitViewSeparator" Grid.Column="1" Width="1" VerticalAlignment="Stretch" Fill="{DynamicResource LaneyGlassBorderBrush}" IsVisible="{Binding IsSplitViewOpen}"/>
       <views:ChatView x:Name="SecondaryChatView" Grid.Column="2" IsVisible="{Binding DataContext, Mode=OneWay, ElementName=SecondaryChatView, Converter={x:Static ObjectConverters.IsNotNull}}" DataContext="{Binding SecondaryOpenedChat}"/>
     </Grid>
 
-    <Border x:Name="RAMInfoOverlay" IsVisible="False" Classes="Debug" Grid.Row="1" Grid.ColumnSpan="3" Padding="4" IsHitTestVisible="False"
+    <Border x:Name="RAMInfoOverlay" IsVisible="False" Classes="Debug" Grid.Row="1" Grid.ColumnSpan="4" Padding="4" IsHitTestVisible="False"
             HorizontalAlignment="Right" VerticalAlignment="Top" Background="#7f000000" TextElement.Foreground="White">
       <TextBlock x:Name="RAMInfo"/>
     </Border>
 
-    <Border x:Name="AutoStatusOverlay" IsVisible="False" Grid.Row="1" Grid.ColumnSpan="3" Padding="10,5" IsHitTestVisible="False"
+    <Border x:Name="AutoStatusOverlay" IsVisible="False" Grid.Row="1" Grid.ColumnSpan="4" Padding="10,5" IsHitTestVisible="False"
             HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,8,0,0" CornerRadius="14"
-            Background="#B3000000" TextElement.Foreground="White">
+            Background="{DynamicResource LaneyGlassOverlayBrush}" BorderBrush="{DynamicResource LaneyGlassBorderBrush}" BorderThickness="1" TextElement.Foreground="White">
       <StackPanel Orientation="Horizontal" Spacing="6">
         <TextBlock Classes="Caption1" FontWeight="SemiBold" Text="Laney-only"/>
         <TextBlock Classes="Caption1" Text="·"/>
@@ -62,7 +77,7 @@
       </StackPanel>
     </Border>
 
-    <Border x:Name="PanicLockOverlay" Grid.ColumnSpan="3" Grid.Row="1" Grid.RowSpan="2" IsVisible="False"
+    <Border x:Name="PanicLockOverlay" Grid.ColumnSpan="4" Grid.Row="1" Grid.RowSpan="2" IsVisible="False"
             Background="{DynamicResource LaneySurfaceRootBrush}" ZIndex="1000">
       <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="16">
         <TextBlock x:Name="PanicLockTitle" Classes="Title1" HorizontalAlignment="Center"

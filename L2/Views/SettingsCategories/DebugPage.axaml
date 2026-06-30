@@ -47,7 +47,7 @@
       <Border Classes="Group" VerticalAlignment="Top">
         <StackPanel x:Name="NetworkCells">
           <Grid Classes="GroupHeader">
-            <TextBlock Text="NETWORK"/>
+            <TextBlock Text="СЕТЬ"/>
           </Grid>
           <vkui:Cell Header="Загружать изображения последовательно" Subtitle="Это может исправить проблемы с загрузкой картинки из-за rate limit">
             <vkui:Cell.After>
@@ -60,34 +60,34 @@
       <Border Classes="Group" VerticalAlignment="Top">
         <StackPanel x:Name="ToolsCells">
           <Grid Classes="GroupHeader">
-            <TextBlock Text="TOOLS"/>
+            <TextBlock Text="ИНСТРУМЕНТЫ"/>
           </Grid>
-          <vkui:Cell x:Name="c01" Header="Show Avalonia's FPS counter">
+          <vkui:Cell x:Name="c01" Header="Показывать FPS Avalonia">
             <vkui:Cell.After>
               <ToggleSwitch x:Name="p01"/>
             </vkui:Cell.After>
           </vkui:Cell>
-          <vkui:Cell x:Name="c02" Header="Show debug infos in ChatView and composer">
+          <vkui:Cell x:Name="c02" Header="Показывать debug-инфо в чате и поле ввода">
             <vkui:Cell.After>
               <ToggleSwitch x:Name="p02"/>
             </vkui:Cell.After>
           </vkui:Cell>
-          <vkui:Cell x:Name="c03" Header="Show RAM usage">
+          <vkui:Cell x:Name="c03" Header="Показывать RAM">
             <vkui:Cell.After>
               <ToggleSwitch x:Name="p03"/>
             </vkui:Cell.After>
           </vkui:Cell>
-          <vkui:Cell x:Name="c04" Header="Show extra items in context menu">
+          <vkui:Cell x:Name="c04" Header="Показывать extra-пункты в контекстных меню">
             <vkui:Cell.After>
               <ToggleSwitch x:Name="p04"/>
             </vkui:Cell.After>
           </vkui:Cell>
-          <vkui:Cell x:Name="c05" Header="Disable marking messages as read">
+          <vkui:Cell x:Name="c05" Header="Не отмечать сообщения прочитанными">
             <vkui:Cell.After>
               <ToggleSwitch x:Name="p05"/>
             </vkui:Cell.After>
           </vkui:Cell>
-          <vkui:Cell x:Name="c07" Header="Show debug infos in photo viewer" Subtitle="Size, offset and zoom. Also photo/doc id.">
+          <vkui:Cell x:Name="c07" Header="Показывать debug-инфо в просмотрщике фото" Subtitle="Размер, смещение, zoom, photo/doc id.">
             <vkui:Cell.After>
               <ToggleSwitch x:Name="p07"/>
             </vkui:Cell.After>

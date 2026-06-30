@@ -52,6 +52,17 @@ namespace ELOR.Laney.Core {
             return false;
         }
 
+        public static bool TryResolveSpriteUri(string emoji, long peerId, out Uri uri) {
+            uri = null;
+            if (String.IsNullOrWhiteSpace(emoji)) return false;
+
+            SpriteMap map = GetMap(peerId);
+            if (!map.ByEmoji.TryGetValue(emoji, out string filePath) || String.IsNullOrWhiteSpace(filePath)) return false;
+
+            uri = new Uri(filePath);
+            return true;
+        }
+
         public static Task<IImage?> LoadImageAsync(string filePath) {
             return Task.Run<IImage?>(() => {
                 try {

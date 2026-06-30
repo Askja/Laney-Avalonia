@@ -8,7 +8,35 @@
   <ControlTheme x:Key="{x:Type controls:BotKeyboardUI}" TargetType="controls:BotKeyboardUI">
     <Setter Property="Template">
       <ControlTemplate>
-        <StackPanel x:Name="Root"/>
+        <StackPanel x:Name="Root">
+          <StackPanel.Styles>
+            <Style Selector="Button">
+              <Setter Property="CornerRadius" Value="12"/>
+              <Setter Property="MinHeight" Value="34"/>
+              <Setter Property="Padding" Value="8,0"/>
+              <Setter Property="Background" Value="{DynamicResource LaneyFieldBackgroundBrush}"/>
+              <Setter Property="BorderBrush" Value="{DynamicResource LaneyGlassBorderBrush}"/>
+              <Setter Property="BorderThickness" Value="1"/>
+              <Setter Property="Foreground" Value="{DynamicResource VKTextPrimaryBrush}"/>
+              <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+              <Setter Property="VerticalContentAlignment" Value="Center"/>
+            </Style>
+            <Style Selector="Button:pointerover /template/ Border#PART_Hover">
+              <Setter Property="Background" Value="{DynamicResource LaneyFieldHoverBrush}"/>
+            </Style>
+            <Style Selector="Button /template/ ContentPresenter#PART_Presenter">
+              <Setter Property="LineHeight" Value="17"/>
+            </Style>
+            <Style Selector="Button TextBlock">
+              <Setter Property="FontSize" Value="13"/>
+              <Setter Property="LineHeight" Value="17"/>
+              <Setter Property="TextWrapping" Value="Wrap"/>
+              <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+              <Setter Property="MaxLines" Value="2"/>
+              <Setter Property="TextAlignment" Value="Center"/>
+            </Style>
+          </StackPanel.Styles>
+        </StackPanel>
       </ControlTemplate>
     </Setter>
   </ControlTheme>

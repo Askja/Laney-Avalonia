@@ -85,6 +85,8 @@ namespace ELOR.Laney.ViewModels {
         private string _restrictionReason;
         private bool _isCurrentOpenedChat;
         private int _selectedMessagesCount;
+        private bool _isPreviousMessagesLoading;
+        private bool _isNextMessagesLoading;
         private ObservableCollection<Command> _messagesCommands = new ObservableCollection<Command>();
         private RelayCommand _openProfileCommand;
         private RelayCommand _goToLastMessageCommand;
@@ -148,6 +150,8 @@ namespace ELOR.Laney.ViewModels {
         public string RestrictionReason { get { return _restrictionReason; } private set { _restrictionReason = value; OnPropertyChanged(); } }
         public bool IsCurrentOpenedChat { get { return _isCurrentOpenedChat; } private set { _isCurrentOpenedChat = value; OnPropertyChanged(); } }
         public int SelectedMessagesCount { get { return _selectedMessagesCount; } private set { _selectedMessagesCount = value; OnPropertyChanged(); } }
+        public bool IsPreviousMessagesLoading { get { return _isPreviousMessagesLoading; } private set { _isPreviousMessagesLoading = value; OnPropertyChanged(); } }
+        public bool IsNextMessagesLoading { get { return _isNextMessagesLoading; } private set { _isNextMessagesLoading = value; OnPropertyChanged(); } }
         public ObservableCollection<Command> MessagesCommands { get { return _messagesCommands; } private set { _messagesCommands = value; OnPropertyChanged(); } }
         public RelayCommand OpenProfileCommand { get { return _openProfileCommand; } private set { _openProfileCommand = value; OnPropertyChanged(); } }
         public RelayCommand GoToLastMessageCommand { get { return _goToLastMessageCommand; } private set { _goToLastMessageCommand = value; OnPropertyChanged(); } }
@@ -238,14 +242,29 @@ namespace ELOR.Laney.ViewModels {
         // Вызывается при отображении беседы на окне
         public void OnDisplayed(int messageId = -1) {
             bool isDisplayedMessagesEmpty = DisplayedMessages == null || DisplayedMessages.Count == 0;
-            Log.Information("Chat {0} is opened. isDisplayedMessagesEmpty: {1}, CMID: {2}", PeerId, isDisplayedMessagesEmpty, messageId);
-            if (isDisplayedMessagesEmpty || messageId >= 0) {
-                new System.Action(async () => await GoToMessageAsync(messageId))();
+            int targetMessageId = GetOpenTargetMessageId(messageId);
+            Log.Information("Chat {0} is opened. isDisplayedMessagesEmpty: {1}, CMID: {2}, target: {3}", PeerId, isDisplayedMessagesEmpty, messageId, targetMessageId);
+
+            if (targetMessageId > 0) {
+                new System.Action(async () => await GoToMessageAsync(targetMessageId))();
+            } else if (isDisplayedMessagesEmpty) {
+                new System.Action(async () => await LoadMessagesAsync())();
+            } else if (Settings.ChatOpenBehavior == ChatOpenBehaviorIds.Bottom) {
+                new System.Action(async () => await GoToLastMessageAsync())();
             } else {
                 new System.Action(async () => {
                     await UpdateOnlineMembersCountAsync();
                 })();
             }
+        }
+
+        private int GetOpenTargetMessageId(int requestedMessageId) {
+            if (requestedMessageId >= 0) return requestedMessageId;
+            if (Settings.ChatOpenBehavior == ChatOpenBehaviorIds.FirstUnread && UnreadMessagesCount > 0 && InRead > 0) {
+                return InRead + 1;
+            }
+
+            return -1;
         }
 
         public void ApplyConversationUpdate(Conversation conversation) {
@@ -653,36 +672,25 @@ namespace ELOR.Laney.ViewModels {
             new System.Action(async () => await Router.OpenPeerProfileAsync(session, PeerId))();
         }
 
-        private async Task GoToLastMessageAsync() {
+        public async Task GoToLastMessageAsync() {
             if (IsLoading) return;
 
-            if (DisplayedMessages?.Last?.ConversationMessageId == LastMessage?.ConversationMessageId) {
-                await GoToMessageAsync(LastMessage);
-            } else {
-                Log.Information($"GoToLastMessage: last message in chat is not displayed. Showing ReceivedMessages...");
-                if (ReceivedMessages.Count > 10) {
-                    DisplayedMessages = new MessagesCollection(ReceivedMessages.ToList());
-                    ScrollToMessageRequested?.Invoke(this, LastMessage);
-                    if (ReceivedMessages.Count < 20) {
-                        Log.Information($"GoToLastMessage: need get more messages from API to display.");
-                        MessagesChunkLoaded += PrevMessagesLoaded;
-                        await LoadPreviousMessagesAsync(null);
-                    }
-                } else {
-                    await GoToMessageAsync(LastMessage);
-                }
+            int lastMessageId = LastMessage?.ConversationMessageId ?? DisplayedMessages?.LastOrDefault()?.ConversationMessageId ?? 0;
+            if (lastMessageId <= 0) return;
+
+            if (DisplayedMessages?.LastOrDefault()?.ConversationMessageId == lastMessageId) {
+                MessageViewModel lastDisplayed = DisplayedMessages.LastOrDefault();
+                if (lastDisplayed != null) ScrollToMessageRequested?.Invoke(this, lastDisplayed);
+                return;
             }
+
+            Log.Information("GoToLastMessage: last message is not displayed. Loading tail page from API. Peer={0}; cmid={1}", PeerId, lastMessageId);
+            await LoadMessagesAsync(lastMessageId);
         }
 
         private async Task GoToLastReactedMessageAsync() {
             if (IsLoading) return;
             if (UnreadReactions != null && UnreadReactions.Count > 0) await GoToMessageAsync(UnreadReactions.LastOrDefault());
-        }
-
-        private void PrevMessagesLoaded(object sender, bool next) {
-            if (next) return;
-            MessagesChunkLoaded -= PrevMessagesLoaded;
-            ScrollToMessageRequested?.Invoke(this, LastMessage);
         }
 
         public void ClearSelectedMessages() {
@@ -857,7 +865,9 @@ namespace ELOR.Laney.ViewModels {
                 await ApplyExpiredSelfDestructMessagesAsync();
                 RefreshE2EState();
                 _ = OfflineCacheStore.SaveChatSnapshotAsync(this);
-                int scrollTo = startMessageId > 0 ? startMessageId : InRead;
+                int scrollTo = startMessageId > 0
+                    ? startMessageId
+                    : DisplayedMessages.LastOrDefault()?.ConversationMessageId ?? 0;
                 MessageViewModel scrollToMsg = scrollTo > 0 ? DisplayedMessages.GetById(scrollTo) : null;
                 if (scrollToMsg != null) ScrollToMessageRequested?.Invoke(this, scrollToMsg);
 
@@ -886,11 +896,9 @@ namespace ELOR.Laney.ViewModels {
                 RefreshE2EState();
                 _ = OfflineCacheStore.SaveChatSnapshotAsync(this);
 
-                int scrollTo = 0;
-                if (startMessageId > 0) scrollTo = startMessageId;
-                if (startMessageId == -1) {
-                    scrollTo = InRead;
-                }
+                int scrollTo = startMessageId > 0
+                    ? startMessageId
+                    : DisplayedMessages.LastOrDefault()?.ConversationMessageId ?? 0;
                 if (scrollTo > 0) {
                     MessageViewModel scrollToMsg = DisplayedMessages.SingleOrDefault(m => m.ConversationMessageId == scrollTo);
                     if (scrollToMsg != null) {
@@ -927,16 +935,17 @@ namespace ELOR.Laney.ViewModels {
             try {
                 Log.Information("LoadPreviousMessages peer: {0}, count: {1}, displayed messages count: {2}", PeerId, count, DisplayedMessages?.Count);
                 IsLoading = true;
+                IsPreviousMessagesLoading = true;
                 MessagesHistoryResponse mhr = await session.API.Messages.GetHistoryAsync(session.GroupId, PeerId, 1, count, DisplayedMessages.First.ConversationMessageId, true, VKAPIHelper.Fields, false, Constants.NestedMessagesLimit);
                 CacheManager.Add(mhr.Profiles);
                 CacheManager.Add(mhr.Groups);
                 mhr.Items?.Reverse();
-                MessagesChunkLoaded?.Invoke(this, false);
                 DisplayedMessages.InsertRange(FilterLocallyVisibleMessages(mhr.Items?.Select(m => {
                     var msg = MessageViewModel.Create(m, session);
                     FixState(msg);
                     return msg;
                 })));
+                MessagesChunkLoaded?.Invoke(this, false);
                 await ApplyExpiredSelfDestructMessagesAsync();
                 RefreshE2EState();
                 _ = OfflineCacheStore.SaveChatSnapshotAsync(this);
@@ -945,6 +954,7 @@ namespace ELOR.Laney.ViewModels {
                     await LoadPreviousMessagesAsync(ct);
                 }
             } finally {
+                IsPreviousMessagesLoading = false;
                 IsLoading = false;
             }
         }
@@ -961,16 +971,17 @@ namespace ELOR.Laney.ViewModels {
             try {
                 Log.Information("LoadNextMessages peer: {0}, count: {1}, displayed messages count: {2}", PeerId, count, DisplayedMessages.Count);
                 IsLoading = true;
+                IsNextMessagesLoading = true;
                 MessagesHistoryResponse mhr = await session.API.Messages.GetHistoryAsync(session.GroupId, PeerId, -count, count, DisplayedMessages.Last.ConversationMessageId, true, VKAPIHelper.Fields, false, Constants.NestedMessagesLimit);
                 CacheManager.Add(mhr.Profiles);
                 CacheManager.Add(mhr.Groups);
                 mhr.Items?.Reverse();
-                MessagesChunkLoaded?.Invoke(this, true);
                 DisplayedMessages.InsertRange(FilterLocallyVisibleMessages(mhr.Items?.Select(m => {
                     var msg = MessageViewModel.Create(m, session);
                     FixState(msg);
                     return msg;
                 })));
+                MessagesChunkLoaded?.Invoke(this, true);
                 await ApplyExpiredSelfDestructMessagesAsync();
                 RefreshE2EState();
                 _ = OfflineCacheStore.SaveChatSnapshotAsync(this);
@@ -979,50 +990,65 @@ namespace ELOR.Laney.ViewModels {
                     await LoadNextMessagesAsync(ct);
                 }
             } finally {
+                IsNextMessagesLoading = false;
                 IsLoading = false;
             }
         }
 
         private async Task LoadPreviousDemoMessagesAsync() {
             if (DisplayedMessages?.Count == 0 || IsLoading) return;
+            IsLoading = true;
+            IsPreviousMessagesLoading = true;
 
-            DemoModeSession ds = DemoMode.GetDemoSessionById(session.Id);
-            int firstId = DisplayedMessages.First.ConversationMessageId;
-            List<Message> messages = ds.Messages
-                .Where(m => m.PeerId == PeerId && m.ConversationMessageId < firstId)
-                .OrderByDescending(m => m.ConversationMessageId)
-                .Take(Constants.MessagesCount)
-                .OrderBy(m => m.ConversationMessageId)
-                .ToList();
-            if (messages.Count == 0) return;
+            try {
+                DemoModeSession ds = DemoMode.GetDemoSessionById(session.Id);
+                int firstId = DisplayedMessages.First.ConversationMessageId;
+                List<Message> messages = ds.Messages
+                    .Where(m => m.PeerId == PeerId && m.ConversationMessageId < firstId)
+                    .OrderByDescending(m => m.ConversationMessageId)
+                    .Take(Constants.MessagesCount)
+                    .OrderBy(m => m.ConversationMessageId)
+                    .ToList();
+                if (messages.Count == 0) return;
 
-            Log.Information("LoadPreviousMessages demo peer: {0}, count: {1}, displayed messages count: {2}", PeerId, messages.Count, DisplayedMessages.Count);
-            MessagesChunkLoaded?.Invoke(this, false);
-            DisplayedMessages.InsertRange(FilterLocallyVisibleMessages(MessageViewModel.BuildFromAPI(messages, session, true, FixState)));
-            await ApplyExpiredSelfDestructMessagesAsync();
-            RefreshE2EState();
-            _ = OfflineCacheStore.SaveChatSnapshotAsync(this);
+                Log.Information("LoadPreviousMessages demo peer: {0}, count: {1}, displayed messages count: {2}", PeerId, messages.Count, DisplayedMessages.Count);
+                DisplayedMessages.InsertRange(FilterLocallyVisibleMessages(MessageViewModel.BuildFromAPI(messages, session, true, FixState)));
+                MessagesChunkLoaded?.Invoke(this, false);
+                await ApplyExpiredSelfDestructMessagesAsync();
+                RefreshE2EState();
+                _ = OfflineCacheStore.SaveChatSnapshotAsync(this);
+            } finally {
+                IsPreviousMessagesLoading = false;
+                IsLoading = false;
+            }
         }
 
         private async Task LoadNextDemoMessagesAsync() {
             if (DisplayedMessages?.Count == 0 || IsLoading) return;
             if (LastMessage?.ConversationMessageId == DisplayedMessages.LastOrDefault()?.ConversationMessageId) return;
+            IsLoading = true;
+            IsNextMessagesLoading = true;
 
-            DemoModeSession ds = DemoMode.GetDemoSessionById(session.Id);
-            int lastId = DisplayedMessages.Last.ConversationMessageId;
-            List<Message> messages = ds.Messages
-                .Where(m => m.PeerId == PeerId && m.ConversationMessageId > lastId)
-                .OrderBy(m => m.ConversationMessageId)
-                .Take(Constants.MessagesCount)
-                .ToList();
-            if (messages.Count == 0) return;
+            try {
+                DemoModeSession ds = DemoMode.GetDemoSessionById(session.Id);
+                int lastId = DisplayedMessages.Last.ConversationMessageId;
+                List<Message> messages = ds.Messages
+                    .Where(m => m.PeerId == PeerId && m.ConversationMessageId > lastId)
+                    .OrderBy(m => m.ConversationMessageId)
+                    .Take(Constants.MessagesCount)
+                    .ToList();
+                if (messages.Count == 0) return;
 
-            Log.Information("LoadNextMessages demo peer: {0}, count: {1}, displayed messages count: {2}", PeerId, messages.Count, DisplayedMessages.Count);
-            MessagesChunkLoaded?.Invoke(this, true);
-            DisplayedMessages.InsertRange(FilterLocallyVisibleMessages(MessageViewModel.BuildFromAPI(messages, session, true, FixState)));
-            await ApplyExpiredSelfDestructMessagesAsync();
-            RefreshE2EState();
-            _ = OfflineCacheStore.SaveChatSnapshotAsync(this);
+                Log.Information("LoadNextMessages demo peer: {0}, count: {1}, displayed messages count: {2}", PeerId, messages.Count, DisplayedMessages.Count);
+                DisplayedMessages.InsertRange(FilterLocallyVisibleMessages(MessageViewModel.BuildFromAPI(messages, session, true, FixState)));
+                MessagesChunkLoaded?.Invoke(this, true);
+                await ApplyExpiredSelfDestructMessagesAsync();
+                RefreshE2EState();
+                _ = OfflineCacheStore.SaveChatSnapshotAsync(this);
+            } finally {
+                IsNextMessagesLoading = false;
+                IsLoading = false;
+            }
         }
 
         private async Task<bool> TryLoadOfflineMessagesAsync(int startMessageId, Exception sourceException) {
@@ -2021,11 +2047,15 @@ namespace ELOR.Laney.ViewModels {
 
             var ava = Settings.StreamerMode ? null : await BitmapManager.GetBitmapAsync(message.SenderAvatar, 56, 56, BitmapCacheKind.Avatar);
             var t = new ToastNotification(message, session.Name, senderName, text, chatName, ava);
-            t.OnClick += () => {
+            System.Action openMessage = () => {
                 Log.Information($"ChatViewModel: clicked on message {message.PeerId}_{message.ConversationMessageId}");
                 session.TryOpenWindow();
                 session.GoToChat(message.PeerId, message.ConversationMessageId);
             };
+            t.OnClick += openMessage;
+            t.Actions.Add(new ToastNotificationAction(Localizer.Get("notification_action_open"), openMessage));
+            t.Actions.Add(new ToastNotificationAction(Localizer.Get("notification_action_mark_read"), () => _ = MarkToastMessageAsReadAsync(message)));
+            t.Actions.Add(new ToastNotificationAction(Localizer.Get("notification_action_mute_1h"), () => Settings.SetPeerQuietUntil(message.PeerId, DateTimeOffset.Now.AddHours(1))));
             //if (CanWrite.Allowed) t.OnSendClick += (text) => {
             //    // TODO: send message from toast
             //};
@@ -2033,6 +2063,16 @@ namespace ELOR.Laney.ViewModels {
             if (sound) {
                 var bb2 = AssetsManager.OpenAsset(new Uri("avares://laney/Assets/Audio/bb2.mp3"));
                 LMediaPlayer.SFX?.PlayStream(bb2);
+            }
+        }
+
+        private async Task MarkToastMessageAsReadAsync(MessageViewModel message) {
+            if (Settings.DisableMarkingMessagesAsRead) return;
+
+            try {
+                await session.API.Messages.MarkAsReadAsync(session.GroupId, message.PeerId, message.ConversationMessageId, true);
+            } catch (Exception ex) {
+                Log.Warning(ex, "Cannot mark toast message as read. Peer={PeerId}; Cmid={Cmid}", message.PeerId, message.ConversationMessageId);
             }
         }
 

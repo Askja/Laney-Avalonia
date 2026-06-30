@@ -126,8 +126,8 @@ namespace ELOR.Laney {
             AppBuilder.Configure<App>().UseAvaloniaNative().UsePlatformDetect()
             .WithAppNotifications(GetNotificationOptions())
             .With(new SkiaOptions {
-                UseOpacitySaveLayer = true,
-                MaxGpuResourceSizeBytes = 1073741824
+                UseOpacitySaveLayer = false,
+                MaxGpuResourceSizeBytes = 134217728
                 //}).With(new Win32PlatformOptions { 
                 //    RenderingMode = new List<Win32RenderingMode> { Win32RenderingMode.Vulkan, Win32RenderingMode.Wgl, Win32RenderingMode.Software },
                 //    CompositionMode = new List<Win32CompositionMode> { Win32CompositionMode.WinUIComposition, Win32CompositionMode.LowLatencyDxgiSwapChain, Win32CompositionMode.DirectComposition },

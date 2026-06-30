@@ -4,11 +4,15 @@ using Avalonia.Controls.Notifications;
 using Avalonia.Input;
 using Avalonia.Input.Platform;
 using Avalonia.Media;
+using Avalonia.Platform;
 using Avalonia.Rendering;
 using Avalonia.Threading;
+using ELOR.Laney.Controls;
+using ELOR.Laney.Controls.Attachments;
 using ELOR.Laney.Core;
 using ELOR.Laney.Core.Network;
 using ELOR.Laney.Core.Localization;
+using ELOR.Laney.Extensions;
 using ELOR.Laney.Helpers;
 using ELOR.Laney.ViewModels;
 using ELOR.Laney.ViewModels.Controls;
@@ -21,6 +25,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using VKUI.Controls;
 using PeerType = ELOR.VKAPILib.Objects.PeerType;
@@ -32,10 +37,14 @@ namespace ELOR.Laney.Views {
         private DateTimeOffset lastUserActivity = DateTimeOffset.Now;
         private DispatcherTimer autoStatusTimer;
         private DispatcherTimer autoLockTimer;
+        private DispatcherTimer memoryPressureTimer;
         private BackgroundSearchIndexer backgroundSearchIndexer;
         private BackgroundHistoryStatisticsIndexer backgroundHistoryStatisticsIndexer;
         private bool lastAutoStatusWasIdle;
         private bool isChatListSplitterDragging;
+        private const int AccountRailColumnIndex = 0;
+        private const int ChatListColumnIndex = 1;
+        private const int ChatColumnIndex = 3;
         private const double ChatListMinWidth = 280d;
         private const double ChatListMaxWidth = 560d;
 
@@ -47,6 +56,7 @@ namespace ELOR.Laney.Views {
             Unloaded += MainWindow_Unloaded;
             Activated += MainWindow_Activated;
             DataContextChanged += MainWindow_DataContextChanged;
+            VKSession.SessionsChanged += VKSession_SessionsChanged;
             KeyDown += MainWindow_KeyDown;
             EffectiveViewportChanged += MainWindow_EffectiveViewportChanged;
             ChatView.BackButtonClick += ChatView_BackButtonClick;
@@ -77,8 +87,11 @@ namespace ELOR.Laney.Views {
             Settings.SettingChanged += Settings_SettingChanged;
             Separator.Cursor = new Cursor(StandardCursorType.SizeWestEast);
             ApplyChatListWidth(Settings.ChatListWidth);
+            RefreshAccountRail();
+            ApplyWindowIcon();
             ToggleAutoStatusTimer();
             ToggleAutoLockTimer();
+            StartMemoryPressureTimer();
 
             PanicLockTitle.Text = Localizer.Get("panic_lock_title");
             PanicLockUnlockButton.Content = Localizer.Get("panic_lock_unlock");
@@ -91,6 +104,11 @@ namespace ELOR.Laney.Views {
 
         private void MainWindow_DataContextChanged(object sender, EventArgs e) {
             AppearanceManager.ApplyAccountAppearanceSettings(Session);
+            RefreshAccountRail();
+        }
+
+        private void VKSession_SessionsChanged(object sender, EventArgs e) {
+            Dispatcher.UIThread.Post(RefreshAccountRail);
         }
 
         private void MainWindow_Unloaded(object sender, Avalonia.Interactivity.RoutedEventArgs e) {
@@ -98,6 +116,7 @@ namespace ELOR.Laney.Views {
             Unloaded -= MainWindow_Unloaded;
             Activated -= MainWindow_Activated;
             DataContextChanged -= MainWindow_DataContextChanged;
+            VKSession.SessionsChanged -= VKSession_SessionsChanged;
             KeyDown -= MainWindow_KeyDown;
             EffectiveViewportChanged -= MainWindow_EffectiveViewportChanged;
             ChatView.BackButtonClick -= ChatView_BackButtonClick;
@@ -110,6 +129,7 @@ namespace ELOR.Laney.Views {
             backgroundHistoryStatisticsIndexer?.Dispose();
             if (autoStatusTimer != null) autoStatusTimer.Stop();
             if (autoLockTimer != null) autoLockTimer.Stop();
+            if (memoryPressureTimer != null) memoryPressureTimer.Stop();
         }
 
         private async void MainWindow_Opened(object? sender, EventArgs e) {
@@ -270,6 +290,7 @@ namespace ELOR.Laney.Views {
                 new CommandPaletteAction(VKIconNames.Icon28CheckCircleOutline, "Извлечь задачи", "Найти кандидаты в todo по загруженным сообщениям", "todo task extract задачи дела автоизвлечение", ShowExtractedTasksAsync),
                 new CommandPaletteAction(VKIconNames.Icon28PictureOutline, "OCR загруженных картинок", "Локально распознать текст на фото из загруженных сообщений", "ocr image text распознать текст картинки фото", ShowLocalOcrAsync),
                 new CommandPaletteAction(VKIconNames.Icon28MusicOutline, "История прослушивания", "Последние треки, подкасты и голосовые с позицией", "audio music history слушал треки голосовые подкасты", ShowAudioPlaybackHistoryAsync),
+                new CommandPaletteAction(VKIconNames.Icon24Story, "Истории VK", "Story-вложения внутри Laney и быстрый переход к ленте VK Stories", "stories story история сторис вк", ShowStoriesHubAsync),
                 new CommandPaletteAction(VKIconNames.Icon28UserOutgoingOutline, "Автостатус", "Laney-only режим: занят, работаю, играю, сплю, не трогать", "status автостатус busy work sleep dnd", ShowAutoStatusDialogAsync),
                 new CommandPaletteAction(VKIconNames.Icon28WriteSquareOutline, "Фокус на сообщение", "Поставить курсор в composer", "composer input сообщение написать", () => {
                     ChatView.FocusComposer();
@@ -291,19 +312,19 @@ namespace ELOR.Laney.Views {
                     SettingsWindow settings = new SettingsWindow(typeof(Appearance));
                     await settings.ShowDialog(this);
                 }),
-                new CommandPaletteAction(VKIconNames.Icon28SettingsOutline, "Performance budget", "RAM, bitmap cache, animations и media governor", "performance budget ram memory cache animations производительность память", async () => {
+                new CommandPaletteAction(VKIconNames.Icon28SettingsOutline, "Производительность", "RAM, кэш изображений, анимации и лимиты медиа", "performance budget ram memory cache animations производительность память", async () => {
                     SettingsWindow settings = new SettingsWindow(typeof(Memory));
                     await settings.ShowDialog(this);
                 }),
-                new CommandPaletteAction(VKIconNames.Icon28SettingsOutline, "Rules engine", "Настроить кто/где/что/когда -> mute/tag/download/remind/archive", "rules automation rule engine mute tag download remind archive правила автоматизация", async () => {
+                new CommandPaletteAction(VKIconNames.Icon28SettingsOutline, "Правила автоматизации", "Настроить кто/где/что/когда -> mute/tag/download/remind/archive", "rules automation rule engine mute tag download remind archive правила автоматизация", async () => {
                     SettingsWindow settings = new SettingsWindow(typeof(Automation));
                     await settings.ShowDialog(this);
                 }),
-                new CommandPaletteAction(VKIconNames.Icon28PrivacyOutline, "Privacy cockpit", "Streamer mode, panic lock, auto-lock и clipboard scrub", "privacy streamer panic lock clipboard приватность", async () => {
+                new CommandPaletteAction(VKIconNames.Icon28PrivacyOutline, "Приватность", "Режим стримера, panic-замок, auto-lock и очистка буфера", "privacy streamer panic lock clipboard приватность", async () => {
                     SettingsWindow settings = new SettingsWindow(typeof(Privacy));
                     await settings.ShowDialog(this);
                 }),
-                new CommandPaletteAction(VKIconNames.Icon28SettingsOutline, "Network diagnostics", "LongPoll, API debug, health-check и low traffic", "network diagnostics api debug health longpoll сеть", async () => {
+                new CommandPaletteAction(VKIconNames.Icon28SettingsOutline, "Диагностика сети", "Long Poll, API debug, health-check и экономия трафика", "network diagnostics api debug health longpoll сеть", async () => {
                     SettingsWindow settings = new SettingsWindow(typeof(Network));
                     await settings.ShowDialog(this);
                 }),
@@ -665,16 +686,16 @@ namespace ELOR.Laney.Views {
                 SelectedIndex = Settings.StickerAnimation == StickerAnimationMode.Never ? 2 : Settings.StickerAnimation == StickerAnimationMode.Click ? 1 : 0,
                 MinWidth = 140
             };
-            CheckBox streamerBox = new CheckBox { Content = "Streamer mode", IsChecked = Settings.StreamerMode };
-            CheckBox autoLockBox = new CheckBox { Content = "Auto-lock", IsChecked = Settings.AutoLockEnabled };
-            CheckBox clipboardBox = new CheckBox { Content = "Clipboard scrub", IsChecked = Settings.PanicLockClearClipboard };
+            CheckBox streamerBox = new CheckBox { Content = "Режим стримера", IsChecked = Settings.StreamerMode };
+            CheckBox autoLockBox = new CheckBox { Content = "Автоблокировка", IsChecked = Settings.AutoLockEnabled };
+            CheckBox clipboardBox = new CheckBox { Content = "Чистить буфер", IsChecked = Settings.PanicLockClearClipboard };
 
             StackPanel content = new StackPanel {
                 Spacing = 10,
                 Children = {
-                    BuildLabeledControl("Layout", profileBox),
-                    BuildLabeledControl("RAM budget", ramBox),
-                    BuildLabeledControl("Sticker animation", animationBox),
+                    BuildLabeledControl("Профиль", profileBox),
+                    BuildLabeledControl("RAM бюджет", ramBox),
+                    BuildLabeledControl("Анимация стикеров", animationBox),
                     streamerBox,
                     autoLockBox,
                     clipboardBox
@@ -1110,6 +1131,180 @@ namespace ELOR.Laney.Views {
             }
         }
 
+        private async Task ShowStoriesHubAsync() {
+            IReadOnlyList<ELOR.VKAPILib.Objects.Story> stories = Array.Empty<ELOR.VKAPILib.Objects.Story>();
+            string text = "Story-вложения в сообщениях открываются прямо в Laney. Лента ниже грузится через stories.get и открывает локальный preview.";
+
+            try {
+                stories = await LoadVKStoriesAsync();
+                if (Settings.ShouldSuppressStoryViewed) {
+                    text += " Невидимка включена: Laney не вызывает отдельные viewed-методы.";
+                }
+            } catch (Exception ex) {
+                Log.Warning(ex, "Cannot load VK stories.");
+                text = $"Не удалось загрузить stories.get: {ex.GetBaseException().Message}\nМожно открыть веб-ленту VK.";
+            }
+
+            VKUIDialog dialog = new VKUIDialog(
+                "Истории VK",
+                text,
+                ["Открыть VK Stories", "Закрыть"],
+                2) {
+                DialogContent = stories.Count > 0 ? BuildStoriesList(stories) : null
+            };
+
+            int result = await dialog.ShowDialog<int>(this);
+            if (result == 1) await ELOR.Laney.Core.Launcher.LaunchUrl("https://vk.com/stories");
+        }
+
+        private async Task<IReadOnlyList<ELOR.VKAPILib.Objects.Story>> LoadVKStoriesAsync() {
+            if (Session?.API == null) return Array.Empty<ELOR.VKAPILib.Objects.Story>();
+
+            using JsonDocument document = await Session.API.CallMethodAsync("stories.get", new Dictionary<string, string> {
+                { "extended", "1" },
+                { "fields", "photo_50,photo_100,screen_name" }
+            });
+
+            JsonElement root = document.RootElement;
+            if (root.TryGetProperty("error", out JsonElement error)) {
+                string message = error.TryGetProperty("error_msg", out JsonElement errorMessage)
+                    ? errorMessage.GetString()
+                    : "VK API вернул ошибку без текста.";
+                throw new InvalidOperationException(message);
+            }
+
+            if (!root.TryGetProperty("response", out JsonElement response)
+                || !response.TryGetProperty("items", out JsonElement items)
+                || items.ValueKind != JsonValueKind.Array) {
+                return Array.Empty<ELOR.VKAPILib.Objects.Story>();
+            }
+
+            List<ELOR.VKAPILib.Objects.Story> stories = new List<ELOR.VKAPILib.Objects.Story>();
+            foreach (JsonElement storyGroup in items.EnumerateArray()) {
+                if (!storyGroup.TryGetProperty("stories", out JsonElement groupStories)
+                    || groupStories.ValueKind != JsonValueKind.Array) {
+                    continue;
+                }
+
+                foreach (JsonElement storyElement in groupStories.EnumerateArray()) {
+                    ELOR.VKAPILib.Objects.Story story = (ELOR.VKAPILib.Objects.Story)JsonSerializer.Deserialize(
+                        storyElement.GetRawText(),
+                        typeof(ELOR.VKAPILib.Objects.Story),
+                        ELOR.VKAPILib.BuildInJsonContext.Default);
+                    if (story != null) stories.Add(story);
+                    if (stories.Count >= 40) return stories;
+                }
+            }
+
+            return stories;
+        }
+
+        private Control BuildStoriesList(IReadOnlyList<ELOR.VKAPILib.Objects.Story> stories) {
+            StackPanel list = new StackPanel {
+                Spacing = 8,
+                MinWidth = 520
+            };
+
+            foreach (ELOR.VKAPILib.Objects.Story story in stories) {
+                list.Children.Add(BuildStoryButton(story));
+            }
+
+            return new ScrollViewer {
+                Content = list,
+                MaxHeight = 430
+            };
+        }
+
+        private Button BuildStoryButton(ELOR.VKAPILib.Objects.Story story) {
+            Border preview = new Border {
+                Width = 70,
+                Height = 96,
+                CornerRadius = new CornerRadius(10),
+                Background = App.GetResource<IBrush>("VKBackgroundSecondaryBrush")
+            };
+            Uri previewUri = GetStoryPreviewUri(story);
+            if (previewUri != null) ImageLoader.SetBackgroundSource(preview, previewUri);
+
+            TextBlock title = new TextBlock {
+                Text = BuildStoryTitle(story),
+                FontWeight = FontWeight.SemiBold,
+                TextWrapping = TextWrapping.Wrap
+            };
+            TextBlock subtitle = new TextBlock {
+                Text = BuildStorySubtitle(story),
+                Foreground = App.GetResource<IBrush>("VKTextSecondaryBrush"),
+                TextWrapping = TextWrapping.Wrap
+            };
+
+            Grid content = new Grid {
+                ColumnDefinitions = new ColumnDefinitions("Auto *"),
+                ColumnSpacing = 12,
+                Children = {
+                    preview,
+                    new StackPanel {
+                        Spacing = 3,
+                        VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+                        Children = {
+                            title,
+                            subtitle
+                        }
+                    }
+                }
+            };
+            Grid.SetColumn(content.Children[1], 1);
+
+            Button button = new Button {
+                HorizontalContentAlignment = Avalonia.Layout.HorizontalAlignment.Stretch,
+                Padding = new Thickness(8),
+                Content = content
+            };
+            button.Classes.Add("Tertiary");
+            button.Click += async (a, b) => await ShowStoryPreviewAsync(story);
+            return button;
+        }
+
+        private async Task ShowStoryPreviewAsync(ELOR.VKAPILib.Objects.Story story) {
+            StoryPreview preview = new StoryPreview(story) {
+                DataContext = Session,
+                Width = 360,
+                Height = 560
+            };
+
+            VKUIDialog dialog = new VKUIDialog("История VK", null, ["Закрыть"], 1) {
+                DialogContent = preview
+            };
+            await dialog.ShowDialog<int>(this);
+        }
+
+        private static Uri GetStoryPreviewUri(ELOR.VKAPILib.Objects.Story story) {
+            try {
+                return story.Type switch {
+                    ELOR.VKAPILib.Objects.StoryType.Photo => story.Photo?.GetSizeAndUriForThumbnail(160, 220).Uri,
+                    ELOR.VKAPILib.Objects.StoryType.Video => story.Video?.FirstFrameForStory?.Uri,
+                    _ => null
+                };
+            } catch {
+                return null;
+            }
+        }
+
+        private static string BuildStoryTitle(ELOR.VKAPILib.Objects.Story story) {
+            if (story == null) return "История";
+            if (Settings.StreamerMode) return "История";
+
+            Tuple<string, string, Uri> owner = CacheManager.GetNameAndAvatar(story.OwnerId);
+            if (owner != null) return $"{owner.Item1} {owner.Item2}".Trim();
+
+            return story.OwnerId < 0 ? $"Сообщество {-story.OwnerId}" : $"Пользователь {story.OwnerId}";
+        }
+
+        private static string BuildStorySubtitle(ELOR.VKAPILib.Objects.Story story) {
+            string type = story.Type == ELOR.VKAPILib.Objects.StoryType.Video ? "видео" : "фото";
+            string seen = story.Seen == 1 ? "просмотрена" : "не просмотрена";
+            string visibility = story.IsExpired ? "истекла" : story.IsDeleted ? "удалена" : story.CanSee == 0 ? "недоступна" : "доступна";
+            return $"{type} · {seen} · {visibility} · story{story.OwnerId}_{story.Id}";
+        }
+
         private static string FormatAudioPlaybackHistoryItem(AudioPlaybackHistoryItem item) {
             DateTimeOffset updated = item.UpdatedAtUnix > 0
                 ? DateTimeOffset.FromUnixTimeSeconds(item.UpdatedAtUnix).ToLocalTime()
@@ -1271,7 +1466,7 @@ namespace ELOR.Laney.Views {
 
         private async Task RunPerfLiveQaAsync(long peerId) {
             try {
-                await Task.Delay(1200);
+                await Task.Delay(800);
 
                 ChatViewModel chat = Session.CurrentOpenedChat;
                 if (chat == null || chat.PeerId != peerId) {
@@ -1279,10 +1474,22 @@ namespace ELOR.Laney.Views {
                     return;
                 }
 
+                Stopwatch readiness = Stopwatch.StartNew();
+                while ((chat.IsLoading || chat.DisplayedMessages == null || chat.DisplayedMessages.Count == 0) && readiness.Elapsed < TimeSpan.FromSeconds(8)) {
+                    await Task.Delay(80);
+                }
+
                 int initialCount = chat.DisplayedMessages?.Count ?? 0;
                 int firstId = chat.DisplayedMessages?.First?.ConversationMessageId ?? 0;
                 int lastId = chat.DisplayedMessages?.Last?.ConversationMessageId ?? 0;
-                int middleId = initialCount > 0 ? chat.DisplayedMessages[initialCount / 2].ConversationMessageId : 0;
+
+                ChatHistoryBoundaryQaResult boundary = await ChatView.RunHistoryBoundaryQaAsync(TimeSpan.FromSeconds(5));
+                int afterPreviousCount = chat.DisplayedMessages?.Count ?? 0;
+                int afterPreviousFirstId = chat.DisplayedMessages?.First?.ConversationMessageId ?? 0;
+
+                int currentCount = chat.DisplayedMessages?.Count ?? 0;
+                int middleIndex = currentCount > 0 ? currentCount / 2 : 0;
+                int middleId = currentCount > 0 ? chat.DisplayedMessages[middleIndex].ConversationMessageId : 0;
 
                 if (middleId > 0) await chat.GoToMessageAsync(middleId);
                 await Task.Delay(300);
@@ -1290,17 +1497,12 @@ namespace ELOR.Laney.Views {
                 bool selectionOk = false;
                 try {
                     chat.SelectedMessages.Clear();
-                    if (initialCount > 0) chat.SelectedMessages.Select(initialCount / 2);
+                    if (currentCount > 0) chat.SelectedMessages.Select(middleIndex);
                     selectionOk = chat.SelectedMessagesCount == 1;
                     chat.SelectedMessages.Clear();
                 } catch (Exception ex) {
                     Log.Warning(ex, "Perf live QA selection check failed.");
                 }
-
-                await chat.GoToMessageAsync(firstId);
-                await chat.LoadPreviousMessagesAsync(null);
-                int afterPreviousCount = chat.DisplayedMessages?.Count ?? 0;
-                int afterPreviousFirstId = chat.DisplayedMessages?.First?.ConversationMessageId ?? 0;
 
                 await chat.GoToMessageAsync(lastId);
                 await chat.LoadNextMessagesAsync(null);
@@ -1308,15 +1510,16 @@ namespace ELOR.Laney.Views {
                 int afterNextLastId = chat.DisplayedMessages?.Last?.ConversationMessageId ?? 0;
 
                 bool scrollToOk = middleId > 0;
-                bool previousOk = afterPreviousCount >= initialCount && afterPreviousFirstId <= firstId;
+                bool previousOk = boundary.PreviousLoaded;
                 bool nextOk = afterNextCount >= afterPreviousCount && afterNextLastId >= lastId;
                 bool unreadNavigationOk = chat.UnreadMessagesCount >= 0 && chat.UnreadReactions?.Count >= 0 || chat.UnreadReactions == null;
 
                 Log.Information(
-                    "Perf live QA result: scrollTo={ScrollTo}; selection={Selection}; previous={Previous}; next={Next}; unreadNavigation={Unread}; initial={InitialCount} first={FirstId} last={LastId} afterPrevious={AfterPreviousCount}/{AfterPreviousFirstId} afterNext={AfterNextCount}/{AfterNextLastId}",
+                    "Perf live QA result: scrollTo={ScrollTo}; selection={Selection}; previous={Previous}; previousAnchor={PreviousAnchor}; next={Next}; unreadNavigation={Unread}; initial={InitialCount} first={FirstId} last={LastId} afterPrevious={AfterPreviousCount}/{AfterPreviousFirstId} afterNext={AfterNextCount}/{AfterNextLastId}; boundaryReady={BoundaryReady}; boundaryHasHolder={BoundaryHasHolder}; boundaryHolderReady={BoundaryHolderReady}; boundaryCanScroll={BoundaryCanScroll}; boundaryPrevFlag={BoundaryPrevFlag}; boundaryNextFlag={BoundaryNextFlag}; boundaryTrigger={BoundaryTrigger}; boundarySkip={BoundarySkip}; boundaryStarted={BoundaryStarted}; boundaryLoaded={BoundaryLoaded}; boundaryAnchorId={BoundaryAnchorId}; boundaryDrift={BoundaryDrift:F2}px; boundaryRestore={RestoreOldOffset:F1}/{RestoreOldHeight:F1}->{RestoreFinalOffset:F1}/{RestoreFinalHeight:F1}; boundaryOffset={BoundaryOffset:F1}/{BoundaryExtent:F1}",
                     scrollToOk,
                     selectionOk,
                     previousOk,
+                    boundary.AnchorStable,
                     nextOk,
                     unreadNavigationOk,
                     initialCount,
@@ -1325,7 +1528,25 @@ namespace ELOR.Laney.Views {
                     afterPreviousCount,
                     afterPreviousFirstId,
                     afterNextCount,
-                    afterNextLastId);
+                    afterNextLastId,
+                    boundary.Ready,
+                    boundary.HasHolder,
+                    boundary.HolderReady,
+                    boundary.CanChangeScroll,
+                    boundary.WasPreviousLoadFlagSet,
+                    boundary.WasNextLoadFlagSet,
+                    boundary.TriggerAccepted,
+                    boundary.TriggerSkipReason,
+                    boundary.Started,
+                    boundary.PreviousLoaded,
+                    boundary.AnchorId,
+                    boundary.AnchorDriftPx,
+                    boundary.RestoreOldOffset,
+                    boundary.RestoreOldHeight,
+                    boundary.RestoreFinalOffset,
+                    boundary.RestoreFinalHeight,
+                    boundary.FinalOffset,
+                    boundary.FinalExtent);
             } catch (Exception ex) {
                 Log.Error(ex, "Perf live QA failed.");
             }
@@ -1395,6 +1616,12 @@ namespace ELOR.Laney.Views {
                     break;
                 case Settings.CHAT_LIST_WIDTH:
                     ApplyChatListWidth(Convert.ToDouble(value));
+                    break;
+                case Settings.SHOW_ACCOUNT_RAIL:
+                    ApplyAccountRailVisibility();
+                    break;
+                case Settings.APP_ICON_VARIANT:
+                    ApplyWindowIcon();
                     break;
                 default:
                     if (key == Settings.ACCENT_COLOR || key == Settings.BuildAccountAccentKey(Session?.Id ?? 0)) {
@@ -1486,6 +1713,19 @@ namespace ELOR.Laney.Views {
 
         #endregion
 
+        private void StartMemoryPressureTimer() {
+            if (memoryPressureTimer != null) {
+                memoryPressureTimer.Start();
+                return;
+            }
+
+            memoryPressureTimer = new DispatcherTimer {
+                Interval = TimeSpan.FromSeconds(8)
+            };
+            memoryPressureTimer.Tick += (a, b) => BitmapManager.TrimForMemoryPressure();
+            memoryPressureTimer.Start();
+        }
+
         #region RAM info
 
         DispatcherTimer ramTimer = null;
@@ -1507,9 +1747,10 @@ namespace ELOR.Laney.Views {
         }
 
         private void UpdateRAMUsageInfo() {
-            long ram = Process.GetCurrentProcess().PrivateMemorySize64;
-            double rammb = (double)ram / 1048576;
-            RAMInfo.Text = $"{ChatViewModel.Instances} chats | {MessageViewModel.Instances} msgs | {ELOR.VKAPILib.Objects.Message.Instances} API msgs | {Math.Round(rammb, 1)} Mb";
+            Process process = Process.GetCurrentProcess();
+            double workingSetMb = process.WorkingSet64 / 1048576d;
+            double privateMb = process.PrivateMemorySize64 / 1048576d;
+            RAMInfo.Text = $"{ChatViewModel.Instances} chats | {MessageViewModel.Instances} msgs | {ELOR.VKAPILib.Objects.Message.Instances} API msgs | WS {Math.Round(workingSetMb, 0)} / P {Math.Round(privateMb, 0)} Mb";
         }
 
         #endregion
@@ -1520,7 +1761,34 @@ namespace ELOR.Laney.Views {
         bool isRightSideDisplaying = false;
 
         private void ApplyChatListWidth(double width) {
-            Root.ColumnDefinitions[0].Width = new GridLength(Math.Clamp(width, ChatListMinWidth, ChatListMaxWidth));
+            Root.ColumnDefinitions[ChatListColumnIndex].Width = new GridLength(Math.Clamp(width, ChatListMinWidth, ChatListMaxWidth));
+        }
+
+        private void RefreshAccountRail() {
+            AccountRailList.ItemsSource = null;
+            AccountRailList.ItemsSource = VKSession.Sessions;
+            ApplyAccountRailVisibility();
+        }
+
+        private void ApplyAccountRailVisibility() {
+            bool visible = Settings.ShowAccountRail && isWide && VKSession.Sessions.Count > 1;
+            AccountRail.IsVisible = visible;
+            Root.ColumnDefinitions[AccountRailColumnIndex].Width = visible ? GridLength.Auto : new GridLength(0);
+        }
+
+        private void AccountRailButton_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e) {
+            if ((sender as Control)?.DataContext is VKSession session) {
+                VKSession.TryOpenSessionWindow(session.Id);
+            }
+        }
+
+        private void ApplyWindowIcon() {
+            try {
+                WindowIcon icon = AssetsManager.GetWindowIconFromUri(AssetsManager.GetAppIconUri(), "avares://laney/Assets/Logo/icon.ico");
+                if (icon != null) Icon = icon;
+            } catch (Exception ex) {
+                Log.Warning(ex, "Cannot apply app icon variant.");
+            }
         }
 
         private void ChatListSplitter_PointerPressed(object sender, PointerPressedEventArgs e) {
@@ -1536,7 +1804,8 @@ namespace ELOR.Laney.Views {
         private void ChatListSplitter_PointerMoved(object sender, PointerEventArgs e) {
             if (!isChatListSplitterDragging) return;
 
-            ApplyChatListWidth(e.GetPosition(Root).X);
+            double railWidth = AccountRail.IsVisible ? AccountRail.Bounds.Width : 0;
+            ApplyChatListWidth(e.GetPosition(Root).X - railWidth);
             e.Handled = true;
         }
 
@@ -1545,7 +1814,7 @@ namespace ELOR.Laney.Views {
 
             isChatListSplitterDragging = false;
             e.Pointer.Capture(null);
-            Settings.ChatListWidth = Root.ColumnDefinitions[0].Width.Value;
+            Settings.ChatListWidth = Root.ColumnDefinitions[ChatListColumnIndex].Width.Value;
             e.Handled = true;
         }
 
@@ -1553,16 +1822,20 @@ namespace ELOR.Laney.Views {
             isWide = width >= 720;
 
             if (!isWide) {
-                Grid.SetColumnSpan(LeftNav, 3);
+                AccountRail.IsVisible = false;
+                Grid.SetColumn(LeftNav, 0);
+                Grid.SetColumnSpan(LeftNav, 4);
                 Grid.SetColumn(ChatViewContainer, 0);
-                Grid.SetColumnSpan(ChatViewContainer, 3);
+                Grid.SetColumnSpan(ChatViewContainer, 4);
                 Separator.IsVisible = false;
 
                 LeftNav.IsVisible = !isRightSideDisplaying;
                 ChatViewContainer.IsVisible = isRightSideDisplaying;
             } else {
+                ApplyAccountRailVisibility();
+                Grid.SetColumn(LeftNav, ChatListColumnIndex);
                 Grid.SetColumnSpan(LeftNav, 1);
-                Grid.SetColumn(ChatViewContainer, 2);
+                Grid.SetColumn(ChatViewContainer, ChatColumnIndex);
                 Grid.SetColumnSpan(ChatViewContainer, 1);
                 Separator.IsVisible = true;
 

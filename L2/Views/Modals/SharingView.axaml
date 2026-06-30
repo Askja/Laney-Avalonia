@@ -11,7 +11,7 @@
         mc:Ignorable="d" d:DesignWidth="540" d:DesignHeight="640"
         x:Class="ELOR.Laney.Views.Modals.SharingView" x:DataType="vm:SharingViewModel"
         Width="540" Height="620"
-        Title="Sharing UI">
+        Title="Поделиться">
   <Grid x:Name="Root" RowDefinitions="Auto *">
     <vkui:WindowTitleBar x:Name="TitleBar" CanShowTitle="False" CanMove="True" />
     <Grid x:Name="ContentPanel" RowDefinitions="Auto Auto *">
