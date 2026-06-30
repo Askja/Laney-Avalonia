@@ -74,7 +74,6 @@ namespace ELOR.Laney.Controls {
         private long _bottomStickSuppressedUntilTicks = 0;
         private bool _isRestoringLayoutAnchor = false;
         private bool _isApplyingBottomStick = false;
-        private bool _restoreAnchorRealizationRequested = false;
         private double _previousLoadSnapshotOffset = Double.NaN;
         private double _previousLoadUserOffsetDelta = 0;
 
@@ -347,7 +346,7 @@ namespace ELOR.Laney.Controls {
                     return;
                 }
 
-                if (!offsetChanged && extentChanged && TryApplyLayoutAnchorGuard()) {
+                if (extentChanged && TryApplyLayoutAnchorGuard()) {
                     SaveScrollPosition(true);
                     return;
                 }
@@ -415,7 +414,6 @@ namespace ELOR.Laney.Controls {
             _isPreviousMessagesLoadTriggered = true;
             _canChangeScroll = true;
             _previousRestoreTriggerTicks = 0;
-            _restoreAnchorRealizationRequested = false;
             _previousLoadSnapshotOffset = Double.NaN;
             _previousLoadUserOffsetDelta = 0;
             LastPreviousLoadUserOffsetDelta = 0;
@@ -462,7 +460,6 @@ namespace ELOR.Laney.Controls {
                 _restoreScrollAttempts = RestorePreviousLoadAttempts;
                 _restoreScrollLastHeight = Double.NaN;
                 _restoreScrollStableFrames = 0;
-                _restoreAnchorRealizationRequested = false;
                 _previousRestoreTriggerTicks = Stopwatch.GetTimestamp();
                 _canChangeScroll = false;
                 restoreScheduled = true;
@@ -495,7 +492,7 @@ namespace ELOR.Laney.Controls {
             double newHeight = Scroll.Extent.Height;
             double diff = newHeight - oldHeight;
             if (Settings.ShowDebugCounters) Debug.WriteLine($"Trying to restore scroll position after previous messages loaded. Old height: {oldHeight}, new height: {newHeight}, diff: {diff}");
-            if (diff > 0 && !_restoreAnchorRealizationRequested) EnsureApproximateOffset(oldOffset, diff);
+            if (diff > 0) EnsureApproximateOffset(oldOffset, diff);
 
             bool heightStable = !Double.IsNaN(_restoreScrollLastHeight) && Math.Abs(newHeight - _restoreScrollLastHeight) <= 1;
             _restoreScrollLastHeight = newHeight;
@@ -724,15 +721,7 @@ namespace ELOR.Laney.Controls {
             if (!anchor.IsValid || ScrollViewer == null) return false;
 
             Control container = FindRealizedControlForItem(anchor.Item);
-            if (container == null) {
-                if (!_restoreAnchorRealizationRequested) {
-                    object currentItem = FindCurrentItemById(anchor.Item) ?? anchor.Item;
-                    _restoreAnchorRealizationRequested = true;
-                    ScrollIntoView(currentItem);
-                }
-
-                return false;
-            }
+            if (container == null) return false;
 
             Point? currentTop = container.TranslatePoint(new Point(0, 0), ScrollViewer);
             if (currentTop == null) return false;
@@ -923,10 +912,10 @@ namespace ELOR.Laney.Controls {
         }
 
         private void FinishPreviousMessagesLoadRestore() {
+            TryApplyFinalPreviousRestoreAnchor();
             _isPreviousMessagesLoadTriggered = false;
             _canChangeScroll = true;
             _previousRestoreTriggerTicks = 0;
-            _restoreAnchorRealizationRequested = false;
             _previousLoadSnapshotOffset = Double.NaN;
             _previousLoadUserOffsetDelta = 0;
             _suppressIncrementalLoadUntilTicks = GetFutureTimestamp(IncrementalLoadSuppressMs);
@@ -934,8 +923,20 @@ namespace ELOR.Laney.Controls {
             LastPreviousRestoreFinalOffset = ScrollViewer?.Offset.Y ?? Double.NaN;
             LastPreviousRestoreFinalHeight = ScrollViewer?.Extent.Height ?? Double.NaN;
             UpdatePreviousRestoreDiagnostics();
+            RequestNextFrame(UpdatePreviousRestoreDiagnostics);
             RefreshLayoutAnchorGuard(PreviousLayoutAnchorGuardMs, _activePreviousRestoreAnchor);
             SaveScrollPosition(true);
+        }
+
+        private void TryApplyFinalPreviousRestoreAnchor() {
+            if (!_activePreviousRestoreAnchor.IsValid || ScrollViewer == null) return;
+
+            _isRestoringLayoutAnchor = true;
+            try {
+                TryRestoreAnchor(_activePreviousRestoreAnchor);
+            } finally {
+                _isRestoringLayoutAnchor = false;
+            }
         }
 
         private void AbortPreviousMessagesLoad(string reason, bool saveScroll = false) {
@@ -1107,6 +1108,18 @@ namespace ELOR.Laney.Controls {
 
             LastPreviousRestoreAnchorId = _activePreviousRestoreAnchor.Item.Id;
             LastPreviousRestoreDrift = currentTop.Value - _activePreviousRestoreAnchor.Top;
+            LastPreviousRestoreFinalOffset = ScrollViewer?.Offset.Y ?? LastPreviousRestoreFinalOffset;
+            LastPreviousRestoreFinalHeight = ScrollViewer?.Extent.Height ?? LastPreviousRestoreFinalHeight;
+            if (Math.Abs(LastPreviousRestoreDrift) <= 6 && IsPreviousRestoreExhaustedReason()) {
+                LastPreviousTriggerSkipReason = "final_anchor_restored";
+            }
+        }
+
+        private bool IsPreviousRestoreExhaustedReason() {
+            return LastPreviousTriggerSkipReason == "restore_attempts_exhausted"
+                || LastPreviousTriggerSkipReason == "stabilize_attempts_exhausted"
+                || LastPreviousTriggerSkipReason == "restore_timeout"
+                || LastPreviousTriggerSkipReason == "stabilize_timeout";
         }
 
         private bool IsNearBottom(double tolerance) {
