@@ -1460,8 +1460,13 @@ namespace ELOR.Laney.Views {
                 ChatPerfScrollQaResult result = await ChatView.RunPerfScrollQaAsync(TimeSpan.FromSeconds(4));
                 bool fpsOk = result.AverageFps >= 58 && result.JankFrames <= 8;
                 Log.Information(
-                    "Perf scroll QA result: fpsOk={FpsOk}; avgFps={AverageFps:F1}; avgFrame={AverageFrameMs:F2}ms; lastFrame={LastFrameMs:F2}ms; maxFrame={MaxFrameMs:F2}ms; jank={JankFrames}; visibleControls={VisibleControls}; samples={Samples}; privateMemory={PrivateMemoryMb:F2}MB",
+                    "Perf scroll QA result: fpsOk={FpsOk}; canLeaveBottom={CanLeaveBottom}; leaveBottom={LeaveBottomFinal:F1}/{LeaveBottomTarget:F1}; leaveBottomMax={LeaveBottomMax:F1}; leaveBottomDistance={LeaveBottomDistance:F1}; avgFps={AverageFps:F1}; avgFrame={AverageFrameMs:F2}ms; lastFrame={LastFrameMs:F2}ms; maxFrame={MaxFrameMs:F2}ms; jank={JankFrames}; visibleControls={VisibleControls}; samples={Samples}; privateMemory={PrivateMemoryMb:F2}MB",
                     fpsOk,
+                    result.CanScrollAwayFromBottom,
+                    result.ScrollAwayFromBottomFinal,
+                    result.ScrollAwayFromBottomTarget,
+                    result.ScrollAwayFromBottomMax,
+                    result.ScrollAwayFromBottomDistance,
                     result.AverageFps,
                     result.AverageFrameMs,
                     result.LastFrameMs,

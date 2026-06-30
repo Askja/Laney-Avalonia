@@ -2,6 +2,7 @@
 
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Controls.Primitives;
 using Avalonia.Threading;
 using ELOR.Laney.Core;
@@ -49,6 +50,7 @@ namespace ELOR.Laney.Controls {
         private bool _isNextMessagesLoadTriggered = false;
         private long _lastScrollSaveTicks = 0;
         private const double BottomStickTolerance = 96;
+        private const double BottomPinnedTolerance = 6;
         private const double ScrollDirectionTolerance = 0.5;
         private const byte RestoreRequiredStableFrames = 3;
         private const byte RestorePreviousLoadAttempts = 90;
@@ -57,8 +59,7 @@ namespace ELOR.Laney.Controls {
         private const double IncrementalLoadSuppressMs = 400;
         private const double LayoutAnchorGuardMs = 1800;
         private const double PreviousLayoutAnchorGuardMs = 5000;
-        private const double BottomStickGuardMs = 1800;
-        private const double BottomStickRestoreTolerance = 180;
+        private const double BottomStickGuardMs = 1200;
         private double _lastScrollOffset = Double.NaN;
         private double _restoreScrollLastHeight = Double.NaN;
         private byte _restoreScrollStableFrames = 0;
@@ -222,6 +223,7 @@ namespace ELOR.Laney.Controls {
             base.OnApplyTemplate(e);
             DataContextChanged += MessagesListBox_DataContextChanged;
             ScrollViewer.ScrollChanged += ScrollViewer_ScrollChanged;
+            ScrollViewer.PointerWheelChanged += ScrollViewer_PointerWheelChanged;
             CheckDataContext();
         }
 
@@ -231,6 +233,7 @@ namespace ELOR.Laney.Controls {
 
             if (ScrollViewer != null) {
                 ScrollViewer.ScrollChanged -= ScrollViewer_ScrollChanged;
+                ScrollViewer.PointerWheelChanged -= ScrollViewer_PointerWheelChanged;
             }
 
             if (_currentHolder != null) {
@@ -334,8 +337,8 @@ namespace ELOR.Laney.Controls {
 
             if (isOk) {
                 bool isUserScroll = offsetChanged && !extentChanged;
-                if (isUserScroll && isMovingUp) ClearBottomStickGuard();
-                if (IsNearBottom(BottomStickTolerance) && (!isUserScroll || isMovingDown || !hasScrollDirection)) RefreshBottomStickGuard(BottomStickGuardMs);
+                if (offsetChanged && isMovingUp) ClearBottomStickGuard();
+                if (IsNearBottom(BottomPinnedTolerance) && (!isUserScroll || isMovingDown || !hasScrollDirection)) RefreshBottomStickGuard(BottomStickGuardMs);
 
                 if (extentChanged && TryApplyBottomStickGuard(offsetChanged)) {
                     SaveScrollPosition(true);
@@ -368,6 +371,13 @@ namespace ELOR.Laney.Controls {
 
                 if (isUserScroll && !IsBottomStickGuardActive() && !IsNearBottom(BottomStickTolerance)) RefreshLayoutAnchorGuard(LayoutAnchorGuardMs);
             }
+        }
+
+        private void ScrollViewer_PointerWheelChanged(object sender, PointerWheelEventArgs e) {
+            if (Math.Abs(e.Delta.Y) < 0.01) return;
+
+            ClearBottomStickGuard();
+            if (!IsNearBottom(BottomPinnedTolerance)) RefreshLayoutAnchorGuard(LayoutAnchorGuardMs);
         }
 
         private void SaveScrollPosition(bool force = false) {
@@ -563,7 +573,7 @@ namespace ELOR.Laney.Controls {
             if (holder == null || token.IsCancellationRequested) return;
 
             _isNextMessagesLoadTriggered = true;
-            bool shouldStickToBottom = IsNearBottom(BottomStickTolerance);
+            bool shouldStickToBottom = IsNearBottom(BottomPinnedTolerance);
 
             try {
                 await holder.LoadNextMessagesAsync(token);
@@ -975,6 +985,11 @@ namespace ELOR.Laney.Controls {
                 return;
             }
 
+            if (!IsNearBottom(BottomPinnedTolerance)) {
+                ClearBottomStickGuard();
+                return;
+            }
+
             _bottomStickGuardUntilTicks = GetFutureTimestamp(milliseconds);
             ClearLayoutAnchorGuard();
         }
@@ -994,10 +1009,14 @@ namespace ELOR.Laney.Controls {
 
         private bool TryApplyBottomStickGuard(bool offsetChanged) {
             if (ScrollViewer == null || !IsBottomStickGuardActive() || _isPreviousMessagesLoadTriggered) return false;
-            if (offsetChanged && !IsNearBottom(BottomStickRestoreTolerance)) return false;
+            if (offsetChanged && !IsNearBottom(BottomPinnedTolerance)) {
+                ClearBottomStickGuard();
+                return false;
+            }
 
             double maxOffset = GetMaxOffset();
             if (maxOffset < 0) return false;
+            if (Math.Abs(ScrollViewer.Offset.Y - maxOffset) <= 1) return false;
 
             _isApplyingBottomStick = true;
             try {

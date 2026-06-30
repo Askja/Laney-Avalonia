@@ -348,7 +348,7 @@ namespace ELOR.Laney.Views {
         bool autoScrollToLastMessage = false;
         bool visibleMessagesCheckQueued = false;
         private void ScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e) {
-            autoScrollToLastMessage = MessagesList?.IsScrollOperationInProgress != true && IsNearBottom(96);
+            autoScrollToLastMessage = MessagesList?.IsScrollOperationInProgress != true && IsNearBottom(8);
             QueueFirstAndLastDisplayedMessagesCheck();
         }
 
@@ -507,12 +507,12 @@ namespace ELOR.Laney.Views {
             int samples = 0;
 
             while (stopwatch.Elapsed < duration) {
-                double maxOffset = Math.Max(0, MessagesListScrollViewer.Extent.Height - MessagesListScrollViewer.Viewport.Height);
+                double loopMaxOffset = Math.Max(0, MessagesListScrollViewer.Extent.Height - MessagesListScrollViewer.Viewport.Height);
                 double step = Math.Max(10, MessagesListScrollViewer.Viewport.Height / 60d);
                 double nextOffset = MessagesListScrollViewer.Offset.Y + step * direction;
-                if (nextOffset <= 0 || nextOffset >= maxOffset) {
+                if (nextOffset <= 0 || nextOffset >= loopMaxOffset) {
                     direction *= -1;
-                    nextOffset = Math.Clamp(MessagesListScrollViewer.Offset.Y + step * direction, 0, maxOffset);
+                    nextOffset = Math.Clamp(MessagesListScrollViewer.Offset.Y + step * direction, 0, loopMaxOffset);
                 }
 
                 MessagesListScrollViewer.Offset = new Vector(MessagesListScrollViewer.Offset.X, nextOffset);
@@ -538,8 +538,48 @@ namespace ELOR.Laney.Views {
 
             double boundedOriginalOffset = Math.Min(originalOffset, Math.Max(0, MessagesListScrollViewer.Extent.Height - MessagesListScrollViewer.Viewport.Height));
             MessagesListScrollViewer.Offset = new Vector(MessagesListScrollViewer.Offset.X, boundedOriginalOffset);
+            await Task.Delay(80);
+
+            double viewportHeight = MessagesListScrollViewer.Viewport.Height;
+            if (viewportHeight <= 0) viewportHeight = MessagesListScrollViewer.Bounds.Height;
+            double maxOffset = Math.Max(0, MessagesListScrollViewer.Extent.Height - viewportHeight);
+            if (maxOffset > 180) {
+                await SetMessagesScrollOffsetForQaAsync(maxOffset, TimeSpan.FromMilliseconds(700));
+                await Task.Delay(220);
+
+                double awayDistance = Math.Min(160, Math.Max(80, GetMaxScrollOffset() * 0.2));
+                double targetAwayFromBottom = Math.Max(0, GetMaxScrollOffset() - awayDistance);
+                await SetMessagesScrollOffsetForQaAsync(targetAwayFromBottom, TimeSpan.FromMilliseconds(700));
+                await Task.Delay(180);
+
+                double settledTargetAwayFromBottom = Math.Max(0, GetMaxScrollOffset() - awayDistance);
+                if (Math.Abs(MessagesListScrollViewer.Offset.Y - settledTargetAwayFromBottom) > 16) {
+                    targetAwayFromBottom = settledTargetAwayFromBottom;
+                    await SetMessagesScrollOffsetForQaAsync(targetAwayFromBottom, TimeSpan.FromMilliseconds(500));
+                }
+
+                await Task.Delay(450);
+                double finalMaxOffset = GetMaxScrollOffset();
+                result.ScrollAwayFromBottomTarget = targetAwayFromBottom;
+                result.ScrollAwayFromBottomFinal = MessagesListScrollViewer.Offset.Y;
+                result.ScrollAwayFromBottomMax = finalMaxOffset;
+                result.ScrollAwayFromBottomDistance = Math.Max(0, finalMaxOffset - result.ScrollAwayFromBottomFinal);
+                result.CanScrollAwayFromBottom = result.ScrollAwayFromBottomDistance >= Math.Min(64, awayDistance * 0.5);
+                MessagesListScrollViewer.Offset = new Vector(MessagesListScrollViewer.Offset.X, Math.Min(boundedOriginalOffset, GetMaxScrollOffset()));
+            } else {
+                result.CanScrollAwayFromBottom = true;
+            }
+
             if (!wasRunning && !DebugOverlay.IsVisible) StopFrameMonitor();
             return result;
+        }
+
+        private double GetMaxScrollOffset() {
+            if (MessagesListScrollViewer == null) return 0;
+
+            double viewportHeight = MessagesListScrollViewer.Viewport.Height;
+            if (viewportHeight <= 0) viewportHeight = MessagesListScrollViewer.Bounds.Height;
+            return Math.Max(0, MessagesListScrollViewer.Extent.Height - viewportHeight);
         }
 
         public async Task<ChatHistoryBoundaryQaResult> RunHistoryBoundaryQaAsync(TimeSpan timeout) {
@@ -857,6 +897,11 @@ namespace ELOR.Laney.Views {
         public int JankFrames { get; set; }
         public int VisibleControls { get; set; }
         public double PrivateMemoryMb { get; set; }
+        public bool CanScrollAwayFromBottom { get; set; }
+        public double ScrollAwayFromBottomTarget { get; set; }
+        public double ScrollAwayFromBottomFinal { get; set; }
+        public double ScrollAwayFromBottomMax { get; set; }
+        public double ScrollAwayFromBottomDistance { get; set; }
     }
 
     public sealed class ChatHistoryBoundaryQaResult {
