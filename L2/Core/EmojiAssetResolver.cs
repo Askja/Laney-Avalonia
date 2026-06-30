@@ -7,7 +7,7 @@ namespace ELOR.Laney.Core {
     public static class EmojiAssetResolver {
         private const int VariationSelector16 = 0xFE0F;
         private const int ZeroWidthJoiner = 0x200D;
-        private const string TwemojiCdnBase = "https://cdn.jsdelivr.net/gh/jdecked/twemoji@latest/assets/72x72/";
+        private const string TwemojiCdnBase = "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/";
         private const string NotoEmojiCdnBase = "https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji@main/png/128/";
 
         public static Uri ResolvePickerImageUri(string emoji, long peerId = 0) {
@@ -68,7 +68,7 @@ namespace ELOR.Laney.Core {
             string code = BuildVkCodepointName(emoji);
             return String.IsNullOrEmpty(code)
                 ? null
-                : new Uri($"https://vk.com/images/emoji/{code}.png");
+                : new Uri($"https://vk.ru/images/emoji/{code}.png");
         }
 
         private static Uri BuildNotoPngUri(string emoji) {

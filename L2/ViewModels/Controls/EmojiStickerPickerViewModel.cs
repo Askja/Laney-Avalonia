@@ -18,7 +18,7 @@ namespace ELOR.Laney.ViewModels.Controls {
         private readonly long _peerId;
         private readonly bool _canUseImage;
         private bool _imageUriResolved;
-        private Uri _imageUri;
+        private IReadOnlyList<Uri> _imageUris;
 
         public EmojiPickerEmoji(SingleEmoji emoji, string packId, long peerId) {
             Emoji = emoji;
@@ -31,18 +31,19 @@ namespace ELOR.Laney.ViewModels.Controls {
 
         public SingleEmoji Emoji { get; }
         public string Text { get; }
-        public Uri ImageUri => ResolveImageUri();
-        public bool HasImage => ResolveImageUri() != null;
-        public bool IsTextVisible => ImageUri == null;
+        public IReadOnlyList<Uri> ImageUris => ResolveImageUris();
+        public Uri ImageUri => ImageUris.Count > 0 ? ImageUris[0] : null;
+        public bool HasImage => ImageUris.Count > 0;
+        public bool IsTextVisible => !HasImage;
         public FontFamily FontFamily { get; }
 
-        private Uri ResolveImageUri() {
-            if (!_canUseImage) return null;
-            if (_imageUriResolved) return _imageUri;
+        private IReadOnlyList<Uri> ResolveImageUris() {
+            if (!_canUseImage) return Array.Empty<Uri>();
+            if (_imageUriResolved) return _imageUris;
 
-            _imageUri = EmojiAssetResolver.ResolveImageUri(Text, _packId, _peerId);
+            _imageUris = EmojiAssetResolver.ResolveImageUris(Text, _packId, _peerId);
             _imageUriResolved = true;
-            return _imageUri;
+            return _imageUris;
         }
     }
 

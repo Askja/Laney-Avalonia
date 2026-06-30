@@ -32,7 +32,7 @@
                     <Border Focusable="True" Width="28" Height="28" Background="Transparent" Tapped="EmojiListBoxItem_Tapped">
                       <Grid>
                         <TextBlock FontSize="17" VerticalAlignment="Center" TextAlignment="Center" Text="{Binding Text}" FontFamily="{Binding FontFamily}" IsVisible="{Binding IsTextVisible}"/>
-                        <Image Width="21" Height="21" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding HasImage}" controls:ImageLoader.Source="{Binding ImageUri}"/>
+                        <Image Width="21" Height="21" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding HasImage}" controls:ImageLoader.SourceCandidates="{Binding ImageUris}"/>
                       </Grid>
                     </Border>
                   </DataTemplate>

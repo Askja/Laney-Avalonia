@@ -11,6 +11,7 @@ using Avalonia.VisualTree;
 using ELOR.Laney.Core;
 using Serilog;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -27,6 +28,9 @@ namespace ELOR.Laney.Controls {
         static ImageLoader() {
             SourceProperty.Changed
                 .Subscribe(args => OnSourceChanged((Image)args.Sender, args.NewValue.Value));
+
+            SourceCandidatesProperty.Changed
+                .Subscribe(args => OnSourceCandidatesChanged((Image)args.Sender, args.NewValue.Value));
 
             SvgSourceProperty.Changed
                 .Subscribe(args => OnSvgSourceChanged((Image)args.Sender, args.NewValue.Value));
@@ -65,6 +69,9 @@ namespace ELOR.Laney.Controls {
             switch (control) {
                 case Image image when GetSvgSource(image) != null:
                     OnSvgSourceChanged(image, GetSvgSource(image));
+                    break;
+                case Image image when HasSourceCandidates(GetSourceCandidates(image)):
+                    OnSourceCandidatesChanged(image, GetSourceCandidates(image));
                     break;
                 case Image image:
                     OnSourceChanged(image, GetSource(image));
@@ -219,6 +226,7 @@ namespace ELOR.Laney.Controls {
         private static bool IsCurrentUri(Control control, Uri uri) {
             return control switch {
                 Image image when GetSvgSource(image) != null => GetSvgSource(image) == uri,
+                Image image when HasSourceCandidates(GetSourceCandidates(image)) => ContainsUri(GetSourceCandidates(image), uri),
                 Image image => GetSource(image) == uri,
                 Avatar avatar => GetImage(avatar) == uri,
                 Shape shape => GetFillSource(shape) == uri,
@@ -252,6 +260,8 @@ namespace ELOR.Laney.Controls {
         }
 
         private static void OnSourceChanged(Image sender, Uri? uri) {
+            if (HasSourceCandidates(GetSourceCandidates(sender))) return;
+
             if (uri == null) {
                 CancelLoad(sender);
                 UnregisterLifecycle(sender);
@@ -284,6 +294,63 @@ namespace ELOR.Laney.Controls {
                 Log.Error(ex, "Cannot set bitmap to Image!");
                 await Dispatcher.UIThread.InvokeAsync(() => {
                     if (IsCurrent(sender, state, uri)) sender.Source = null;
+                });
+            } finally {
+                FinishLoad(sender, state);
+            }
+        }
+
+        private static void OnSourceCandidatesChanged(Image sender, IReadOnlyList<Uri>? uris) {
+            if (!HasSourceCandidates(uris)) {
+                Uri? fallback = GetSource(sender);
+                if (fallback != null) {
+                    OnSourceChanged(sender, fallback);
+                    return;
+                }
+
+                CancelLoad(sender);
+                UnregisterLifecycle(sender);
+                sender.Source = null;
+                return;
+            }
+
+            if (!EnsureAttached(sender)) return;
+            _ = LoadBitmapCandidatesIntoImageAsync(sender, uris);
+        }
+
+        private static async Task LoadBitmapCandidatesIntoImageAsync(Image sender, IReadOnlyList<Uri> uris) {
+            ImageLoadState state = BeginLoad(sender);
+            Uri[] candidates = DeduplicateUris(uris);
+            double decodeWidth = GetDecodeWidth(sender);
+            double decodeHeight = GetDecodeHeight(sender);
+
+            try {
+                using IDisposable lease = await MediaMemoryGovernor.EnterMediaLoadAsync(state.Token);
+                if (!IsCurrentCandidates(sender, state, candidates) || !IsNearViewport(sender)) return;
+
+                Bitmap bitmap = null;
+                foreach (Uri candidate in candidates) {
+                    if (!IsCurrentCandidates(sender, state, candidates)) return;
+                    bitmap = await BitmapManager.GetBitmapAsync(candidate, decodeWidth, decodeHeight, state.Token, BitmapCacheKind.Attachment, false);
+                    if (bitmap != null) break;
+                }
+
+                if (bitmap == null) {
+                    await Dispatcher.UIThread.InvokeAsync(() => {
+                        if (IsCurrentCandidates(sender, state, candidates)) sender.Source = null;
+                    });
+                    return;
+                }
+
+                await Dispatcher.UIThread.InvokeAsync(() => {
+                    if (IsCurrentCandidates(sender, state, candidates)) sender.Source = bitmap;
+                });
+            } catch (OperationCanceledException) {
+                // Виртуализация выгрузила контрол или список кандидатов поменялся.
+            } catch (Exception ex) {
+                Log.Warning(ex, "Cannot set candidate bitmap to Image!");
+                await Dispatcher.UIThread.InvokeAsync(() => {
+                    if (IsCurrentCandidates(sender, state, candidates)) sender.Source = null;
                 });
             } finally {
                 FinishLoad(sender, state);
@@ -616,6 +683,46 @@ namespace ELOR.Laney.Controls {
             control.LayoutUpdated -= OnDeferredImageLayoutUpdated;
         }
 
+        private static bool HasSourceCandidates(IReadOnlyList<Uri>? uris) {
+            return uris != null && uris.Count > 0;
+        }
+
+        private static bool ContainsUri(IReadOnlyList<Uri>? uris, Uri uri) {
+            if (uris == null || uri == null) return false;
+
+            for (int i = 0; i < uris.Count; i++) {
+                if (uris[i] == uri) return true;
+            }
+
+            return false;
+        }
+
+        private static Uri[] DeduplicateUris(IReadOnlyList<Uri> uris) {
+            if (uris == null || uris.Count == 0) return [];
+
+            List<Uri> result = new List<Uri>(uris.Count);
+            for (int i = 0; i < uris.Count; i++) {
+                Uri uri = uris[i];
+                if (uri == null || result.Contains(uri)) continue;
+                result.Add(uri);
+            }
+
+            return result.ToArray();
+        }
+
+        private static bool IsCurrentCandidates(Image image, ImageLoadState state, IReadOnlyList<Uri> candidates) {
+            if (!ReferenceEquals(GetLoadState(image), state) || state.Token.IsCancellationRequested) return false;
+
+            IReadOnlyList<Uri>? current = GetSourceCandidates(image);
+            if (!HasSourceCandidates(current) || candidates == null || current.Count != candidates.Count) return false;
+
+            for (int i = 0; i < candidates.Count; i++) {
+                if (current[i] != candidates[i]) return false;
+            }
+
+            return true;
+        }
+
         private static readonly AttachedProperty<ImageLoadState?> LoadStateProperty =
             AvaloniaProperty.RegisterAttached<Control, ImageLoadState?>("LoadState", typeof(ImageLoader));
 
@@ -660,6 +767,17 @@ namespace ELOR.Laney.Controls {
 
         public static void SetSource(Image element, Uri? value) {
             element.SetValue(SourceProperty, value);
+        }
+
+        public static readonly AttachedProperty<IReadOnlyList<Uri>?> SourceCandidatesProperty =
+            AvaloniaProperty.RegisterAttached<Image, IReadOnlyList<Uri>?>("SourceCandidates", typeof(ImageLoader));
+
+        public static IReadOnlyList<Uri>? GetSourceCandidates(Image element) {
+            return element.GetValue(SourceCandidatesProperty);
+        }
+
+        public static void SetSourceCandidates(Image element, IReadOnlyList<Uri>? value) {
+            element.SetValue(SourceCandidatesProperty, value);
         }
 
         public static readonly AttachedProperty<Uri?> SvgSourceProperty =
