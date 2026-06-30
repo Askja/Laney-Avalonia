@@ -5,11 +5,14 @@ using System;
 
 namespace ELOR.Laney.ViewModels {
     public sealed class StoryRailItemViewModel : ViewModelBase {
+        private string _stateText;
+        private bool _isSeen;
+
         public StoryRailItemViewModel(Story story) {
             Story = story ?? throw new ArgumentNullException(nameof(story));
             OwnerId = story.OwnerId;
             PreviewUri = GetStoryPreviewUri(story);
-            IsSeen = story.Seen == 1;
+            _isSeen = story.Seen == 1;
             IsVideo = story.Type == StoryType.Video;
             IsUnavailable = story.IsExpired || story.IsDeleted || story.CanSee == 0;
 
@@ -18,7 +21,7 @@ namespace ELOR.Laney.ViewModels {
             Title = title;
             Initials = BuildInitials(title);
             AvatarUri = owner?.Item3;
-            StateText = BuildStateText(story);
+            _stateText = BuildStateText(story);
         }
 
         public Story Story { get; }
@@ -27,10 +30,18 @@ namespace ELOR.Laney.ViewModels {
         public Uri AvatarUri { get; }
         public string Title { get; }
         public string Initials { get; }
-        public string StateText { get; }
-        public bool IsSeen { get; }
+        public string StateText { get { return _stateText; } private set { _stateText = value; OnPropertyChanged(); } }
+        public bool IsSeen { get { return _isSeen; } private set { _isSeen = value; OnPropertyChanged(); } }
         public bool IsVideo { get; }
         public bool IsUnavailable { get; }
+
+        public void MarkSeenLocally() {
+            if (IsSeen || IsUnavailable) return;
+
+            Story.Seen = 1;
+            IsSeen = true;
+            StateText = BuildStateText(Story);
+        }
 
         private static Uri GetStoryPreviewUri(Story story) {
             try {

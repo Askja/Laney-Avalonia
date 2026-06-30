@@ -154,6 +154,7 @@ namespace ELOR.Laney.Views {
                 DialogContent = preview
             };
             await dialog.ShowDialog<int>(Session.ModalWindow);
+            if (!Settings.ShouldSuppressStoryViewed) item.MarkSeenLocally();
         }
 
         private async void StoriesRefreshButton_Click(object sender, RoutedEventArgs e) {

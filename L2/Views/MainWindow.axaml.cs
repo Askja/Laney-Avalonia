@@ -25,7 +25,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using System.Text.Json;
 using System.Threading.Tasks;
 using VKUI.Controls;
 using PeerType = ELOR.VKAPILib.Objects.PeerType;
@@ -1161,45 +1160,7 @@ namespace ELOR.Laney.Views {
         }
 
         private async Task<IReadOnlyList<ELOR.VKAPILib.Objects.Story>> LoadVKStoriesAsync() {
-            if (Session?.API == null) return Array.Empty<ELOR.VKAPILib.Objects.Story>();
-
-            using JsonDocument document = await Session.API.CallMethodAsync("stories.get", new Dictionary<string, string> {
-                { "extended", "1" },
-                { "fields", "photo_50,photo_100,screen_name" }
-            });
-
-            JsonElement root = document.RootElement;
-            if (root.TryGetProperty("error", out JsonElement error)) {
-                string message = error.TryGetProperty("error_msg", out JsonElement errorMessage)
-                    ? errorMessage.GetString()
-                    : "VK API вернул ошибку без текста.";
-                throw new InvalidOperationException(message);
-            }
-
-            if (!root.TryGetProperty("response", out JsonElement response)
-                || !response.TryGetProperty("items", out JsonElement items)
-                || items.ValueKind != JsonValueKind.Array) {
-                return Array.Empty<ELOR.VKAPILib.Objects.Story>();
-            }
-
-            List<ELOR.VKAPILib.Objects.Story> stories = new List<ELOR.VKAPILib.Objects.Story>();
-            foreach (JsonElement storyGroup in items.EnumerateArray()) {
-                if (!storyGroup.TryGetProperty("stories", out JsonElement groupStories)
-                    || groupStories.ValueKind != JsonValueKind.Array) {
-                    continue;
-                }
-
-                foreach (JsonElement storyElement in groupStories.EnumerateArray()) {
-                    ELOR.VKAPILib.Objects.Story story = (ELOR.VKAPILib.Objects.Story)JsonSerializer.Deserialize(
-                        storyElement.GetRawText(),
-                        typeof(ELOR.VKAPILib.Objects.Story),
-                        ELOR.VKAPILib.BuildInJsonContext.Default);
-                    if (story != null) stories.Add(story);
-                    if (stories.Count >= 40) return stories;
-                }
-            }
-
-            return stories;
+            return await VKStoriesService.LoadStoriesAsync(Session, 40);
         }
 
         private Control BuildStoriesList(IReadOnlyList<ELOR.VKAPILib.Objects.Story> stories) {
@@ -1277,6 +1238,7 @@ namespace ELOR.Laney.Views {
                 DialogContent = preview
             };
             await dialog.ShowDialog<int>(this);
+            if (!Settings.ShouldSuppressStoryViewed && story != null) story.Seen = 1;
         }
 
         private static Uri GetStoryPreviewUri(ELOR.VKAPILib.Objects.Story story) {
