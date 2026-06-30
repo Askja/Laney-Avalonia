@@ -1270,6 +1270,7 @@ namespace ELOR.Laney.Views {
                 TryOpenPerfNewsFeed();
                 TryOpenPerfSettings();
                 TryRunPerfSettingsAudit();
+                TryRunPerfSettingsMutationSmoke();
             })();
         }
 
@@ -1454,6 +1455,39 @@ namespace ELOR.Laney.Views {
                     }
                 } catch (Exception ex) {
                     Log.Error(ex, "Settings audit failed.");
+                }
+            }, DispatcherPriority.Background);
+        }
+
+        private void TryRunPerfSettingsMutationSmoke() {
+            if (!App.HasCmdLineValue("perf-settings-mutation-smoke")) return;
+
+            Dispatcher.UIThread.Post(() => {
+                try {
+                    SettingsViewModel settings = new SettingsViewModel();
+                    if (Session != null) settings.SetAccountId(Session.Id);
+                    SettingsMutationSmokeReport report = settings.RunMutationSmoke();
+                    Log.Information(
+                        "Settings mutation smoke result: passed={Passed}; viewModels={ViewModels}/{Categories}; skippedViewModels={SkippedViewModels}; properties={Properties}; roundTrips={RoundTrips}; boolPairs={BoolPairs}; skipped={Skipped}; failed={Failed}",
+                        report.Passed,
+                        report.ViewModelsChecked,
+                        report.CategoriesTotal,
+                        report.SkippedViewModels,
+                        report.PropertiesChecked,
+                        report.RoundTripsPassed,
+                        report.BoolPairsPassed,
+                        report.SkippedProperties,
+                        report.FailedProperties);
+
+                    foreach (SettingsMutationSmokeIssue issue in report.Issues.Where(i => !i.IsSkipped).Take(80)) {
+                        Log.Warning("Settings mutation smoke issue: category={Category}; property={Property}; reason={Reason}", issue.Category, issue.Property, issue.Reason);
+                    }
+
+                    foreach (SettingsMutationSmokeIssue issue in report.Issues.Where(i => i.IsSkipped).Take(40)) {
+                        Log.Information("Settings mutation smoke skipped: category={Category}; property={Property}; reason={Reason}", issue.Category, issue.Property, issue.Reason);
+                    }
+                } catch (Exception ex) {
+                    Log.Error(ex, "Settings mutation smoke failed.");
                 }
             }, DispatcherPriority.Background);
         }

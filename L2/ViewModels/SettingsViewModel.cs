@@ -1,13 +1,16 @@
 using Avalonia.Controls;
 using Avalonia.LogicalTree;
+using ELOR.Laney.Core;
 using ELOR.Laney.Core.Localization;
 using ELOR.Laney.DataModels;
 using ELOR.Laney.ViewModels.SettingsCategories;
 using ELOR.Laney.Views.SettingsCategories;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Reflection;
 using VKUI.Controls;
 
 namespace ELOR.Laney.ViewModels {
@@ -81,6 +84,30 @@ namespace ELOR.Laney.ViewModels {
             return report;
         }
 
+        public SettingsMutationSmokeReport RunMutationSmoke() {
+            SettingsMutationSmokeReport report = new SettingsMutationSmokeReport(Categories.Count);
+            ApplyCategoryDataContexts();
+
+            foreach (SettingsCategory category in Categories) {
+                object viewModel = category?.ViewModel;
+                if (viewModel == null) {
+                    report.SkippedViewModels++;
+                    continue;
+                }
+
+                report.ViewModelsChecked++;
+                List<PropertyInfo> properties = GetSmokeCandidateProperties(viewModel).ToList();
+                foreach (PropertyInfo property in properties) {
+                    SmokeProperty(category.Title, viewModel, property, report);
+                }
+
+                SmokeBoolPairs(category.Title, viewModel, properties, report);
+                ValidateSmokeCollections(category.Title, viewModel, report);
+            }
+
+            return report;
+        }
+
         private void AuditCategory(SettingsCategory category, SettingsAuditReport report) {
             if (category?.View == null) return;
 
@@ -114,6 +141,348 @@ namespace ELOR.Laney.ViewModels {
                 if (category?.View == null || category.ViewModel == null) continue;
                 category.View.DataContext = category.ViewModel;
             }
+        }
+
+        private static IEnumerable<PropertyInfo> GetSmokeCandidateProperties(object viewModel) {
+            return viewModel.GetType()
+                .GetProperties(BindingFlags.Instance | BindingFlags.Public)
+                .Where(p => p.CanRead && p.CanWrite && p.GetIndexParameters().Length == 0)
+                .Where(p => IsSmokeSupportedType(p.PropertyType));
+        }
+
+        private static bool IsSmokeSupportedType(Type type) {
+            Type actual = Nullable.GetUnderlyingType(type) ?? type;
+            return actual == typeof(bool)
+                || actual == typeof(string)
+                || actual == typeof(int)
+                || actual == typeof(double)
+                || actual == typeof(TwoStringTuple)
+                || actual == typeof(Tuple<int, string>)
+                || actual == typeof(AppearanceOption)
+                || actual == typeof(AppFontFamilyOption)
+                || actual == typeof(AppIconVariantOption);
+        }
+
+        private static void SmokeProperty(string category, object viewModel, PropertyInfo property, SettingsMutationSmokeReport report) {
+            report.PropertiesChecked++;
+
+            if (ShouldSkipSmokeProperty(property)) {
+                report.AddSkipped(category, property.Name, "skip_side_effect");
+                return;
+            }
+
+            object original = null;
+            bool hasOriginal = false;
+            try {
+                original = property.GetValue(viewModel);
+                hasOriginal = true;
+                if (!TryBuildSmokeValue(viewModel, property, original, out object smokeValue, out string skipReason)) {
+                    report.AddSkipped(category, property.Name, skipReason);
+                    return;
+                }
+
+                property.SetValue(viewModel, smokeValue);
+                object mutated = property.GetValue(viewModel);
+                if (!SmokeValuesEqual(mutated, smokeValue)) {
+                    report.AddFailure(category, property.Name, $"mutation_mismatch:{FormatSmokeValue(mutated)}!={FormatSmokeValue(smokeValue)}");
+                } else {
+                    report.RoundTripsPassed++;
+                }
+
+                property.SetValue(viewModel, original);
+                object restored = property.GetValue(viewModel);
+                if (!SmokeValuesEqual(restored, original)) {
+                    report.AddFailure(category, property.Name, $"restore_mismatch:{FormatSmokeValue(restored)}!={FormatSmokeValue(original)}");
+                }
+            } catch (Exception ex) {
+                report.AddFailure(category, property.Name, $"{ex.GetType().Name}:{ex.InnerException?.Message ?? ex.Message}");
+                if (hasOriginal) TrySetProperty(viewModel, property, original);
+            }
+        }
+
+        private static void SmokeBoolPairs(string category, object viewModel, List<PropertyInfo> properties, SettingsMutationSmokeReport report) {
+            List<PropertyInfo> bools = properties
+                .Where(p => p.PropertyType == typeof(bool) && !ShouldSkipSmokeProperty(p))
+                .Take(12)
+                .ToList();
+            if (bools.Count < 2) return;
+
+            for (int i = 0; i < bools.Count - 1; i++) {
+                PropertyInfo first = bools[i];
+                PropertyInfo second = bools[i + 1];
+                object firstOriginal = null;
+                object secondOriginal = null;
+                try {
+                    firstOriginal = first.GetValue(viewModel);
+                    secondOriginal = second.GetValue(viewModel);
+                    first.SetValue(viewModel, !(bool)firstOriginal);
+                    second.SetValue(viewModel, !(bool)secondOriginal);
+                    _ = first.GetValue(viewModel);
+                    _ = second.GetValue(viewModel);
+                    report.BoolPairsPassed++;
+                } catch (Exception ex) {
+                    report.AddFailure(category, $"{first.Name}+{second.Name}", $"bool_pair:{ex.GetType().Name}:{ex.InnerException?.Message ?? ex.Message}");
+                } finally {
+                    TrySetProperty(viewModel, first, firstOriginal);
+                    TrySetProperty(viewModel, second, secondOriginal);
+                }
+            }
+        }
+
+        private static bool ShouldSkipSmokeProperty(PropertyInfo property) {
+            string name = property.Name.ToLowerInvariant();
+            return ContainsAny(name,
+                "autostart",
+                "currentlanguage",
+                "interfaceprofile",
+                "localdata",
+                "backup",
+                "folder",
+                "directory",
+                "path",
+                "filepath",
+                "filename",
+                "token",
+                "keymap",
+                "hotkey",
+                "clipboard",
+                "panic",
+                "autolock",
+                "proxyuri",
+                "apidomain",
+                "apiversion");
+        }
+
+        private static bool TryBuildSmokeValue(object viewModel, PropertyInfo property, object original, out object value, out string skipReason) {
+            Type actual = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
+            skipReason = null;
+
+            if (actual == typeof(bool)) {
+                value = !(bool)(original ?? false);
+                return true;
+            }
+
+            if (actual == typeof(int)) {
+                int current = original is int i ? i : 0;
+                value = current == 1 ? 2 : 1;
+                return true;
+            }
+
+            if (actual == typeof(double)) {
+                double current = original is double d && !Double.IsNaN(d) && !Double.IsInfinity(d) ? d : 1.0;
+                value = BuildSafeDoubleValue(property.Name, current);
+                return true;
+            }
+
+            if (actual == typeof(string)) {
+                value = BuildSafeStringValue(property.Name, original as string);
+                if (value == null) {
+                    skipReason = "skip_string";
+                    return false;
+                }
+
+                return true;
+            }
+
+            if (actual == typeof(TwoStringTuple)) {
+                TwoStringTuple next = FindNextOption(viewModel, property.Name, original as TwoStringTuple, o => o.Item1);
+                if (next == null) {
+                    skipReason = "no_tuple_option";
+                    value = null;
+                    return false;
+                }
+
+                value = next;
+                return true;
+            }
+
+            if (actual == typeof(Tuple<int, string>)) {
+                Tuple<int, string> next = FindNextOption(viewModel, property.Name, original as Tuple<int, string>, o => o.Item1.ToString());
+                if (next == null) {
+                    skipReason = "no_tuple_option";
+                    value = null;
+                    return false;
+                }
+
+                value = next;
+                return true;
+            }
+
+            if (actual == typeof(AppearanceOption)) {
+                AppearanceOption next = FindNextOption(viewModel, property.Name, original as AppearanceOption, o => o.Id);
+                if (next == null) {
+                    skipReason = "no_appearance_option";
+                    value = null;
+                    return false;
+                }
+
+                value = next;
+                return true;
+            }
+
+            if (actual == typeof(AppFontFamilyOption)) {
+                AppFontFamilyOption next = FindNextOption(viewModel, property.Name, original as AppFontFamilyOption, o => o.FamilyName);
+                if (next == null) {
+                    skipReason = "no_font_option";
+                    value = null;
+                    return false;
+                }
+
+                value = next;
+                return true;
+            }
+
+            if (actual == typeof(AppIconVariantOption)) {
+                AppIconVariantOption next = FindNextOption(viewModel, property.Name, original as AppIconVariantOption, o => o.Id);
+                if (next == null) {
+                    skipReason = "no_icon_option";
+                    value = null;
+                    return false;
+                }
+
+                value = next;
+                return true;
+            }
+
+            value = null;
+            skipReason = "unsupported_type";
+            return false;
+        }
+
+        private static double BuildSafeDoubleValue(string propertyName, double current) {
+            string name = propertyName.ToLowerInvariant();
+            if (name.Contains("volume")) return current == 70 ? 80 : 70;
+            if (name.Contains("rate")) return Math.Abs(current - 1.25) < 0.001 ? 1.0 : 1.25;
+            if (name.Contains("seek")) return current == 15 ? 30 : 15;
+            return Math.Abs(current - 1.0) < 0.001 ? 2.0 : 1.0;
+        }
+
+        private static string BuildSafeStringValue(string propertyName, string original) {
+            string name = propertyName.ToLowerInvariant();
+            if (name.Contains("chatlistwidth")) return original == "360" ? "420" : "360";
+            if (name.Contains("mediamemorybudget")) return original == "128" ? "160" : "128";
+            if (name.Contains("imagecacheramlimit")) return original == "64" ? "96" : "64";
+            if (name.Contains("budgetmb")) return original == "128" ? "160" : "128";
+            if (name.Contains("timeout")) return "5";
+            if (name.Contains("minutes")) return "5";
+            if (name.Contains("hour")) return "2";
+            if (name.EndsWith("text") || name.Contains("limit")) return "2";
+            if (name.Contains("language")) return String.Equals(original, "auto", StringComparison.OrdinalIgnoreCase) ? "ru" : "auto";
+            if (name.Contains("keywords")) return "urgent, smoke";
+            if (name.Contains("uri") || name.Contains("domain") || name.Contains("version")) return null;
+            return String.IsNullOrWhiteSpace(original) ? "laney-smoke" : $"{original} smoke";
+        }
+
+        private static T FindNextOption<T>(object viewModel, string targetPropertyName, T current, Func<T, string> keySelector) where T : class {
+            if (current == null) return null;
+
+            var candidates = new List<(int Score, List<T> Options)>();
+            foreach (PropertyInfo property in viewModel.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public)) {
+                if (!typeof(IEnumerable).IsAssignableFrom(property.PropertyType) || property.PropertyType == typeof(string)) continue;
+
+                IEnumerable enumerable = property.GetValue(viewModel) as IEnumerable;
+                if (enumerable == null) continue;
+
+                List<T> options = enumerable.OfType<T>().ToList();
+                string currentKey = keySelector(current);
+                if (options.Count < 2 || !options.Any(o => String.Equals(keySelector(o), currentKey, StringComparison.OrdinalIgnoreCase))) continue;
+
+                candidates.Add((GetOptionCollectionScore(targetPropertyName, property.Name), options));
+            }
+
+            foreach ((int _, List<T> options) in candidates.OrderByDescending(c => c.Score)) {
+                string currentKey = keySelector(current);
+                int index = options.FindIndex(o => String.Equals(keySelector(o), currentKey, StringComparison.OrdinalIgnoreCase));
+                if (index >= 0) return options[(index + 1) % options.Count];
+            }
+
+            return null;
+        }
+
+        private static int GetOptionCollectionScore(string targetPropertyName, string collectionPropertyName) {
+            string target = NormalizeOptionName(targetPropertyName);
+            string collection = NormalizeOptionName(collectionPropertyName);
+            if (collection == target) return 100;
+            if (collection.Contains(target, StringComparison.OrdinalIgnoreCase)) return 80;
+            if (target.Contains(collection, StringComparison.OrdinalIgnoreCase)) return 60;
+
+            int score = 0;
+            string[] tokens = {
+                "account", "accent", "animation", "avatar", "background", "bubble", "chat", "delivery",
+                "density", "emoji", "family", "font", "hour", "icon", "idle", "layout", "list", "message",
+                "minute", "mode", "opacity", "position", "send", "size", "status", "sticker", "style",
+                "theme", "width"
+            };
+
+            foreach (string token in tokens) {
+                if (target.Contains(token, StringComparison.OrdinalIgnoreCase) && collection.Contains(token, StringComparison.OrdinalIgnoreCase)) score += 10;
+            }
+
+            return score;
+        }
+
+        private static string NormalizeOptionName(string value) {
+            if (String.IsNullOrWhiteSpace(value)) return String.Empty;
+            return value
+                .Replace("Current", String.Empty, StringComparison.OrdinalIgnoreCase)
+                .Replace("Options", String.Empty, StringComparison.OrdinalIgnoreCase)
+                .Replace("Cards", String.Empty, StringComparison.OrdinalIgnoreCase)
+                .ToLowerInvariant();
+        }
+
+        private static bool SmokeValuesEqual(object left, object right) {
+            if (ReferenceEquals(left, right)) return true;
+            if (left == null || right == null) return false;
+            if (left is TwoStringTuple lt && right is TwoStringTuple rt) return lt.Item1 == rt.Item1;
+            if (left is Tuple<int, string> lti && right is Tuple<int, string> rti) return lti.Item1 == rti.Item1;
+            if (left is AppearanceOption la && right is AppearanceOption ra) return la.Id == ra.Id;
+            if (left is AppFontFamilyOption lf && right is AppFontFamilyOption rf) return lf.FamilyName == rf.FamilyName;
+            if (left is AppIconVariantOption li && right is AppIconVariantOption ri) return li.Id == ri.Id;
+            if (left is double ld && right is double rd) return Math.Abs(ld - rd) < 0.001;
+            return Equals(left, right);
+        }
+
+        private static string FormatSmokeValue(object value) {
+            return value switch {
+                null => "null",
+                TwoStringTuple tuple => tuple.Item1,
+                Tuple<int, string> tuple => tuple.Item1.ToString(),
+                AppearanceOption option => option.Id,
+                AppFontFamilyOption font => font.FamilyName,
+                AppIconVariantOption icon => icon.Id,
+                _ => value.ToString()
+            };
+        }
+
+        private static void TrySetProperty(object viewModel, PropertyInfo property, object value) {
+            try {
+                property.SetValue(viewModel, value);
+            } catch {
+            }
+        }
+
+        private static void ValidateSmokeCollections(string category, object viewModel, SettingsMutationSmokeReport report) {
+            if (viewModel is not AppearanceViewModel appearance) return;
+
+            foreach (AppIconVariantOption option in appearance.AppIconVariantCards) {
+                if (option.PreviewBitmap == null) {
+                    report.AddFailure(category, $"AppIconVariantCards.{option.Id}", $"preview_missing:{option.PreviewUri}");
+                }
+            }
+
+            foreach (AppFontFamilyOption option in appearance.AppFontFamilyOptions) {
+                if (option.Family == null) {
+                    report.AddFailure(category, $"AppFontFamilyOptions.{option.FamilyName}", "font_family_missing");
+                }
+            }
+        }
+
+        private static bool ContainsAny(string text, params string[] values) {
+            foreach (string value in values) {
+                if (text.Contains(value, StringComparison.OrdinalIgnoreCase)) return true;
+            }
+
+            return false;
         }
 
         private void BuildSearchIndex() {
@@ -266,6 +635,49 @@ namespace ELOR.Laney.ViewModels {
             }
 
             _issues.Add(new SettingsAuditIssue(category, header, reason, iconId));
+        }
+    }
+
+    public sealed class SettingsMutationSmokeReport {
+        private readonly List<SettingsMutationSmokeIssue> _issues = new List<SettingsMutationSmokeIssue>();
+
+        public int CategoriesTotal { get; }
+        public int ViewModelsChecked { get; set; }
+        public int SkippedViewModels { get; set; }
+        public int PropertiesChecked { get; set; }
+        public int RoundTripsPassed { get; set; }
+        public int BoolPairsPassed { get; set; }
+        public int SkippedProperties { get; private set; }
+        public int FailedProperties { get; private set; }
+        public IReadOnlyList<SettingsMutationSmokeIssue> Issues => _issues;
+        public bool Passed => FailedProperties == 0;
+
+        public SettingsMutationSmokeReport(int categoriesTotal) {
+            CategoriesTotal = categoriesTotal;
+        }
+
+        public void AddSkipped(string category, string property, string reason) {
+            SkippedProperties++;
+            _issues.Add(new SettingsMutationSmokeIssue(category, property, reason, true));
+        }
+
+        public void AddFailure(string category, string property, string reason) {
+            FailedProperties++;
+            _issues.Add(new SettingsMutationSmokeIssue(category, property, reason, false));
+        }
+    }
+
+    public sealed class SettingsMutationSmokeIssue {
+        public string Category { get; }
+        public string Property { get; }
+        public string Reason { get; }
+        public bool IsSkipped { get; }
+
+        public SettingsMutationSmokeIssue(string category, string property, string reason, bool isSkipped) {
+            Category = category;
+            Property = property;
+            Reason = reason;
+            IsSkipped = isSkipped;
         }
     }
 
