@@ -465,7 +465,7 @@ namespace ELOR.Laney.Views {
             bool movingUp = hasDirection && currentOffset < previousOffset - AutoScrollDirectionTolerance;
             bool movingDown = hasDirection && currentOffset > previousOffset + AutoScrollDirectionTolerance;
 
-            if (offsetChanged && movingUp && !nearPinnedBottom && GetBottomRemaining() > AutoScrollReleaseTolerance) {
+            if (offsetChanged && movingUp && !nearPinnedBottom) {
                 autoScrollToLastMessage = false;
                 return;
             }

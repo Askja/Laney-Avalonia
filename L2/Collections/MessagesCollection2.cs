@@ -63,9 +63,11 @@ namespace ELOR.Laney.Collections {
         public void InsertRange(List<MessageViewModel> messages) {
             if (messages == null || messages.Count == 0) return;
 
-            foreach (MessageViewModel message in messages) {
-                if (message == null) continue;
-                Insert(message);
+            using (DeferNotifications()) {
+                foreach (MessageViewModel message in messages) {
+                    if (message == null) continue;
+                    Insert(message);
+                }
             }
         }
 
