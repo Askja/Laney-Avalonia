@@ -55,8 +55,8 @@
               <Setter Property="Height" Value="22"/>
             </Style>
           </Border.Styles>
-          <Grid ColumnDefinitions="32 * Auto" Margin="12,0">
-            <ContentPresenter x:Name="BeforeControl" Width="32" Margin="0,6,0,6" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+          <Grid ColumnDefinitions="Auto * Auto" Margin="12,0">
+            <ContentPresenter x:Name="BeforeControl" MinWidth="32" Margin="0,6,0,6" HorizontalAlignment="Center" VerticalAlignment="Center"/>
             <StackPanel Grid.Column="1" Margin="10,8,0,8" VerticalAlignment="Center" ClipToBounds="True">
               <TextBlock x:Name="HeaderText" Classes="Default" Text="{TemplateBinding Header}"/>
               <TextBlock x:Name="SubtitleText" Classes="Caption1" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" FontWeight="Regular" Foreground="{DynamicResource VKTextSecondaryBrush}" IsVisible="{TemplateBinding Subtitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" Text="{TemplateBinding Subtitle}"/>

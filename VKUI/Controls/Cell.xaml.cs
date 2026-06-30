@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
 using Avalonia.Controls.Primitives;
+using Avalonia.Layout;
 using System;
 
 namespace VKUI.Controls {
@@ -78,7 +79,13 @@ namespace VKUI.Controls {
             if (BeforeControl == null) return;
 
             if (Before != null) {
-                BeforeControl.Content = Before;
+                if (ShouldComposeSemanticIcon(Before)) {
+                    BeforeControl.Content = null;
+                    BeforeControl.Content = CreateBeforeWithSemanticIcon(Header, Before);
+                } else {
+                    BeforeControl.Content = Before;
+                }
+
                 BeforeControl.IsVisible = true;
                 return;
             }
@@ -89,11 +96,7 @@ namespace VKUI.Controls {
                 return;
             }
 
-            BeforeControl.Content = new VKIcon {
-                Width = 24,
-                Height = 24,
-                Id = GetSemanticIconId(Header)
-            };
+            BeforeControl.Content = CreateSemanticIcon(Header);
             BeforeControl.IsVisible = true;
         }
 
@@ -119,27 +122,34 @@ namespace VKUI.Controls {
             if (ContainsAny(text, "поиск", "search")) return VKIconNames.Icon28SearchOutline;
             if (ContainsAny(text, "профиль", "аккаунт", "учет", "учёт")) return VKIconNames.Icon20UserOutline;
             if (ContainsAny(text, "язык", "language")) return VKIconNames.Icon20EducationOutline;
+            if (ContainsAny(text, "panic-замок", "panic lock")) return VKIconNames.Icon20LockOutline;
+            if (ContainsAny(text, "стример", "privacy", "приват", "невидим", "прочитан", "online", "stories", "story", "набор текста", "panic", "blacklist", "заблок", "не отмечать", "не показывать набор", "не слать")) return VKIconNames.Icon28PrivacyOutline;
             if (ContainsAny(text, "автозапуск", "startup", "start")) return VKIconNames.Icon20DoorEnterArrowRightOutline;
             if (ContainsAny(text, "пресет", "тема", "палитра", "акцент", "оформ", "цвет")) return VKIconNames.Icon28PaletteOutline;
+            if (ContainsAny(text, "enter отправляет", "отправк", "отправляет", "send")) return VKIconNames.Icon28Send;
             if (ContainsAny(text, "шрифт", "формат", "текст")) return VKIconNames.Icon24TextLiveOutline;
             if (ContainsAny(text, "иконк", "картин", "фон", "изображ", "галере", "ocr", "tesseract")) return VKIconNames.Icon28PictureOutline;
             if (ContainsAny(text, "аватар")) return VKIconNames.Icon20UserOutline;
-            if (ContainsAny(text, "чат", "сообщ", "пузыр", "галоч", "строк", "список", "макет", "ширина")) return VKIconNames.Icon24MessagesOutline;
+            if (ContainsAny(text, "галоч")) return VKIconNames.Icon16CheckDoubleOutline;
+            if (ContainsAny(text, "чат", "сообщ", "пузыр", "строк", "список", "макет", "ширина")) return VKIconNames.Icon24MessagesOutline;
             if (ContainsAny(text, "уведом", "звук", "sound", "toast")) return VKIconNames.Icon20NotificationOutline;
-            if (ContainsAny(text, "стикер", "emoji", "эмод", "смайл")) return VKIconNames.Icon24SmileOutline;
+            if (ContainsAny(text, "стикер", "emoji", "эмод", "смайл", "пак")) return VKIconNames.Icon24SmileOutline;
+            if (ContainsAny(text, "повтор")) return VKIconNames.Icon24RepeatOutline;
             if (ContainsAny(text, "аудио", "музык", "трек", "плеер", "подкаст", "громк", "перемот", "dsp", "эквал", "whisper")) return VKIconNames.Icon28MusicOutline;
             if (ContainsAny(text, "голос")) return VKIconNames.Icon28VoiceOutline;
-            if (ContainsAny(text, "влож", "файл", "документ", "json", "backup", "папк", "экспорт", "импорт")) return VKIconNames.Icon28DocumentOutline;
+            if (ContainsAny(text, "влож", "файл", "документ", "json", "backup", "папк", "экспорт", "импорт", "скачан")) return VKIconNames.Icon28DocumentOutline;
             if (ContainsAny(text, "синхро")) return VKIconNames.Icon20RecentOutline;
-            if (ContainsAny(text, "сеть", "api", "proxy", "прокси", "long poll", "lnet", "трафик", "буфер api")) return VKIconNames.Icon28LinkCircleOutline;
-            if (ContainsAny(text, "стример", "privacy", "приват", "невидим", "прочитан", "online", "stories", "panic", "буфер", "blacklist", "заблок")) return VKIconNames.Icon28PrivacyOutline;
+            if (ContainsAny(text, "сеть", "api", "proxy", "прокси", "long poll", "lnet", "трафик", "буфер api", "адрес", "локальные адреса")) return VKIconNames.Icon28LinkCircleOutline;
             if (ContainsAny(text, "lock", "блокир", "ключ")) return VKIconNames.Icon20LockOutline;
-            if (ContainsAny(text, "авто", "правил", "распис", "период", "тихие", "статус", "активност", "ключевые")) return VKIconNames.Icon20ServicesOutline;
+            if (ContainsAny(text, "истори", "history", "статист")) return VKIconNames.Icon20StoryOutline;
+            if (ContainsAny(text, "счетчик", "счётчик")) return VKIconNames.Icon20PollOutline;
+            if (ContainsAny(text, "быстрые", "действ", "команд", "шаблон", "очеред", "авто", "правил", "распис", "период", "тихие", "статус", "активност", "ключевые", "группа", "кто", "где", "когда")) return VKIconNames.Icon20ServicesOutline;
             if (ContainsAny(text, "памят", "ram", "кэш", "cache", "куча", "процесс", "медиа", "waveform", "prefetch", "лимит", "анимац", "последователь", "бюджет", "ttl", "декод")) return VKIconNames.Icon28SettingsOutline;
             if (ContainsAny(text, "debug", "лог", "fps", "render", "рендер", "bitmapmanager", "extra")) return VKIconNames.Icon28BugOutline;
             if (ContainsAny(text, "важн", "vip", "упомин")) return VKIconNames.Icon20FavoriteOutline;
             if (ContainsAny(text, "назад")) return VKIconNames.Icon28ArrowLeftOutline;
             if (ContainsAny(text, "фокус")) return VKIconNames.Icon20WriteOutline;
+            if (ContainsAny(text, "режим", "по умолчанию", "обычный")) return VKIconNames.Icon28SettingsOutline;
 
             return VKIconNames.Icon20GearOutline;
         }
@@ -150,6 +160,33 @@ namespace VKUI.Controls {
             }
 
             return false;
+        }
+
+        private bool ShouldComposeSemanticIcon(Control before) {
+            return AutoBeforeIcon
+                && !String.IsNullOrWhiteSpace(Header)
+                && before is not VKIcon
+                && before is not Avatar;
+        }
+
+        private static VKIcon CreateSemanticIcon(string header) {
+            return new VKIcon {
+                Width = 24,
+                Height = 24,
+                Id = GetSemanticIconId(header)
+            };
+        }
+
+        private static Control CreateBeforeWithSemanticIcon(string header, Control before) {
+            return new StackPanel {
+                Orientation = Orientation.Horizontal,
+                Spacing = 8,
+                VerticalAlignment = VerticalAlignment.Center,
+                Children = {
+                    CreateSemanticIcon(header),
+                    before
+                }
+            };
         }
 
         #endregion
