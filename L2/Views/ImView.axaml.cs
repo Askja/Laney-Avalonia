@@ -18,6 +18,7 @@ using VKUI.Controls;
 
 namespace ELOR.Laney.Views {
     public sealed partial class ImView : VKUI.Controls.Page {
+        private const double StoriesCarouselStep = 276;
         private VKSession Session { get { return VKSession.GetByDataContext(this); } }
 
         public ImView() {
@@ -40,6 +41,10 @@ namespace ELOR.Laney.Views {
             NewsFeedButton.Click += async (a, b) => {
                 if (DemoMode.IsEnabled) return;
                 await NavigationRouter.NavigateToAsync(new NewsFeedView());
+            };
+            MusicButton.Click += async (a, b) => {
+                if (DemoMode.IsEnabled) return;
+                await NavigationRouter.NavigateToAsync(new MusicView());
             };
 
             ChatsList.Loaded += ChatsList_Loaded;
@@ -155,6 +160,28 @@ namespace ELOR.Laney.Views {
         private async void StoriesRefreshButton_Click(object sender, RoutedEventArgs e) {
             if (Session?.ImViewModel == null) return;
             await Session.ImViewModel.LoadStoriesAsync(true);
+        }
+
+        private void StoriesCarouselLeftButton_Click(object sender, RoutedEventArgs e) {
+            ScrollStoriesCarousel(-StoriesCarouselStep);
+        }
+
+        private void StoriesCarouselRightButton_Click(object sender, RoutedEventArgs e) {
+            ScrollStoriesCarousel(StoriesCarouselStep);
+        }
+
+        private void StoriesScroll_PointerWheelChanged(object sender, PointerWheelEventArgs e) {
+            if (Math.Abs(e.Delta.Y) < 0.01) return;
+            ScrollStoriesCarousel(-e.Delta.Y * 72);
+            e.Handled = true;
+        }
+
+        private void ScrollStoriesCarousel(double delta) {
+            if (StoriesScroll == null) return;
+
+            double maxOffset = Math.Max(0, StoriesScroll.Extent.Width - StoriesScroll.Viewport.Width);
+            double nextOffset = Math.Clamp(StoriesScroll.Offset.X + delta, 0, maxOffset);
+            StoriesScroll.Offset = new Vector(nextOffset, StoriesScroll.Offset.Y);
         }
 
         // Необходимо для того, чтобы при ПКМ не пробрасывалось

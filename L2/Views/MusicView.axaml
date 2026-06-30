@@ -1,0 +1,215 @@
+<vkui:Page xmlns="https://github.com/avaloniaui"
+           xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+           xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+           xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+           xmlns:vkui="using:VKUI.Controls"
+           xmlns:controls="using:ELOR.Laney.Controls"
+           xmlns:mdl="using:ELOR.Laney.DataModels"
+           xmlns:vm="using:ELOR.Laney.ViewModels"
+           mc:Ignorable="d" d:DesignWidth="420" d:DesignHeight="720"
+           x:Class="ELOR.Laney.Views.MusicView"
+           x:DataType="vm:MusicViewModel"
+           Loaded="MusicView_Loaded">
+  <Grid RowDefinitions="Auto Auto *" Background="{DynamicResource LaneyGlassPanelBrush}">
+    <Grid.Styles>
+      <Style Selector="Border.MusicCard">
+        <Setter Property="CornerRadius" Value="14"/>
+        <Setter Property="Padding" Value="12"/>
+        <Setter Property="Margin" Value="12,8"/>
+        <Setter Property="Background" Value="{DynamicResource LaneyGlassRaisedBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource LaneyGlassBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+      </Style>
+      <Style Selector="Button.TrackAction">
+        <Setter Property="Width" Value="34"/>
+        <Setter Property="Height" Value="34"/>
+        <Setter Property="Padding" Value="0"/>
+      </Style>
+    </Grid.Styles>
+
+    <vkui:PanelHeader IsSeparatorVisible="False">
+      <vkui:PanelHeader.LeftButtons>
+        <Button x:Name="BackButton">
+          <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon28ArrowLeftOutline}"/>
+        </Button>
+      </vkui:PanelHeader.LeftButtons>
+      <vkui:PanelHeader.Content>
+        <TextBlock Classes="Headline" FontWeight="SemiBold" Text="Музыка"/>
+      </vkui:PanelHeader.Content>
+      <vkui:PanelHeader.RightButtons>
+        <Button x:Name="RefreshButton" Click="RefreshButton_Click" ToolTip.Tip="Обновить музыку">
+          <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon20RecentOutline}"/>
+        </Button>
+      </vkui:PanelHeader.RightButtons>
+    </vkui:PanelHeader>
+
+    <Border Grid.Row="1" BorderBrush="{DynamicResource LaneyGlassBorderBrush}" BorderThickness="0,0,0,1">
+      <StackPanel Margin="12,8,12,10" Spacing="10">
+        <Grid ColumnDefinitions="* Auto" ColumnSpacing="8">
+          <ComboBox Classes="Alternate" MinHeight="36" ItemsSource="{Binding SourceOptions}" SelectedItem="{Binding CurrentSource, Mode=TwoWay}">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="mdl:TwoStringTuple">
+                <TextBlock Text="{Binding Item2}"/>
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+          <Button Grid.Column="1" Classes="Tertiary" MinHeight="36" Padding="10,0" Click="OpenAudioSettingsButton_Click" ToolTip.Tip="Настройки аудио">
+            <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon28SettingsOutline}"/>
+          </Button>
+        </Grid>
+        <TextBox Classes="Search" MinHeight="36" PlaceholderText="Найти трек, исполнителя, альбом" Text="{Binding Query, Mode=TwoWay}"/>
+        <Grid ColumnDefinitions="Auto * Auto" ColumnSpacing="8">
+          <Border CornerRadius="8" Padding="8,3" Background="{DynamicResource VKAccentBrush}">
+            <TextBlock Classes="Caption1" FontWeight="SemiBold" Foreground="{DynamicResource VKButtonPrimaryForegroundBrush}" Text="{Binding QueueSummary}"/>
+          </Border>
+          <TextBlock Grid.Column="1" Classes="Caption1" VerticalAlignment="Center" Foreground="{DynamicResource LaneyTextMutedBrush}" Text="{Binding LibrarySummary}"/>
+          <Button Grid.Column="2" Classes="Tertiary" MinHeight="28" Padding="8,2" Click="ClearQueueButton_Click" IsVisible="{Binding HasQueue}">
+            <TextBlock Text="Очистить"/>
+          </Button>
+        </Grid>
+      </StackPanel>
+    </Border>
+
+    <Grid Grid.Row="2" RowDefinitions="Auto *">
+      <Border Classes="MusicCard">
+        <StackPanel Spacing="10">
+          <Grid ColumnDefinitions="Auto * Auto" ColumnSpacing="10">
+            <Border Width="44" Height="44" CornerRadius="12" Background="{DynamicResource LaneyMutedSurfaceBrush}">
+              <vkui:VKIcon HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource LaneyAccentBrush}" Id="{x:Static vkui:VKIconNames.Icon28MusicOutline}"/>
+            </Border>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+              <TextBlock Classes="Subhead" FontWeight="SemiBold" Text="{Binding CurrentTrackTitle}" TextTrimming="CharacterEllipsis"/>
+              <TextBlock Classes="Caption1" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="{Binding CurrentTrackSubtitle}" TextTrimming="CharacterEllipsis"/>
+              <TextBlock Classes="Caption1" Foreground="{DynamicResource LaneyTextMutedBrush}" Text="{Binding PlayerStatusText}" TextTrimming="CharacterEllipsis"/>
+            </StackPanel>
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center" IsVisible="{Binding HasCurrentPlayer}">
+              <Button Classes="Tertiary TrackAction" Command="{Binding CurrentPlayer.SeekBackwardCommand}" ToolTip.Tip="{Binding CurrentPlayer.SeekBackwardLabel}">
+                <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon24SkipPrevious}"/>
+              </Button>
+              <Button Classes="Tertiary TrackAction" Command="{Binding CurrentPlayer.PlayPauseCommand}">
+                <Grid>
+                  <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon24Play}" IsVisible="{Binding !CurrentPlayer.IsPlaying}"/>
+                  <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon24Pause}" IsVisible="{Binding CurrentPlayer.IsPlaying}"/>
+                </Grid>
+              </Button>
+              <Button Classes="Tertiary TrackAction" Command="{Binding CurrentPlayer.SeekForwardCommand}" ToolTip.Tip="{Binding CurrentPlayer.SeekForwardLabel}">
+                <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon24SkipNext}"/>
+              </Button>
+            </StackPanel>
+          </Grid>
+
+          <Grid ColumnDefinitions="* Auto Auto" ColumnSpacing="8">
+            <ComboBox Classes="Alternate" MinHeight="34" ItemsSource="{Binding AudioDspModes}" SelectedItem="{Binding CurrentAudioDspMode, Mode=TwoWay}">
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="mdl:TwoStringTuple">
+                  <TextBlock Text="{Binding Item2}"/>
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+            <Button Grid.Column="1" Classes="Tertiary" MinHeight="34" Padding="10,0" Click="SetStatusButton_Click" ToolTip.Tip="Транслировать в VK status">
+              <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon20ShareOutline}"/>
+            </Button>
+            <Button Grid.Column="2" Classes="Tertiary" MinHeight="34" Padding="10,0" Click="ScrobbleButton_Click" ToolTip.Tip="Скроббл в локальную очередь">
+              <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon20RecentOutline}"/>
+            </Button>
+          </Grid>
+
+          <ItemsControl ItemsSource="{Binding EqualizerPreviewBands}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch" Spacing="6"/>
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:AudioEqualizerBandViewModel">
+                <StackPanel Width="38" Spacing="4" VerticalAlignment="Bottom">
+                  <Border Width="22" Height="{Binding Height}" CornerRadius="6,6,2,2" HorizontalAlignment="Center" Background="{DynamicResource LaneyAccentBrush}"/>
+                  <TextBlock Classes="Caption1" TextAlignment="Center" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="{Binding Label}"/>
+                </StackPanel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <TextBlock Classes="Caption1" Foreground="{DynamicResource LaneyTextMutedBrush}" Text="{Binding StatusText}" TextWrapping="Wrap"/>
+          <TextBlock Classes="Caption1" Foreground="{DynamicResource LaneyTextMutedBrush}" Text="{Binding DownloadStatusText}" TextWrapping="Wrap"/>
+          <TextBlock Classes="Caption1" Foreground="{DynamicResource LaneyTextMutedBrush}" Text="{Binding IntegrationStatusText}" TextWrapping="Wrap"/>
+        </StackPanel>
+      </Border>
+
+      <Grid Grid.Row="1">
+        <ScrollViewer x:Name="TracksScroll" IsVisible="{Binding HasTracks}">
+          <StackPanel>
+            <ItemsRepeater ItemsSource="{Binding VisibleTracks}">
+              <ItemsRepeater.ItemTemplate>
+                <DataTemplate x:DataType="vm:MusicTrackViewModel">
+                  <Border Classes="MusicCard">
+                    <Grid ColumnDefinitions="Auto * Auto" ColumnSpacing="10">
+                      <Border Width="48" Height="48" CornerRadius="12" ClipToBounds="True" Background="{DynamicResource LaneyMutedSurfaceBrush}" controls:ImageLoader.BackgroundSource="{Binding CoverUri}">
+                        <vkui:VKIcon HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource VKIconSecondaryBrush}" Id="{x:Static vkui:VKIconNames.Icon28MusicOutline}"/>
+                      </Border>
+                      <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                          <TextBlock Classes="Subhead" FontWeight="SemiBold" Text="{Binding Title}" TextTrimming="CharacterEllipsis"/>
+                          <Border CornerRadius="7" Padding="5,1" Background="{DynamicResource VKAccentBrush}" IsVisible="{Binding IsCurrent}">
+                            <TextBlock Classes="Caption1" Foreground="{DynamicResource VKButtonPrimaryForegroundBrush}" Text="играет"/>
+                          </Border>
+                        </StackPanel>
+                        <TextBlock Classes="Caption1" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="{Binding Artist}" TextTrimming="CharacterEllipsis"/>
+                        <TextBlock Classes="Caption1" Foreground="{DynamicResource LaneyTextMutedBrush}" Text="{Binding Subtitle}" TextTrimming="CharacterEllipsis"/>
+                      </StackPanel>
+                      <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                        <TextBlock Classes="Caption1" Width="38" VerticalAlignment="Center" TextAlignment="Right" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="{Binding DurationText}"/>
+                        <Button Classes="Tertiary TrackAction" Click="PlayTrackButton_Click" IsEnabled="{Binding IsPlayable}" ToolTip.Tip="Играть">
+                          <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon24Play}"/>
+                        </Button>
+                        <Button Classes="Tertiary TrackAction" Click="EnqueueTrackButton_Click" ToolTip.Tip="В очередь">
+                          <Grid>
+                            <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon24Playlist}" IsVisible="{Binding !IsQueued}"/>
+                            <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon20Check}" IsVisible="{Binding IsQueued}"/>
+                          </Grid>
+                        </Button>
+                        <Button Classes="Tertiary TrackAction" Click="DownloadTrackButton_Click" IsEnabled="{Binding IsPlayable}" ToolTip.Tip="Скачать">
+                          <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon16UploadOutline}"/>
+                        </Button>
+                        <Button Classes="Tertiary TrackAction" Click="OpenTrackButton_Click" ToolTip.Tip="Открыть VK">
+                          <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon12ArrowUpRight}"/>
+                        </Button>
+                      </StackPanel>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsRepeater.ItemTemplate>
+            </ItemsRepeater>
+            <Button Classes="Secondary" Margin="12,8,12,16" HorizontalAlignment="Stretch" IsVisible="{Binding CanLoadMore}" Click="LoadMoreButton_Click">
+              <TextBlock Text="Загрузить еще"/>
+            </Button>
+            <vkui:Spinner Width="28" Height="28" Margin="0,8,0,16" HorizontalAlignment="Center" IsVisible="{Binding IsLoading}"/>
+          </StackPanel>
+        </ScrollViewer>
+
+        <StackPanel Margin="12,10" Spacing="10" IsVisible="{Binding IsLoadingFirstPage}">
+          <Border Classes="MusicCard">
+            <Grid ColumnDefinitions="Auto *" ColumnSpacing="10">
+              <Border Classes="Skeleton" Width="48" Height="48" CornerRadius="12"/>
+              <StackPanel Grid.Column="1" Spacing="8">
+                <Border Classes="Skeleton" Width="170" Height="14" CornerRadius="7" HorizontalAlignment="Left"/>
+                <Border Classes="Skeleton" Height="12" CornerRadius="6"/>
+                <Border Classes="Skeleton" Width="120" Height="12" CornerRadius="6" HorizontalAlignment="Left"/>
+              </StackPanel>
+            </Grid>
+          </Border>
+        </StackPanel>
+
+        <vkui:Placeholder Classes="Compact" VerticalAlignment="Center"
+                          IsVisible="{Binding Placeholder, FallbackValue=False, Converter={x:Static ObjectConverters.IsNotNull}}"
+                          Icon="{Binding Placeholder.Icon}"
+                          Header="{Binding Placeholder.Header}"
+                          Text="{Binding Placeholder.Text}">
+          <vkui:Placeholder.Action>
+            <Button Classes="Primary" Content="{Binding Placeholder.ActionButton}" Command="{Binding Placeholder.ActionButtonFunc}"/>
+          </vkui:Placeholder.Action>
+        </vkui:Placeholder>
+      </Grid>
+    </Grid>
+  </Grid>
+</vkui:Page>

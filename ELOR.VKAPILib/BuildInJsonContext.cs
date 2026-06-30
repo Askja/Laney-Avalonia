@@ -13,6 +13,8 @@ namespace ELOR.VKAPILib {
     [JsonSerializable(typeof(APIException))]
     [JsonSerializable(typeof(App))]
     [JsonSerializable(typeof(AppsList))]
+    [JsonSerializable(typeof(Audio))]
+    [JsonSerializable(typeof(List<Audio>))]
     [JsonSerializable(typeof(BotKeyboard))]
     [JsonSerializable(typeof(ConversationsList))]
     [JsonSerializable(typeof(DocumentsList))]

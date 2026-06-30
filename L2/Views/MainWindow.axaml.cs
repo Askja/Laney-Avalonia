@@ -284,6 +284,9 @@ namespace ELOR.Laney.Views {
                 new CommandPaletteAction(VKIconNames.Icon28ArticleOutline, "Новости VK", "Лента постов с фильтрами и локальным вырезанием промо", "news feed новости лента vk реклама фильтр", async () => {
                     await LeftNav.NavigationRouter.NavigateToAsync(new NewsFeedView());
                 }),
+                new CommandPaletteAction(VKIconNames.Icon28MusicOutline, "Музыка VK", "Треки, очередь, EQ, скачивание, VK status и локальный scrobble", "music audio vk музыка аудио трек очередь эквалайзер скачать status scrobble", async () => {
+                    await LeftNav.NavigationRouter.NavigateToAsync(new MusicView());
+                }),
                 new CommandPaletteAction(VKIconNames.Icon28SearchOutline, "Поиск в текущем чате", "Открыть поиск внутри выбранного диалога", "search current chat найти здесь", () => {
                     ChatView.OpenSearchInChat();
                     return Task.CompletedTask;
