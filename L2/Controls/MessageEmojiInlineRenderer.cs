@@ -6,6 +6,7 @@ using Avalonia.Threading;
 using ELOR.Laney.Core;
 using Serilog;
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using System.Threading;
@@ -15,10 +16,10 @@ namespace ELOR.Laney.Controls {
     internal static class MessageEmojiInlineRenderer {
         private const int MaxRichTextLength = 720;
         private const int MaxCustomInlineImages = 1;
-        private const int MaxPackInlineImages = 2;
+        private const int MaxPackInlineImages = 4;
         private const int MaxCustomEmojiLetters = 32;
-        private const int MaxPackEmojiLetters = 36;
-        private const int MaxPackImageTextLength = 160;
+        private const int MaxPackEmojiLetters = 48;
+        private const int MaxPackImageTextLength = 220;
         private const int MaxSystemEmojiLetters = 180;
         private const double EmojiSize = 20;
         private static readonly SemaphoreSlim InlineEmojiLoadGate = new SemaphoreSlim(1, 1);
@@ -114,10 +115,10 @@ namespace ELOR.Laney.Controls {
             while (index < text.Length) {
                 string textElement = StringInfo.GetNextTextElement(text, index);
                 if (LooksLikeEmoji(textElement) && richEmojis < MaxPackInlineImages) {
-                    Uri imageUri = EmojiAssetResolver.ResolveImageUri(textElement, pack, peerId);
-                    if (imageUri != null) {
+                    IReadOnlyList<Uri> imageUris = EmojiAssetResolver.ResolveImageUris(textElement, pack, peerId);
+                    if (imageUris.Count > 0) {
                         FlushText(inlines, ref buffer);
-                        inlines.Add(CreateInlineEmojiImage(imageUri));
+                        inlines.Add(CreateInlineEmojiImage(imageUris));
                         richEmojis++;
                         index += textElement.Length;
                         continue;
@@ -202,6 +203,10 @@ namespace ELOR.Laney.Controls {
         }
 
         private static Image CreateInlineEmojiImage(Uri imageUri) {
+            return CreateInlineEmojiImage(new[] { imageUri });
+        }
+
+        private static Image CreateInlineEmojiImage(IReadOnlyList<Uri> imageUris) {
             Image image = new Image {
                 Width = EmojiSize,
                 Height = EmojiSize,
@@ -212,12 +217,12 @@ namespace ELOR.Laney.Controls {
             };
 
             long sequence = Interlocked.Increment(ref inlineEmojiLoadSequence);
-            _ = LoadInlineEmojiImageAsync(new WeakReference<Image>(image), imageUri, sequence);
+            _ = LoadInlineEmojiImageAsync(new WeakReference<Image>(image), imageUris, sequence);
             return image;
         }
 
-        private static async Task LoadInlineEmojiImageAsync(WeakReference<Image> imageReference, Uri imageUri, long sequence) {
-            if (imageReference == null || imageUri == null) return;
+        private static async Task LoadInlineEmojiImageAsync(WeakReference<Image> imageReference, IReadOnlyList<Uri> imageUris, long sequence) {
+            if (imageReference == null || imageUris == null || imageUris.Count == 0) return;
 
             try {
                 int delayMs = (int)(Math.Min(sequence % 16, 15) * 12);
@@ -227,7 +232,7 @@ namespace ELOR.Laney.Controls {
                 await InlineEmojiLoadGate.WaitAsync().ConfigureAwait(false);
                 try {
                     using IDisposable lease = await MediaMemoryGovernor.EnterMediaLoadAsync(CancellationToken.None).ConfigureAwait(false);
-                    var bitmap = await BitmapManager.GetBitmapAsync(imageUri, EmojiSize, EmojiSize, CancellationToken.None, BitmapCacheKind.Attachment).ConfigureAwait(false);
+                    var bitmap = await LoadFirstAvailableEmojiBitmapAsync(imageUris).ConfigureAwait(false);
                     if (bitmap == null) return;
 
                     await Dispatcher.UIThread.InvokeAsync(() => {
@@ -237,8 +242,17 @@ namespace ELOR.Laney.Controls {
                     InlineEmojiLoadGate.Release();
                 }
             } catch (Exception ex) {
-                Log.Warning(ex, "Cannot load inline emoji image {ImageUri}", imageUri);
+                Log.Warning(ex, "Cannot load inline emoji image candidates: {ImageUris}", String.Join(", ", imageUris));
             }
+        }
+
+        private static async Task<Avalonia.Media.Imaging.Bitmap> LoadFirstAvailableEmojiBitmapAsync(IReadOnlyList<Uri> imageUris) {
+            foreach (Uri imageUri in imageUris) {
+                var bitmap = await BitmapManager.GetBitmapAsync(imageUri, EmojiSize, EmojiSize, CancellationToken.None, BitmapCacheKind.Attachment, false).ConfigureAwait(false);
+                if (bitmap != null) return bitmap;
+            }
+
+            return null;
         }
 
         private static void FlushText(InlineCollection inlines, ref StringBuilder buffer) {

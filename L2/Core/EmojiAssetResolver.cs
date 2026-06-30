@@ -7,6 +7,8 @@ namespace ELOR.Laney.Core {
     public static class EmojiAssetResolver {
         private const int VariationSelector16 = 0xFE0F;
         private const int ZeroWidthJoiner = 0x200D;
+        private const string TwemojiCdnBase = "https://cdn.jsdelivr.net/gh/jdecked/twemoji@latest/assets/72x72/";
+        private const string NotoEmojiCdnBase = "https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji@main/png/128/";
 
         public static Uri ResolvePickerImageUri(string emoji, long peerId = 0) {
             string pack = peerId != 0 ? Settings.ResolvePeerEmojiPack(peerId) : Settings.EmojiPack;
@@ -16,18 +18,41 @@ namespace ELOR.Laney.Core {
         public static Uri ResolveImageUri(string emoji, string packId, long peerId = 0) {
             if (String.IsNullOrWhiteSpace(emoji)) return null;
 
+            IReadOnlyList<Uri> candidates = ResolveImageUris(emoji, packId, peerId);
+            return candidates.Count > 0 ? candidates[0] : null;
+        }
+
+        public static IReadOnlyList<Uri> ResolveImageUris(string emoji, string packId, long peerId = 0) {
+            if (String.IsNullOrWhiteSpace(emoji)) return Array.Empty<Uri>();
+
             string pack = EmojiPackIds.Normalize(packId);
             if (pack == EmojiPackIds.Custom) {
-                return EmojiSpriteStore.TryResolveSpriteUri(emoji, peerId, out Uri uri) ? uri : null;
+                return EmojiSpriteStore.TryResolveSpriteUri(emoji, peerId, out Uri uri)
+                    ? new[] { uri }
+                    : Array.Empty<Uri>();
             }
 
-            return pack switch {
-                EmojiPackIds.Vk => BuildVkPngUri(emoji),
-                EmojiPackIds.TelegramLike => BuildTwemojiPngUri(emoji),
-                EmojiPackIds.Noto => BuildNotoPngUri(emoji),
-                EmojiPackIds.Twemoji => BuildTwemojiPngUri(emoji),
-                _ => null
-            };
+            List<Uri> candidates = new List<Uri>(4);
+            switch (pack) {
+                case EmojiPackIds.Vk:
+                    Uri vkUri = BuildVkPngUri(emoji);
+                    if (ShouldPreferVkEmoji(emoji)) AddCandidate(candidates, vkUri);
+                    AddCandidate(candidates, BuildTwemojiPngUri(emoji));
+                    AddCandidate(candidates, BuildNotoPngUri(emoji));
+                    if (!ShouldPreferVkEmoji(emoji)) AddCandidate(candidates, vkUri);
+                    break;
+                case EmojiPackIds.TelegramLike:
+                case EmojiPackIds.Twemoji:
+                    AddCandidate(candidates, BuildTwemojiPngUri(emoji));
+                    AddCandidate(candidates, BuildNotoPngUri(emoji));
+                    break;
+                case EmojiPackIds.Noto:
+                    AddCandidate(candidates, BuildNotoPngUri(emoji));
+                    AddCandidate(candidates, BuildTwemojiPngUri(emoji));
+                    break;
+            }
+
+            return candidates;
         }
 
         public static bool IsImageBackedPack(string packId) {
@@ -50,14 +75,33 @@ namespace ELOR.Laney.Core {
             string code = BuildCodepointName(emoji, "_", stripVariationSelectors: true);
             return String.IsNullOrEmpty(code)
                 ? null
-                : new Uri($"https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji@main/png/128/emoji_u{code}.png");
+                : new Uri($"{NotoEmojiCdnBase}emoji_u{code}.png");
         }
 
         private static Uri BuildTwemojiPngUri(string emoji) {
             string code = BuildTwemojiCodepointName(emoji);
             return String.IsNullOrEmpty(code)
                 ? null
-                : new Uri($"https://cdn.jsdelivr.net/gh/jdecked/twemoji@latest/assets/72x72/{code}.png");
+                : new Uri($"{TwemojiCdnBase}{code}.png");
+        }
+
+        private static void AddCandidate(List<Uri> candidates, Uri uri) {
+            if (uri == null || candidates.Contains(uri)) return;
+            candidates.Add(uri);
+        }
+
+        private static bool ShouldPreferVkEmoji(string emoji) {
+            List<int> codepoints = GetCodepoints(emoji);
+            if (codepoints.Count == 0 || codepoints.Contains(ZeroWidthJoiner)) return false;
+
+            foreach (int codepoint in codepoints) {
+                if (codepoint == VariationSelector16) continue;
+
+                // У VK веб-пак частичный: современные Emoji 11+ чаще дают 404.
+                if (codepoint >= 0x1F970 || codepoint is >= 0x1FA70 and <= 0x1FAFF) return false;
+            }
+
+            return true;
         }
 
         private static string BuildTwemojiCodepointName(string emoji) {

@@ -157,7 +157,7 @@ namespace ELOR.Laney.Core {
             return GetBitmapAsync(source, decodeWidth, decodeHeight, cancellationToken, cacheKind);
         }
 
-        public static async Task<Bitmap> GetBitmapAsync(Uri source, double decodeWidth = 0, double decodeHeight = 0, CancellationToken cancellationToken = default, BitmapCacheKind cacheKind = BitmapCacheKind.Default) {
+        public static async Task<Bitmap> GetBitmapAsync(Uri source, double decodeWidth = 0, double decodeHeight = 0, CancellationToken cancellationToken = default, BitmapCacheKind cacheKind = BitmapCacheKind.Default, bool logErrors = true) {
             if (source == null) return null;
 
             ImageRequest request = ImageRequest.Create(source, decodeWidth, decodeHeight, cacheKind);
@@ -187,7 +187,7 @@ namespace ELOR.Laney.Core {
 
                 throw;
             } catch (Exception ex) {
-                Log.Error(ex, "GetBitmapAsync error! Source: {Source}, size: {Width}x{Height}", source.AbsoluteUri, request.DecodeWidth, request.DecodeHeight);
+                if (logErrors) Log.Error(ex, "GetBitmapAsync error! Source: {Source}, size: {Width}x{Height}", source.AbsoluteUri, request.DecodeWidth, request.DecodeHeight);
                 return null;
             }
         }
