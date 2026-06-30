@@ -3,6 +3,7 @@ using Avalonia.Media.Imaging;
 using ELOR.Laney.Core.Network;
 using ELOR.Laney.Helpers;
 using Serilog;
+using SkiaSharp;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -15,7 +16,8 @@ namespace ELOR.Laney.Core {
         Default = 0,
         Avatar = 1,
         Attachment = 2,
-        E2E = 3
+        E2E = 3,
+        Background = 4
     }
 
     public readonly struct BitmapCacheSnapshot {
@@ -25,16 +27,18 @@ namespace ELOR.Laney.Core {
         public int AvatarCount { get; }
         public int AttachmentCount { get; }
         public int E2ECount { get; }
+        public int BackgroundCount { get; }
         public long SizeBytes { get; }
         public long LimitBytes { get; }
 
-        public BitmapCacheSnapshot(int entryCount, int loadingCount, int defaultCount, int avatarCount, int attachmentCount, int e2ECount, long sizeBytes, long limitBytes) {
+        public BitmapCacheSnapshot(int entryCount, int loadingCount, int defaultCount, int avatarCount, int attachmentCount, int e2ECount, int backgroundCount, long sizeBytes, long limitBytes) {
             EntryCount = entryCount;
             LoadingCount = loadingCount;
             DefaultCount = defaultCount;
             AvatarCount = avatarCount;
             AttachmentCount = attachmentCount;
             E2ECount = e2ECount;
+            BackgroundCount = backgroundCount;
             SizeBytes = sizeBytes;
             LimitBytes = limitBytes;
         }
@@ -86,6 +90,7 @@ namespace ELOR.Laney.Core {
                 int avatarCount = 0;
                 int attachmentCount = 0;
                 int e2ECount = 0;
+                int backgroundCount = 0;
 
                 foreach (var cacheEntry in cachedImages.Values) {
                     switch (cacheEntry.Kind) {
@@ -97,6 +102,9 @@ namespace ELOR.Laney.Core {
                             break;
                         case BitmapCacheKind.E2E:
                             e2ECount++;
+                            break;
+                        case BitmapCacheKind.Background:
+                            backgroundCount++;
                             break;
                         default:
                             defaultCount++;
@@ -111,6 +119,7 @@ namespace ELOR.Laney.Core {
                     avatarCount,
                     attachmentCount,
                     e2ECount,
+                    backgroundCount,
                     cachedBytes,
                     GetCacheLimitBytes());
             }
@@ -136,7 +145,7 @@ namespace ELOR.Laney.Core {
                 bitmap.Dispose();
             }
 
-            if (bitmapsToDispose.Count > 0) {
+            if (bitmapsToDispose.Count > 0 || MediaMemoryGovernor.IsProcessMemoryPressureHigh()) {
                 GC.Collect(2, GCCollectionMode.Optimized, false, false);
             }
 
@@ -232,6 +241,23 @@ namespace ELOR.Laney.Core {
             string path = request.Uri.LocalPath;
             if (String.IsNullOrWhiteSpace(path) || !File.Exists(path)) throw new FileNotFoundException("Bitmap file not found.", path);
 
+            if (request.CacheKind == BitmapCacheKind.Background) {
+                Bitmap backgroundBitmap = DecodeLocalBackgroundBitmap(path, request.DecodeWidth, request.DecodeHeight);
+
+                if (Settings.BitmapManagerLogs) {
+                    Log.Information(
+                        "Loaded local background {Source}, requested {Width}x{Height}, decoded {DecodedWidth}x{DecodedHeight}, cache {CacheMb} Mb.",
+                        request.Uri.AbsoluteUri,
+                        request.DecodeWidth,
+                        request.DecodeHeight,
+                        backgroundBitmap.PixelSize.Width,
+                        backgroundBitmap.PixelSize.Height,
+                        Math.Round((double)cachedBytes / 1048576, 1));
+                }
+
+                return backgroundBitmap;
+            }
+
             await using FileStream stream = new FileStream(
                 path,
                 FileMode.Open,
@@ -302,6 +328,60 @@ namespace ELOR.Laney.Core {
             }
 
             return Bitmap.DecodeToHeight(stream, decodeHeight, BitmapInterpolationMode.MediumQuality);
+        }
+
+        private static Bitmap DecodeLocalBackgroundBitmap(string path, int decodeWidth, int decodeHeight) {
+            if (decodeWidth <= 0 && decodeHeight <= 0) {
+                using FileStream stream = File.OpenRead(path);
+                return DecodeBitmap(stream, decodeWidth, decodeHeight);
+            }
+
+            try {
+                using SKCodec codec = SKCodec.Create(path);
+                if (codec == null) {
+                    using FileStream stream = File.OpenRead(path);
+                    return DecodeBitmap(stream, decodeWidth, decodeHeight);
+                }
+
+                SKImageInfo sourceInfo = codec.Info;
+                int sampleSize = GetSkiaSampleSize(sourceInfo.Width, sourceInfo.Height, decodeWidth, decodeHeight);
+                SKImageInfo sampledInfo = new SKImageInfo(
+                    Math.Max(1, sourceInfo.Width / sampleSize),
+                    Math.Max(1, sourceInfo.Height / sampleSize),
+                    SKColorType.Bgra8888,
+                    SKAlphaType.Premul);
+
+                using SKBitmap sampledBitmap = new SKBitmap(sampledInfo);
+                SKCodecResult result = codec.GetPixels(sampledInfo, sampledBitmap.GetPixels(), new SKCodecOptions(0, sampleSize));
+                if (result != SKCodecResult.Success && result != SKCodecResult.IncompleteInput) {
+                    using FileStream stream = File.OpenRead(path);
+                    return DecodeBitmap(stream, decodeWidth, decodeHeight);
+                }
+
+                using SKImage image = SKImage.FromBitmap(sampledBitmap);
+                using SKData encoded = image.Encode(SKEncodedImageFormat.Png, 90);
+                using Stream bitmapStream = encoded.AsStream();
+                return new Bitmap(bitmapStream);
+            } catch (Exception ex) {
+                Log.Warning(ex, "Cannot sampled-decode local background {Path}; falling back to Avalonia decoder.", path);
+                using FileStream stream = File.OpenRead(path);
+                return DecodeBitmap(stream, decodeWidth, decodeHeight);
+            }
+        }
+
+        private static int GetSkiaSampleSize(int sourceWidth, int sourceHeight, int decodeWidth, int decodeHeight) {
+            if (sourceWidth <= 0 || sourceHeight <= 0) return 1;
+
+            double widthRatio = decodeWidth > 0 ? (double)sourceWidth / decodeWidth : 1;
+            double heightRatio = decodeHeight > 0 ? (double)sourceHeight / decodeHeight : 1;
+            double ratio = Math.Max(widthRatio, heightRatio);
+
+            int sampleSize = 1;
+            while (sampleSize < 64 && sampleSize * 2 <= ratio) {
+                sampleSize *= 2;
+            }
+
+            return Math.Max(1, sampleSize);
         }
 
         private static async Task<Bitmap> CreateScaledBitmapAsync(Bitmap bitmap, int decodeWidth, int decodeHeight, CancellationToken cancellationToken) {
@@ -454,6 +534,7 @@ namespace ELOR.Laney.Core {
             int minutes = cacheKind switch {
                 BitmapCacheKind.Avatar => Settings.ImageCacheAvatarTtlMinutes,
                 BitmapCacheKind.Attachment => Settings.ImageCacheAttachmentTtlMinutes,
+                BitmapCacheKind.Background => Math.Min(Settings.ImageCacheAttachmentTtlMinutes, 30),
                 BitmapCacheKind.E2E => Settings.ImageCacheE2ETtlMinutes,
                 _ => Settings.ImageCacheDefaultTtlMinutes
             };

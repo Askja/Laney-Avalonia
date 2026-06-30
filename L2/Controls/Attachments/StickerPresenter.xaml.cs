@@ -17,8 +17,6 @@ using System.Threading.Tasks;
 
 namespace ELOR.Laney.Controls.Attachments {
     public class StickerPresenter : TemplatedControl {
-        private const int MaxActiveAnimations = 8;
-
         private static readonly object activeAnimationsLock = new object();
         private static readonly LinkedList<WeakReference<StickerPresenter>> activeAnimations = new LinkedList<WeakReference<StickerPresenter>>();
 
@@ -123,6 +121,7 @@ namespace ELOR.Laney.Controls.Attachments {
 
         private async Task StartAnimationAsync(Sticker sticker) {
             if (StickerView == null || sticker == null || String.IsNullOrEmpty(sticker.AnimationUrl) || !this.IsAttachedToVisualTree()) return;
+            if (!MediaMemoryGovernor.CanStartLocalStickerAnimation()) return;
 
             animationCancellationTokenSource?.Cancel();
 
@@ -192,7 +191,7 @@ namespace ELOR.Laney.Controls.Attachments {
 
                 activeAnimations.AddLast(new WeakReference<StickerPresenter>(this));
 
-                while (CountActiveAnimations() > MaxActiveAnimations && activeAnimations.First != null) {
+                while (CountActiveAnimations() > GetMaxActiveAnimations() && activeAnimations.First != null) {
                     WeakReference<StickerPresenter> oldest = activeAnimations.First.Value;
                     activeAnimations.RemoveFirst();
 
@@ -200,6 +199,8 @@ namespace ELOR.Laney.Controls.Attachments {
                         animationsToStop.Add(presenter);
                     }
                 }
+
+                MediaMemoryGovernor.ReportActiveLocalStickerAnimations(CountActiveAnimations());
             }
 
             foreach (var presenter in animationsToStop) {
@@ -217,6 +218,8 @@ namespace ELOR.Laney.Controls.Attachments {
                     }
                     node = next;
                 }
+
+                MediaMemoryGovernor.ReportActiveLocalStickerAnimations(CountActiveAnimations());
             }
         }
 
@@ -237,6 +240,10 @@ namespace ELOR.Laney.Controls.Attachments {
                 if (reference.TryGetTarget(out _)) count++;
             }
             return count;
+        }
+
+        private static int GetMaxActiveAnimations() {
+            return Math.Max(1, MediaMemoryGovernor.GetLocalStickerAnimationLimit());
         }
     }
 }

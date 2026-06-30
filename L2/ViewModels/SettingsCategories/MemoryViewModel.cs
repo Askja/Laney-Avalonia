@@ -36,7 +36,7 @@ namespace ELOR.Laney.ViewModels.SettingsCategories {
         public bool LowMemoryMode { get { return Settings.LowMemoryMode; } set { Settings.LowMemoryMode = value; RefreshModeDependentProperties(); OnPropertyChanged(); } }
         public bool LoadImagesSequential { get { return Settings.LoadImagesSequential; } set { Settings.LoadImagesSequential = value; RefreshPerformanceBudget(); OnPropertyChanged(); } }
         public bool ShowRAMUsage { get { return Settings.ShowRAMUsage; } set { Settings.ShowRAMUsage = value; OnPropertyChanged(); } }
-        public string MediaMemoryBudgetMbText { get { return Settings.MediaMemoryBudgetMb.ToString(); } set { SetInt(value, 64, 1024, v => Settings.MediaMemoryBudgetMb = v, nameof(MediaMemoryBudgetMbText)); } }
+        public string MediaMemoryBudgetMbText { get { return Settings.MediaMemoryBudgetMb.ToString(); } set { SetInt(value, 64, 192, v => Settings.MediaMemoryBudgetMb = v, nameof(MediaMemoryBudgetMbText)); } }
         public string ImageCacheRamLimitMbText { get { return Settings.ImageCacheRamLimitMb.ToString(); } set { SetInt(value, 16, 256, v => Settings.ImageCacheRamLimitMb = v, nameof(ImageCacheRamLimitMbText)); } }
         public string ImageCacheDefaultTtlMinutesText { get { return Settings.ImageCacheDefaultTtlMinutes.ToString(); } set { SetInt(value, 0, Int32.MaxValue, v => Settings.ImageCacheDefaultTtlMinutes = v, nameof(ImageCacheDefaultTtlMinutesText)); } }
         public string ImageCacheAvatarTtlMinutesText { get { return Settings.ImageCacheAvatarTtlMinutes.ToString(); } set { SetInt(value, 0, Int32.MaxValue, v => Settings.ImageCacheAvatarTtlMinutes = v, nameof(ImageCacheAvatarTtlMinutesText)); } }
@@ -116,7 +116,7 @@ namespace ELOR.Laney.ViewModels.SettingsCategories {
             LocalAnimationBudgetText = $"{mediaSnapshot.ActiveLocalStickerAnimations}/{mediaSnapshot.LocalStickerAnimationLimit} active · {(MediaMemoryGovernor.CanStartLocalStickerAnimation() ? "can start" : "gated")}";
             PrefetchBudgetText = FeatureFlags.IsEnabled(FeatureFlags.PreloadNextChat) ? (mediaSnapshot.CanPrefetchMedia ? "prefetch allowed" : "prefetch gated by headroom") : "prefetch feature off";
             BitmapCacheBudgetText = $"{FormatBytes(cacheSnapshot.SizeBytes)} / {FormatBytes(cacheSnapshot.LimitBytes)} · элементов {cacheSnapshot.EntryCount} · грузится {cacheSnapshot.LoadingCount}";
-            BitmapCacheBreakdownText = $"default {cacheSnapshot.DefaultCount} · avatars {cacheSnapshot.AvatarCount} · attachments {cacheSnapshot.AttachmentCount} · e2e {cacheSnapshot.E2ECount}";
+            BitmapCacheBreakdownText = $"default {cacheSnapshot.DefaultCount} · avatars {cacheSnapshot.AvatarCount} · attachments {cacheSnapshot.AttachmentCount} · background {cacheSnapshot.BackgroundCount} · e2e {cacheSnapshot.E2ECount}";
             BitmapCachePressureText = FormatPercent(cachePressure);
             NetworkBudgetText = $"active {networkSnapshot.ActiveRequests} · sequential GET {networkSnapshot.SequentialGetRequests} · POST {networkSnapshot.SequentialPostRequests} · VK Queue {(VKQueue.IsInitialized ? "on" : "off")}";
             NetworkBudgetBadge = networkSnapshot.ActiveRequests > 0 ? $"{networkSnapshot.ActiveRequests} active" : "idle";

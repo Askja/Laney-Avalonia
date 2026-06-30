@@ -415,7 +415,7 @@ namespace ELOR.Laney.Core {
 
             int dim = Settings.GetPeerLocalBackgroundDim(peerId);
             int negativeBrightness = Math.Max(0, -Settings.GetPeerLocalBackgroundBrightness(peerId));
-            if (dim == 0 && negativeBrightness == 0 && IsDarkTheme()) return 0.16;
+            if (dim == 0 && negativeBrightness == 0 && IsDarkTheme()) return 0.28;
             return Math.Clamp(dim + negativeBrightness, 0, 90) / 100d;
         }
 

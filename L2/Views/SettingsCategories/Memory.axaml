@@ -102,9 +102,9 @@
               <ToggleSwitch IsChecked="{Binding LoadImagesSequential, Mode=TwoWay}"/>
             </vkui:Cell.After>
           </vkui:Cell>
-          <vkui:Cell Header="Лимит медиа, МБ" Subtitle="Общий лимит картинок, анимаций, waveform и будущего prefetch; диапазон 64-1024.">
+          <vkui:Cell Header="Лимит медиа, МБ" Subtitle="Общий лимит картинок, анимаций, waveform и будущего prefetch; диапазон 64-192.">
             <vkui:Cell.After>
-              <TextBox Width="96" Text="{Binding MediaMemoryBudgetMbText, Mode=TwoWay}" PlaceholderText="256"/>
+              <TextBox Width="96" Text="{Binding MediaMemoryBudgetMbText, Mode=TwoWay}" PlaceholderText="96"/>
             </vkui:Cell.After>
           </vkui:Cell>
           <vkui:Cell Header="RAM лимит кеша, MB" Subtitle="Картинки и аватары; диапазон 16-256.">

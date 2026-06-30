@@ -1783,8 +1783,8 @@ namespace ELOR.Laney.Core {
         }
 
         public static int MediaMemoryBudgetMb {
-            get => Math.Clamp(Get(MEDIA_MEMORY_BUDGET_MB, 80), 64, 1024);
-            set => Set(MEDIA_MEMORY_BUDGET_MB, Math.Clamp(value, 64, 1024));
+            get => Math.Clamp(Get(MEDIA_MEMORY_BUDGET_MB, 96), 64, 192);
+            set => Set(MEDIA_MEMORY_BUDGET_MB, Math.Clamp(value, 64, 192));
         }
 
         public static string GetPeerLocalNote(long peerId) {

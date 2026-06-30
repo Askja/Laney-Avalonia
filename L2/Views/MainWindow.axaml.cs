@@ -1763,7 +1763,10 @@ namespace ELOR.Laney.Views {
             Process process = Process.GetCurrentProcess();
             double workingSetMb = process.WorkingSet64 / 1048576d;
             double privateMb = process.PrivateMemorySize64 / 1048576d;
-            RAMInfo.Text = $"{ChatViewModel.Instances} chats | {MessageViewModel.Instances} msgs | {ELOR.VKAPILib.Objects.Message.Instances} API msgs | WS {Math.Round(workingSetMb, 0)} / P {Math.Round(privateMb, 0)} Mb";
+            BitmapCacheSnapshot cache = BitmapManager.GetCacheSnapshot();
+            double cacheMb = cache.SizeBytes / 1048576d;
+            double cacheLimitMb = cache.LimitBytes / 1048576d;
+            RAMInfo.Text = $"{ChatViewModel.Instances} chats | {MessageViewModel.Instances} msgs | {ELOR.VKAPILib.Objects.Message.Instances} API msgs | WS {Math.Round(workingSetMb, 0)} / P {Math.Round(privateMb, 0)} Mb | img {Math.Round(cacheMb, 1)}/{Math.Round(cacheLimitMb, 0)} Mb ({cache.EntryCount}, bg {cache.BackgroundCount}, load {cache.LoadingCount})";
         }
 
         #endregion

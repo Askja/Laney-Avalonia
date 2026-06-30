@@ -20,8 +20,8 @@ using VKUI.Controls;
 namespace ELOR.Laney.Controls {
     public static class ImageLoader {
         private const double ViewportPreloadMargin = 192;
-        private const double MaxBackgroundDecodePixels = 768;
-        private const double MaxBlurBackgroundDecodePixels = 256;
+        private const double MaxBackgroundDecodePixels = 560;
+        private const double MaxBlurBackgroundDecodePixels = 192;
         private const double ActiveViewportCheckIntervalMs = 240;
 
         static ImageLoader() {
@@ -272,7 +272,7 @@ namespace ELOR.Laney.Controls {
                 using IDisposable lease = await MediaMemoryGovernor.EnterMediaLoadAsync(state.Token);
                 if (!IsCurrent(sender, state, uri) || !IsNearViewport(sender)) return;
 
-                Bitmap bitmap = await BitmapManager.GetBitmapAsync(uri, decodeWidth, decodeHeight, state.Token, BitmapCacheKind.Attachment);
+                Bitmap bitmap = await BitmapManager.GetBitmapAsync(uri, decodeWidth, decodeHeight, state.Token, BitmapCacheKind.Background);
                 if (!IsCurrent(sender, state, uri)) return;
 
                 await Dispatcher.UIThread.InvokeAsync(() => {
