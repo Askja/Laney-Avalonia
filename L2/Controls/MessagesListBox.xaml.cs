@@ -72,6 +72,8 @@ namespace ELOR.Laney.Controls {
         private long _layoutAnchorGuardUntilTicks = 0;
         private long _bottomStickGuardUntilTicks = 0;
         private long _bottomStickSuppressedUntilTicks = 0;
+        private long _manualScrollGeneration = 0;
+        private long _scrollToBottomGeneration = 0;
         private bool _isRestoringLayoutAnchor = false;
         private bool _isApplyingBottomStick = false;
         private double _previousLoadSnapshotOffset = Double.NaN;
@@ -179,18 +181,31 @@ namespace ELOR.Laney.Controls {
         public async Task ScrollToBottomStableAsync(IMessageListItem target = null, int maxAttempts = 14) {
             if (ScrollViewer == null) return;
 
+            long operationGeneration = ++_scrollToBottomGeneration;
+            long manualGeneration = _manualScrollGeneration;
+            bool cancelledByUser = false;
             _canChangeScroll = false;
             double lastExtent = -1;
             int settledFrames = 0;
 
             try {
                 for (int attempt = 0; attempt < maxAttempts; attempt++) {
+                    if (IsScrollToBottomCancelled(operationGeneration, manualGeneration)) {
+                        cancelledByUser = true;
+                        break;
+                    }
+
                     await Dispatcher.UIThread.InvokeAsync(() => {
                         if (target != null) ScrollIntoView(target);
                         ScrollViewer.ScrollToEnd();
                     }, DispatcherPriority.Render);
 
                     await Task.Delay(attempt < 4 ? 16 : 32);
+
+                    if (IsScrollToBottomCancelled(operationGeneration, manualGeneration)) {
+                        cancelledByUser = true;
+                        break;
+                    }
 
                     (double remaining, double extent) = await Dispatcher.UIThread.InvokeAsync(() => {
                         double viewportHeight = ScrollViewer.Viewport.Height;
@@ -214,7 +229,12 @@ namespace ELOR.Laney.Controls {
             } finally {
                 await Dispatcher.UIThread.InvokeAsync(() => {
                     _canChangeScroll = true;
-                    RefreshBottomStickGuard(BottomStickGuardMs);
+                    if (cancelledByUser || IsScrollToBottomCancelled(operationGeneration, manualGeneration)) {
+                        SuppressBottomStick(BottomStickManualSuppressMs);
+                    } else {
+                        RefreshBottomStickGuard(BottomStickGuardMs);
+                    }
+
                     SaveScrollPosition(true);
                 }, DispatcherPriority.Render);
             }
@@ -332,6 +352,8 @@ namespace ELOR.Laney.Controls {
             bool extentChanged = Math.Abs(e.ExtentDelta.Y) > 1;
             bool isUserScroll = offsetChanged && (!extentChanged || IsBottomStickSuppressed());
 
+            if (offsetChanged && isMovingUp && !extentChanged) RegisterManualScrollIntent();
+
             if (IsPreviousLoadAwaitingData()) {
                 TrackPreviousLoadPendingScroll(e, o);
                 return;
@@ -366,7 +388,7 @@ namespace ELOR.Laney.Controls {
         private void ScrollViewer_PointerWheelChanged(object sender, PointerWheelEventArgs e) {
             if (Math.Abs(e.Delta.Y) < 0.01) return;
 
-            SuppressBottomStick(BottomStickManualSuppressMs);
+            RegisterManualScrollIntent();
             if (!IsNearBottom(BottomPinnedTolerance)) RefreshLayoutAnchorGuard(LayoutAnchorGuardMs);
         }
 
@@ -578,10 +600,15 @@ namespace ELOR.Laney.Controls {
 
             _isNextMessagesLoadTriggered = true;
             bool shouldStickToBottom = IsNearBottom(BottomPinnedTolerance);
+            long manualGeneration = _manualScrollGeneration;
 
             try {
                 await holder.LoadNextMessagesAsync(token);
-                if (!token.IsCancellationRequested && ReferenceEquals(holder, _currentHolder) && shouldStickToBottom) {
+                if (!token.IsCancellationRequested
+                    && ReferenceEquals(holder, _currentHolder)
+                    && shouldStickToBottom
+                    && manualGeneration == _manualScrollGeneration
+                    && IsNearBottom(BottomStickTolerance)) {
                     await ScrollToBottomStableAsync(null, 10);
                 }
             } catch (OperationCanceledException) {
@@ -930,6 +957,7 @@ namespace ELOR.Laney.Controls {
             UpdatePreviousRestoreDiagnostics();
             RequestNextFrame(UpdatePreviousRestoreDiagnostics);
             RefreshLayoutAnchorGuard(PreviousLayoutAnchorGuardMs, _activePreviousRestoreAnchor);
+            SchedulePostLayoutPreviousRestore(_manualScrollGeneration, 6);
             SaveScrollPosition(true);
         }
 
@@ -942,6 +970,33 @@ namespace ELOR.Laney.Controls {
             } finally {
                 _isRestoringLayoutAnchor = false;
             }
+        }
+
+        private void SchedulePostLayoutPreviousRestore(long manualGeneration, byte attempts) {
+            if (!_activePreviousRestoreAnchor.IsValid || attempts == 0 || ScrollViewer == null) return;
+
+            RequestNextFrame(() => {
+                if (!_activePreviousRestoreAnchor.IsValid
+                    || ScrollViewer == null
+                    || manualGeneration != _manualScrollGeneration
+                    || IsNearBottom(BottomStickTolerance)) {
+                    return;
+                }
+
+                _isRestoringLayoutAnchor = true;
+                try {
+                    TryRestoreAnchor(_activePreviousRestoreAnchor);
+                    _lastScrollOffset = ScrollViewer.Offset.Y;
+                } finally {
+                    _isRestoringLayoutAnchor = false;
+                }
+
+                UpdatePreviousRestoreDiagnostics();
+                SaveScrollPosition(true);
+
+                if (!Double.IsNaN(LastPreviousRestoreDrift) && Math.Abs(LastPreviousRestoreDrift) <= 3) return;
+                SchedulePostLayoutPreviousRestore(manualGeneration, (byte)(attempts - 1));
+            });
         }
 
         private void AbortPreviousMessagesLoad(string reason, bool saveScroll = false) {
@@ -1025,6 +1080,17 @@ namespace ELOR.Laney.Controls {
             if (milliseconds <= 0) return;
 
             _bottomStickSuppressedUntilTicks = GetFutureTimestamp(milliseconds);
+        }
+
+        private void RegisterManualScrollIntent() {
+            _manualScrollGeneration++;
+            _scrollToBottomGeneration++;
+            SuppressBottomStick(BottomStickManualSuppressMs);
+        }
+
+        private bool IsScrollToBottomCancelled(long operationGeneration, long manualGeneration) {
+            return _scrollToBottomGeneration != operationGeneration
+                || _manualScrollGeneration != manualGeneration;
         }
 
         private double GetMaxOffset() {
