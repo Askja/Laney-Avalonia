@@ -53,12 +53,17 @@ namespace ELOR.Laney.Controls {
         private const byte RestorePostAnchorAttempts = 48;
         private const double PreviousLoadStaleMs = 2500;
         private const double IncrementalLoadSuppressMs = 400;
+        private const double LayoutAnchorGuardMs = 1800;
+        private const double PreviousLayoutAnchorGuardMs = 5000;
         private double _lastScrollOffset = Double.NaN;
         private double _restoreScrollLastHeight = Double.NaN;
         private byte _restoreScrollStableFrames = 0;
         private ScrollAnchor _activePreviousRestoreAnchor;
+        private ScrollAnchor _layoutAnchorGuard;
         private long _previousLoadTriggerTicks = 0;
         private long _suppressIncrementalLoadUntilTicks = 0;
+        private long _layoutAnchorGuardUntilTicks = 0;
+        private bool _isRestoringLayoutAnchor = false;
 
         private ScrollViewer ScrollViewer => Scroll as ScrollViewer;
         public double LastPreviousRestoreDrift { get; private set; } = Double.NaN;
@@ -296,6 +301,7 @@ namespace ELOR.Laney.Controls {
 
         private void ScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e) {
             ClearStalePreviousLoadIfNeeded();
+            if (_isRestoringLayoutAnchor) return;
 
             double o = Scroll.Offset.Y;
             double previousOffset = _lastScrollOffset;
@@ -304,8 +310,15 @@ namespace ELOR.Laney.Controls {
             bool isMovingUp = hasScrollDirection && o < previousOffset - ScrollDirectionTolerance;
             bool isMovingDown = hasScrollDirection && o > previousOffset + ScrollDirectionTolerance;
             bool isOk = _controlHolderId1 != 0 && _controlHolderId1 == _controlHolderId2 && _canChangeScroll;
+            bool offsetChanged = Math.Abs(e.OffsetDelta.Y) > ScrollDirectionTolerance;
+            bool extentChanged = Math.Abs(e.ExtentDelta.Y) > 1;
 
             if (isOk) {
+                if (!offsetChanged && extentChanged && TryApplyLayoutAnchorGuard()) {
+                    SaveScrollPosition(true);
+                    return;
+                }
+
                 // Saving scroll
                 SaveScrollPosition();
 
@@ -324,6 +337,8 @@ namespace ELOR.Laney.Controls {
                         TriggerLoadNextMessages();
                     }
                 }
+
+                if (offsetChanged) RefreshLayoutAnchorGuard(LayoutAnchorGuardMs);
             }
         }
 
@@ -733,6 +748,7 @@ namespace ELOR.Laney.Controls {
             LastPreviousRestoreFinalOffset = ScrollViewer?.Offset.Y ?? Double.NaN;
             LastPreviousRestoreFinalHeight = ScrollViewer?.Extent.Height ?? Double.NaN;
             UpdatePreviousRestoreDiagnostics();
+            RefreshLayoutAnchorGuard(PreviousLayoutAnchorGuardMs, _activePreviousRestoreAnchor);
             SaveScrollPosition(true);
         }
 
@@ -756,6 +772,51 @@ namespace ELOR.Laney.Controls {
 
         private static long GetFutureTimestamp(double delayMs) {
             return Stopwatch.GetTimestamp() + (long)(Stopwatch.Frequency * delayMs / 1000.0);
+        }
+
+        private void RefreshLayoutAnchorGuard(double milliseconds, ScrollAnchor anchor = default) {
+            if (milliseconds <= 0 || ScrollViewer == null || IsNearBottom(BottomStickTolerance)) {
+                ClearLayoutAnchorGuard();
+                return;
+            }
+
+            ScrollAnchor nextAnchor = anchor.IsValid ? anchor : CaptureTopAnchor();
+            if (!nextAnchor.IsValid) {
+                ClearLayoutAnchorGuard();
+                return;
+            }
+
+            _layoutAnchorGuard = nextAnchor;
+            _layoutAnchorGuardUntilTicks = GetFutureTimestamp(milliseconds);
+        }
+
+        private void ClearLayoutAnchorGuard() {
+            _layoutAnchorGuard = default;
+            _layoutAnchorGuardUntilTicks = 0;
+        }
+
+        private bool TryApplyLayoutAnchorGuard() {
+            if (!_layoutAnchorGuard.IsValid || _layoutAnchorGuardUntilTicks == 0 || ScrollViewer == null) return false;
+
+            if (Stopwatch.GetTimestamp() > _layoutAnchorGuardUntilTicks || IsNearBottom(BottomStickTolerance)) {
+                ClearLayoutAnchorGuard();
+                return false;
+            }
+
+            if (ContainerFromItem(_layoutAnchorGuard.Item) == null) return false;
+
+            _isRestoringLayoutAnchor = true;
+            try {
+                bool restored = TryRestoreAnchor(_layoutAnchorGuard);
+                if (restored) {
+                    _lastScrollOffset = ScrollViewer.Offset.Y;
+                    _layoutAnchorGuardUntilTicks = GetFutureTimestamp(LayoutAnchorGuardMs);
+                }
+
+                return restored;
+            } finally {
+                _isRestoringLayoutAnchor = false;
+            }
         }
 
         private void UpdatePreviousRestoreDiagnostics() {
