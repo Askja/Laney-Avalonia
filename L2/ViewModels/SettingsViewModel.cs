@@ -76,6 +76,7 @@ namespace ELOR.Laney.ViewModels {
             foreach (SettingsCategory category in Categories) {
                 try {
                     AuditCategory(category, report);
+                    AuditDynamicHeaders(category, report);
                 } catch (Exception ex) {
                     report.AddIssue(category?.Title ?? "unknown", String.Empty, $"category_exception:{ex.GetType().Name}:{ex.Message}", null);
                 }
@@ -133,6 +134,82 @@ namespace ELOR.Laney.ViewModels {
                     string iconId = Cell.GetSemanticIconIdForHeader(header);
                     if (iconId == Cell.DefaultSemanticIconId) report.AddIssue(category.Title, header, "generic_icon", iconId);
                 }
+            }
+        }
+
+        private static void AuditDynamicHeaders(SettingsCategory category, SettingsAuditReport report) {
+            if (category?.ViewModel == null) return;
+
+            HashSet<string> seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (string rawHeader in EnumerateDynamicSettingHeaders(category.ViewModel)) {
+                string header = NormalizeText(rawHeader);
+                if (String.IsNullOrWhiteSpace(header) || !seen.Add(header)) continue;
+
+                report.DynamicHeadersChecked++;
+                string iconId = Cell.GetSemanticIconIdForHeader(header);
+                if (iconId == Cell.DefaultSemanticIconId) report.AddIssue(category.Title, header, "generic_dynamic_icon", iconId);
+            }
+        }
+
+        private static IEnumerable<string> EnumerateDynamicSettingHeaders(object viewModel) {
+            foreach (PropertyInfo property in viewModel.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public)) {
+                if (!property.CanRead || property.GetIndexParameters().Length > 0) continue;
+
+                if (property.PropertyType == typeof(string) && property.Name.EndsWith("Title", StringComparison.Ordinal)) {
+                    if (TryGetPropertyValue(viewModel, property, out object value) && value is string header) yield return header;
+                    continue;
+                }
+
+                if (!IsDynamicSettingItemsProperty(property)) continue;
+                if (!TryGetPropertyValue(viewModel, property, out object collection) || collection is not IEnumerable enumerable) continue;
+
+                foreach (object item in enumerable) {
+                    foreach (string header in EnumerateDynamicSettingItemHeaders(item, 0)) {
+                        yield return header;
+                    }
+                }
+            }
+        }
+
+        private static IEnumerable<string> EnumerateDynamicSettingItemHeaders(object item, int depth) {
+            if (item == null || depth > 2) yield break;
+
+            if (item is TwoStringTuple tuple) {
+                yield return tuple.Item1;
+                yield break;
+            }
+
+            Type type = item.GetType();
+            bool isContainer = type.Name.Contains("Section", StringComparison.OrdinalIgnoreCase);
+            PropertyInfo title = type.GetProperty("Title", BindingFlags.Instance | BindingFlags.Public);
+            if (!isContainer && title?.PropertyType == typeof(string) && TryGetPropertyValue(item, title, out object value) && value is string titleHeader) {
+                yield return titleHeader;
+            }
+
+            if (depth >= 2) yield break;
+
+            foreach (PropertyInfo property in type.GetProperties(BindingFlags.Instance | BindingFlags.Public)) {
+                if (!IsDynamicSettingItemsProperty(property) || !TryGetPropertyValue(item, property, out object nested) || nested is not IEnumerable enumerable) continue;
+
+                foreach (object nestedItem in enumerable) {
+                    foreach (string nestedHeader in EnumerateDynamicSettingItemHeaders(nestedItem, depth + 1)) {
+                        yield return nestedHeader;
+                    }
+                }
+            }
+        }
+
+        private static bool IsDynamicSettingItemsProperty(PropertyInfo property) {
+            return property.Name is "Profiles" or "FeatureFlags" or "Sections" or "Settings";
+        }
+
+        private static bool TryGetPropertyValue(object source, PropertyInfo property, out object value) {
+            try {
+                value = property.GetValue(source);
+                return true;
+            } catch {
+                value = null;
+                return false;
             }
         }
 
@@ -607,6 +684,7 @@ namespace ELOR.Laney.ViewModels {
         public int CategoriesTotal { get; }
         public int CategoryViewsChecked { get; set; }
         public int CellsChecked { get; set; }
+        public int DynamicHeadersChecked { get; set; }
         public int EmptyHeaderCount { get; private set; }
         public int MissingIconCount { get; private set; }
         public int GenericIconCount { get; private set; }
@@ -627,6 +705,7 @@ namespace ELOR.Laney.ViewModels {
                     MissingIconCount++;
                     break;
                 case "generic_icon":
+                case "generic_dynamic_icon":
                     GenericIconCount++;
                     break;
                 case "category_exception":

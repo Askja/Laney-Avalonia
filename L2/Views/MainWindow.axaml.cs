@@ -41,6 +41,7 @@ namespace ELOR.Laney.Views {
         private BackgroundHistoryStatisticsIndexer backgroundHistoryStatisticsIndexer;
         private bool lastAutoStatusWasIdle;
         private bool isChatListSplitterDragging;
+        private static bool perfSettingsQaScheduled;
         private const int AccountRailColumnIndex = 0;
         private const int ChatListColumnIndex = 1;
         private const int ChatColumnIndex = 3;
@@ -94,6 +95,7 @@ namespace ELOR.Laney.Views {
 
             PanicLockTitle.Text = Localizer.Get("panic_lock_title");
             PanicLockUnlockButton.Content = Localizer.Get("panic_lock_unlock");
+            TrySchedulePerfSettingsQa();
         }
 
         private void AudioPlayerViewModel_InstancesChanged(object sender, EventArgs e) {
@@ -132,6 +134,8 @@ namespace ELOR.Laney.Views {
         }
 
         private async void MainWindow_Opened(object? sender, EventArgs e) {
+            TrySchedulePerfSettingsQa();
+
             if (Settings.FirstRunOnboardingDone || Session == null || App.HasCmdLineValue("perf-open-settings")) return;
 
             await Task.Delay(450);
@@ -1269,9 +1273,25 @@ namespace ELOR.Laney.Views {
                 TryOpenPerfDemoChat();
                 TryOpenPerfNewsFeed();
                 TryOpenPerfSettings();
+                TrySchedulePerfSettingsQa();
+            })();
+        }
+
+        private void TrySchedulePerfSettingsQa() {
+            if (perfSettingsQaScheduled) return;
+            if (!App.HasCmdLineValue("perf-settings-audit") && !App.HasCmdLineValue("perf-settings-mutation-smoke")) return;
+
+            perfSettingsQaScheduled = true;
+            Dispatcher.UIThread.Post(async () => {
+                await Task.Delay(1200);
                 TryRunPerfSettingsAudit();
                 TryRunPerfSettingsMutationSmoke();
-            })();
+                if (App.HasCmdLineValue("perf-exit-after-qa")) {
+                    await Task.Delay(14000);
+                    Log.Information("Closing after perf settings QA.");
+                    App.Current?.DesktopLifetime?.Shutdown();
+                }
+            }, DispatcherPriority.Background);
         }
 
         private void TryOpenPerfDemoChat() {
@@ -1471,11 +1491,12 @@ namespace ELOR.Laney.Views {
                     if (Session != null) settings.SetAccountId(Session.Id);
                     SettingsAuditReport report = settings.RunAudit();
                     Log.Information(
-                        "Settings audit result: passed={Passed}; categories={Checked}/{Total}; cells={Cells}; emptyHeader={Empty}; missingIcon={Missing}; genericIcon={Generic}; categoryErrors={Errors}",
+                        "Settings audit result: passed={Passed}; categories={Checked}/{Total}; cells={Cells}; dynamicHeaders={DynamicHeaders}; emptyHeader={Empty}; missingIcon={Missing}; genericIcon={Generic}; categoryErrors={Errors}",
                         report.Passed,
                         report.CategoryViewsChecked,
                         report.CategoriesTotal,
                         report.CellsChecked,
+                        report.DynamicHeadersChecked,
                         report.EmptyHeaderCount,
                         report.MissingIconCount,
                         report.GenericIconCount,
