@@ -8,21 +8,21 @@
       <SolidColorBrush x:Key="LaneySurfaceRaisedBrush" Color="#F7FFFFFF"/>
       <SolidColorBrush x:Key="LaneySurfaceOverlayBrush" Color="#FFFFFFFF"/>
       <SolidColorBrush x:Key="LaneyMutedSurfaceBrush" Color="#BFEAF0F7"/>
-      <SolidColorBrush x:Key="LaneyFieldBackgroundBrush" Color="#CCFFFFFF"/>
-      <SolidColorBrush x:Key="LaneyFieldHoverBrush" Color="#F0FFFFFF"/>
-      <SolidColorBrush x:Key="LaneyFieldBorderBrush" Color="#9FB7C5D6"/>
+      <SolidColorBrush x:Key="LaneyFieldBackgroundBrush" Color="#BFFFFFFF"/>
+      <SolidColorBrush x:Key="LaneyFieldHoverBrush" Color="#E8FFFFFF"/>
+      <SolidColorBrush x:Key="LaneyFieldBorderBrush" Color="#8FB7C5D6"/>
       <SolidColorBrush x:Key="LaneyChatListHoverBrush" Color="#66DCEEFF"/>
       <SolidColorBrush x:Key="LaneyChatListSelectedBrush" Color="#99CFE8FF"/>
       <SolidColorBrush x:Key="LaneySkeletonBrush" Color="#BFE3EAF2"/>
 
       <SolidColorBrush x:Key="LaneyBorderSubtleBrush" Color="#7FB8C5D2"/>
       <SolidColorBrush x:Key="LaneyBorderStrongBrush" Color="#A78EA0B4"/>
-      <SolidColorBrush x:Key="LaneyGlassPanelBrush" Color="#F0FFFFFF"/>
-      <SolidColorBrush x:Key="LaneyGlassRaisedBrush" Color="#F8FFFFFF"/>
-      <SolidColorBrush x:Key="LaneyGlassOverlayBrush" Color="#FFFFFFFF"/>
-      <SolidColorBrush x:Key="LaneyGlassBorderBrush" Color="#66AEBCCB"/>
-      <SolidColorBrush x:Key="LaneyGlassHighlightBrush" Color="#99FFFFFF"/>
-      <SolidColorBrush x:Key="LaneyGlassShadowBrush" Color="#101D2B3A"/>
+      <SolidColorBrush x:Key="LaneyGlassPanelBrush" Color="#E3FFFFFF"/>
+      <SolidColorBrush x:Key="LaneyGlassRaisedBrush" Color="#EEFFFFFF"/>
+      <SolidColorBrush x:Key="LaneyGlassOverlayBrush" Color="#F8FFFFFF"/>
+      <SolidColorBrush x:Key="LaneyGlassBorderBrush" Color="#78A9BCD0"/>
+      <SolidColorBrush x:Key="LaneyGlassHighlightBrush" Color="#C8FFFFFF"/>
+      <SolidColorBrush x:Key="LaneyGlassShadowBrush" Color="#0D1D2B3A"/>
 
       <SolidColorBrush x:Key="LaneyTextMutedBrush" Color="#657386"/>
       <SolidColorBrush x:Key="LaneyTextSubtleBrush" Color="#8A96A6"/>
@@ -50,21 +50,21 @@
       <SolidColorBrush x:Key="LaneySurfaceRaisedBrush" Color="#FA17212C"/>
       <SolidColorBrush x:Key="LaneySurfaceOverlayBrush" Color="#FF1C2735"/>
       <SolidColorBrush x:Key="LaneyMutedSurfaceBrush" Color="#7A202A36"/>
-      <SolidColorBrush x:Key="LaneyFieldBackgroundBrush" Color="#F016202C"/>
-      <SolidColorBrush x:Key="LaneyFieldHoverBrush" Color="#FA1D2A38"/>
-      <SolidColorBrush x:Key="LaneyFieldBorderBrush" Color="#38FFFFFF"/>
+      <SolidColorBrush x:Key="LaneyFieldBackgroundBrush" Color="#CC172331"/>
+      <SolidColorBrush x:Key="LaneyFieldHoverBrush" Color="#E01C2A3A"/>
+      <SolidColorBrush x:Key="LaneyFieldBorderBrush" Color="#42A9C7EC"/>
       <SolidColorBrush x:Key="LaneyChatListHoverBrush" Color="#332B67A0"/>
       <SolidColorBrush x:Key="LaneyChatListSelectedBrush" Color="#703390EC"/>
       <SolidColorBrush x:Key="LaneySkeletonBrush" Color="#B02A3341"/>
 
       <SolidColorBrush x:Key="LaneyBorderSubtleBrush" Color="#29FFFFFF"/>
       <SolidColorBrush x:Key="LaneyBorderStrongBrush" Color="#44FFFFFF"/>
-      <SolidColorBrush x:Key="LaneyGlassPanelBrush" Color="#E60D141D"/>
-      <SolidColorBrush x:Key="LaneyGlassRaisedBrush" Color="#F2182431"/>
-      <SolidColorBrush x:Key="LaneyGlassOverlayBrush" Color="#FA202C3B"/>
-      <SolidColorBrush x:Key="LaneyGlassBorderBrush" Color="#28FFFFFF"/>
-      <SolidColorBrush x:Key="LaneyGlassHighlightBrush" Color="#24FFFFFF"/>
-      <SolidColorBrush x:Key="LaneyGlassShadowBrush" Color="#24000000"/>
+      <SolidColorBrush x:Key="LaneyGlassPanelBrush" Color="#BE0B121B"/>
+      <SolidColorBrush x:Key="LaneyGlassRaisedBrush" Color="#D1182533"/>
+      <SolidColorBrush x:Key="LaneyGlassOverlayBrush" Color="#E3223040"/>
+      <SolidColorBrush x:Key="LaneyGlassBorderBrush" Color="#3E93BCEB"/>
+      <SolidColorBrush x:Key="LaneyGlassHighlightBrush" Color="#35FFFFFF"/>
+      <SolidColorBrush x:Key="LaneyGlassShadowBrush" Color="#1A000000"/>
 
       <SolidColorBrush x:Key="LaneyTextMutedBrush" Color="#8B97A8"/>
       <SolidColorBrush x:Key="LaneyTextSubtleBrush" Color="#667386"/>

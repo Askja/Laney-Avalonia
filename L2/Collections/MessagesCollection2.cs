@@ -5,7 +5,6 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
-using System.Runtime.InteropServices;
 
 namespace ELOR.Laney.Collections {
     public class MessagesCollection : ObservableCollection<MessageViewModel> {
@@ -64,10 +63,9 @@ namespace ELOR.Laney.Collections {
         public void InsertRange(List<MessageViewModel> messages) {
             if (messages == null || messages.Count == 0) return;
 
-            using (DeferNotifications()) {
-                foreach (var message in CollectionsMarshal.AsSpan<MessageViewModel>(messages)) {
-                    Insert(message);
-                }
+            foreach (MessageViewModel message in messages) {
+                if (message == null) continue;
+                Insert(message);
             }
         }
 

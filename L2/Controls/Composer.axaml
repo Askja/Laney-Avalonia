@@ -17,17 +17,33 @@
       <Setter Property="Height" Value="36"/>
       <Setter Property="Width" Value="36"/>
       <Setter Property="Padding" Value="0"/>
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="CornerRadius" Value="14"/>
       <Setter Property="HorizontalContentAlignment" Value="Center"/>
       <Setter Property="VerticalContentAlignment" Value="Center"/>
     </Style>
 
+    <Style Selector="Button.ComposerButton /template/ Border#PART_Background">
+      <Setter Property="Background" Value="Transparent"/>
+    </Style>
+
+    <Style Selector="Button.ComposerButton /template/ Border#PART_Hover">
+      <Setter Property="Margin" Value="3"/>
+      <Setter Property="Background" Value="Transparent"/>
+    </Style>
+
     <Style Selector="Button.ComposerButton, Button.ComposerButton > vkui|VKIcon">
       <Setter Property="Foreground" Value="{DynamicResource VKIconOutlineMediumBrush}"/>
-      <Setter Property="Opacity" Value="0.72"/>
+      <Setter Property="Opacity" Value="0.68"/>
     </Style>
 
     <Style Selector="Button.ComposerButton:pointerover, Button.ComposerButton:pointerover > vkui|VKIcon">
       <Setter Property="Opacity" Value="1"/>
+    </Style>
+
+    <Style Selector="Button.ComposerButton:pointerover /template/ Border#PART_Hover">
+      <Setter Property="Background" Value="{DynamicResource LaneyMutedSurfaceBrush}"/>
     </Style>
   </UserControl.Styles>
 
@@ -218,8 +234,8 @@
       </Grid>
     </Border>
 
-    <Border x:Name="InputPanel" Classes="GlassInput" Margin="10,5,10,8" CornerRadius="18">
-      <Grid x:Name="InputArea" Margin="6,3" MinHeight="38" ColumnDefinitions="Auto * Auto">
+    <Border x:Name="InputPanel" Classes="GlassInput" Margin="10,6,10,8" CornerRadius="18">
+      <Grid x:Name="InputArea" Margin="7,4" MinHeight="38" ColumnDefinitions="Auto * Auto">
         <Button x:Name="AttachmentButton" Classes="Tertiary ComposerButton" VerticalAlignment="Center" Click="ShowAttachmentPickerContextMenu">
           <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon24AddCircleOutline}"/>
         </Button>

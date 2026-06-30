@@ -20,8 +20,8 @@ using VKUI.Controls;
 namespace ELOR.Laney.Controls {
     public static class ImageLoader {
         private const double ViewportPreloadMargin = 192;
-        private const double MaxBackgroundDecodePixels = 960;
-        private const double MaxBlurBackgroundDecodePixels = 320;
+        private const double MaxBackgroundDecodePixels = 768;
+        private const double MaxBlurBackgroundDecodePixels = 256;
         private const double ActiveViewportCheckIntervalMs = 240;
 
         static ImageLoader() {
@@ -145,13 +145,17 @@ namespace ELOR.Laney.Controls {
             return true;
         }
 
-        private static ImageLoadState BeginLoad(Control control) {
+        private static ImageLoadState BeginLoad(Control control, bool showLoadingState = true) {
             CancelLoad(control);
 
             ImageLoadState state = new ImageLoadState();
             SetLoadState(control, state);
-            SetLoadingPlaceholder(control);
-            if (!control.Classes.Contains("ImageLoading")) control.Classes.Add("ImageLoading");
+            if (showLoadingState) {
+                SetLoadingPlaceholder(control);
+                if (!control.Classes.Contains("ImageLoading")) control.Classes.Add("ImageLoading");
+            } else {
+                control.Classes.Remove("ImageLoading");
+            }
 
             control.DetachedFromVisualTree -= OnDetachedFromVisualTree;
             control.DetachedFromVisualTree += OnDetachedFromVisualTree;
@@ -237,9 +241,11 @@ namespace ELOR.Laney.Controls {
                     shape.Fill = null;
                     break;
                 case Border border:
+                    ReplaceOwnedBackgroundBitmap(border, null);
                     border.Background = null;
                     break;
                 case ContentControl contentControl:
+                    ReplaceOwnedBackgroundBitmap(contentControl, null);
                     contentControl.Background = null;
                     break;
             }
@@ -323,12 +329,11 @@ namespace ELOR.Laney.Controls {
             }
 
             if (!EnsureAttached(sender)) return;
-            SetLoadingPlaceholder(sender);
             _ = LoadBitmapIntoBackgroundAsync(sender, uri);
         }
 
         private static async Task LoadBitmapIntoBackgroundAsync(Control sender, Uri uri) {
-            ImageLoadState state = BeginLoad(sender);
+            ImageLoadState state = BeginLoad(sender, false);
             double decodeWidth = GetDecodeWidth(sender);
             double decodeHeight = GetDecodeHeight(sender);
             int blurRadius = GetBackgroundBlurRadius(sender);
@@ -345,7 +350,12 @@ namespace ELOR.Laney.Controls {
 
                 Bitmap bitmap = await BitmapManager.GetBitmapAsync(uri, decodeWidth, decodeHeight, state.Token, BitmapCacheKind.Attachment);
                 if (!IsCurrent(sender, state, uri)) return;
-                if (blurRadius > 0) bitmap = CreateBlurredBitmap(bitmap, blurRadius);
+                if (bitmap == null) return;
+                IDisposable ownedBitmap = null;
+                if (blurRadius > 0) {
+                    bitmap = CreateBlurredBitmap(bitmap, blurRadius);
+                    ownedBitmap = bitmap;
+                }
 
                 ImageBrush brush = new ImageBrush(bitmap) {
                     AlignmentX = AlignmentX.Center,
@@ -354,7 +364,11 @@ namespace ELOR.Laney.Controls {
                 };
 
                 await Dispatcher.UIThread.InvokeAsync(() => {
-                    if (IsCurrent(sender, state, uri)) SetBackground(sender, brush);
+                    if (IsCurrent(sender, state, uri)) {
+                        SetBackground(sender, brush, ownedBitmap);
+                    } else {
+                        ownedBitmap?.Dispose();
+                    }
                 });
             } catch (OperationCanceledException) {
             } catch (Exception ex) {
@@ -450,7 +464,9 @@ namespace ELOR.Laney.Controls {
             }
         }
 
-        private static void SetBackground(Control control, IBrush brush) {
+        private static void SetBackground(Control control, IBrush brush, IDisposable ownedBitmap = null) {
+            ReplaceOwnedBackgroundBitmap(control, ownedBitmap);
+
             switch (control) {
                 case Border border:
                     border.Background = brush;
@@ -609,6 +625,19 @@ namespace ELOR.Laney.Controls {
 
         private static void SetLoadState(Control element, ImageLoadState? value) {
             element.SetValue(LoadStateProperty, value);
+        }
+
+        private static readonly AttachedProperty<IDisposable?> OwnedBackgroundBitmapProperty =
+            AvaloniaProperty.RegisterAttached<Control, IDisposable?>("OwnedBackgroundBitmap", typeof(ImageLoader));
+
+        private static IDisposable? GetOwnedBackgroundBitmap(Control element) {
+            return element.GetValue(OwnedBackgroundBitmapProperty);
+        }
+
+        private static void ReplaceOwnedBackgroundBitmap(Control element, IDisposable? value) {
+            IDisposable? previous = GetOwnedBackgroundBitmap(element);
+            if (!ReferenceEquals(previous, value)) previous?.Dispose();
+            element.SetValue(OwnedBackgroundBitmapProperty, value);
         }
 
         private static readonly AttachedProperty<long> LastViewportCheckTicksProperty =

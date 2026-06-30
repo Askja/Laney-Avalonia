@@ -91,6 +91,18 @@ namespace ELOR.Laney.Controls {
             }
         }
 
+        private readonly struct ScrollSnapshot {
+            public ScrollAnchor Anchor { get; }
+            public double Height { get; }
+            public double Offset { get; }
+
+            public ScrollSnapshot(ScrollAnchor anchor, double height, double offset) {
+                Anchor = anchor;
+                Height = height;
+                Offset = offset;
+            }
+        }
+
         private readonly struct ItemsState {
             public int Count { get; }
             public int FirstId { get; }
@@ -340,9 +352,10 @@ namespace ELOR.Laney.Controls {
                 _previousLoadTriggerTicks = Stopwatch.GetTimestamp();
                 LastPreviousTriggerSkipReason = String.Empty;
 
-                ScrollAnchor anchor = CaptureTopAnchor();
-                double oldHeight = Scroll.Extent.Height;
-                double oldOffset = Scroll.Offset.Y;
+                ScrollSnapshot snapshot = await CaptureStableScrollSnapshotAsync();
+                ScrollAnchor anchor = snapshot.Anchor;
+                double oldHeight = snapshot.Height;
+                double oldOffset = snapshot.Offset;
                 ItemsState oldItemsState = CaptureItemsState();
                 _activePreviousRestoreAnchor = anchor;
                 LastPreviousRestoreDrift = Double.NaN;
@@ -406,31 +419,22 @@ namespace ELOR.Laney.Controls {
             }
 
             if (anchor.IsValid) {
-                EnsureApproximateOffset(oldOffset, diff);
-
-                bool anchorContainerReady = ContainerFromItem(anchor.Item) != null;
-                if (!anchorContainerReady) {
-                    ScrollIntoView(anchor.Item);
-                    if (Settings.ShowDebugCounters) Debug.WriteLine($"Anchor container is not ready after stable previous messages load. Trying in next frame, attempts: {_restoreScrollAttempts}.");
-                    RequestNextFrame(() => TryRestoreScroll(anchor, oldHeight, oldOffset));
-                    return;
-                }
-
                 if (TryRestoreAnchor(anchor)) {
                     if (Settings.ShowDebugCounters) Debug.WriteLine("Scroll anchor successfully restored.");
                     _restoreScrollAttempts = RestorePostAnchorAttempts;
                     _restoreScrollLastHeight = Double.NaN;
                     _restoreScrollStableFrames = 0;
                     StabilizeRestoredAnchor(anchor, oldHeight, oldOffset);
-                } else if (_restoreScrollAttempts > 0) {
-                    if (Settings.ShowDebugCounters) Debug.WriteLine($"Anchor container is not ready. Trying in next frame, attempts: {_restoreScrollAttempts}.");
-                    RequestNextFrame(() => TryRestoreScroll(anchor, oldHeight, oldOffset));
-                } else {
-                    RestoreByHeightDiff(oldOffset, newHeight, diff);
+                    return;
                 }
-            } else {
-                RestoreByHeightDiff(oldOffset, newHeight, diff);
+
+                ScrollIntoView(anchor.Item);
+                if (Settings.ShowDebugCounters) Debug.WriteLine($"Anchor container is not ready. Trying in next frame, attempts: {_restoreScrollAttempts}.");
+                RequestNextFrame(() => TryRestoreScroll(anchor, oldHeight, oldOffset));
+                return;
             }
+
+            RestoreByHeightDiff(oldOffset, newHeight, diff);
         }
 
         private void StabilizeRestoredAnchor(ScrollAnchor anchor, double oldHeight, double oldOffset) {
@@ -450,8 +454,8 @@ namespace ELOR.Laney.Controls {
             bool heightStable = !Double.IsNaN(_restoreScrollLastHeight) && Math.Abs(newHeight - _restoreScrollLastHeight) <= 1;
             _restoreScrollLastHeight = newHeight;
 
-            bool anchorStable = !anchor.IsValid || TryRestoreAnchor(anchor);
-            if (!anchorStable && anchor.IsValid && ContainerFromItem(anchor.Item) == null) ScrollIntoView(anchor.Item);
+            bool anchorStable = TryRestoreAnchor(anchor);
+            if (!anchorStable && ContainerFromItem(anchor.Item) == null) ScrollIntoView(anchor.Item);
             _restoreScrollStableFrames = heightStable && anchorStable
                 ? (byte)Math.Min(_restoreScrollStableFrames + 1, RestoreRequiredStableFrames)
                 : (byte)0;
@@ -543,6 +547,37 @@ namespace ELOR.Laney.Controls {
             }
 
             return default;
+        }
+
+        private async Task<ScrollSnapshot> CaptureStableScrollSnapshotAsync() {
+            ScrollSnapshot snapshot = default;
+            double lastHeight = Double.NaN;
+            double lastOffset = Double.NaN;
+            byte stableFrames = 0;
+
+            for (byte attempt = 0; attempt < 8; attempt++) {
+                snapshot = await Dispatcher.UIThread.InvokeAsync(() => {
+                    if (ScrollViewer == null) return default;
+                    return new ScrollSnapshot(CaptureTopAnchor(), ScrollViewer.Extent.Height, ScrollViewer.Offset.Y);
+                }, DispatcherPriority.Render);
+
+                bool stable = !Double.IsNaN(lastHeight)
+                    && Math.Abs(snapshot.Height - lastHeight) <= 1
+                    && Math.Abs(snapshot.Offset - lastOffset) <= 1;
+
+                if (stable) {
+                    stableFrames++;
+                    if (stableFrames >= 2) break;
+                } else {
+                    stableFrames = 0;
+                }
+
+                lastHeight = snapshot.Height;
+                lastOffset = snapshot.Offset;
+                await Task.Delay(16);
+            }
+
+            return snapshot;
         }
 
         private bool TryRestoreAnchor(ScrollAnchor anchor) {
@@ -668,6 +703,10 @@ namespace ELOR.Laney.Controls {
         }
 
         private void RestoreByHeightDiff(double oldOffset, double newHeight, double heightDiff) {
+            RestoreByHeightDiff(oldOffset, newHeight, heightDiff, true);
+        }
+
+        private void RestoreByHeightDiff(double oldOffset, double newHeight, double heightDiff, bool finishRestore) {
             double restoredOffset = GetHeightDiffRestoredOffset(oldOffset, heightDiff);
             Scroll.Offset = new Vector(Scroll.Offset.X, restoredOffset);
             if (_controlHolderId1 != 0) {
@@ -675,7 +714,7 @@ namespace ELOR.Laney.Controls {
             }
 
             if (Settings.ShowDebugCounters) Debug.WriteLine("Scroll successfully restored by height diff.");
-            FinishPreviousMessagesLoadRestore();
+            if (finishRestore) FinishPreviousMessagesLoadRestore();
         }
 
         private double GetHeightDiffRestoredOffset(double oldOffset, double heightDiff) {
