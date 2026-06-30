@@ -44,6 +44,7 @@ namespace ELOR.Laney.ViewModels {
         private bool _isEmpty = true;
         private bool _reloadAfterCurrentLoad = false;
         private bool _isStoriesLoading = false;
+        private bool _storiesLoadFailed = false;
         private bool _storiesLoaded = false;
         private ConversationsFilter _conversationsFilter = ConversationsFilter.All;
         private string _currentChatFilterId = ConversationsFilter.All.ToString();
@@ -58,8 +59,14 @@ namespace ELOR.Laney.ViewModels {
         public ChatViewModel VisualSelectedChat { get { return _visualSelectedChat; } private set { _visualSelectedChat = value; OnPropertyChanged(); } }
         public bool IsEmpty { get { return _isEmpty; } private set { _isEmpty = value; OnPropertyChanged(); OnPropertyChanged(nameof(ShowFilterEmpty)); } }
         public bool ShowFilterEmpty { get { return IsEmpty && !IsLoading && Placeholder == null && _currentChatFilterId != ConversationsFilter.All.ToString(); } }
-        public bool IsStoriesLoading { get { return _isStoriesLoading; } private set { _isStoriesLoading = value; OnPropertyChanged(); OnPropertyChanged(nameof(HasStoriesRail)); } }
-        public bool HasStoriesRail { get { return IsStoriesLoading || Stories.Count > 0; } }
+        public bool IsStoriesLoading { get { return _isStoriesLoading; } private set { _isStoriesLoading = value; OnPropertyChanged(); RefreshStoriesState(); } }
+        public bool StoriesLoadFailed { get { return _storiesLoadFailed; } private set { _storiesLoadFailed = value; OnPropertyChanged(); RefreshStoriesState(); } }
+        public bool HasStories { get { return Stories.Count > 0; } }
+        public bool IsStoriesSkeletonVisible { get { return IsStoriesLoading && Stories.Count == 0; } }
+        public bool IsStoriesStatusVisible { get { return _storiesLoaded && !IsStoriesLoading && Stories.Count == 0; } }
+        public bool HasStoriesRail { get { return IsStoriesLoading || Stories.Count > 0 || IsStoriesStatusVisible; } }
+        public string StoriesStatusText { get { return StoriesLoadFailed ? "Истории не загрузились" : "Историй сейчас нет"; } }
+        public string StoriesStatusSubtitle { get { return StoriesLoadFailed ? "Нажми обновить или открой VK Stories." : "Новые истории друзей и сообществ появятся тут."; } }
         public string FilterEmptyText { get { return Resources.chat_filter_empty; } }
 
         public ImViewModel(VKSession session) {
@@ -172,7 +179,16 @@ namespace ELOR.Laney.ViewModels {
         }
 
         public async Task LoadStoriesAsync(bool force = false) {
-            if (DemoMode.IsEnabled) return;
+            if (DemoMode.IsEnabled) {
+                await Dispatcher.UIThread.InvokeAsync(() => {
+                    Stories.Clear();
+                    StoriesLoadFailed = false;
+                    _storiesLoaded = true;
+                    RefreshStoriesState();
+                });
+                return;
+            }
+
             if (session?.API == null) return;
             if (IsStoriesLoading) return;
             if (_storiesLoaded && !force) return;
@@ -185,20 +201,31 @@ namespace ELOR.Laney.ViewModels {
                     foreach (Story story in stories) {
                         Stories.Add(new StoryRailItemViewModel(story));
                     }
+                    StoriesLoadFailed = false;
                     _storiesLoaded = true;
-                    OnPropertyChanged(nameof(Stories));
-                    OnPropertyChanged(nameof(HasStoriesRail));
+                    RefreshStoriesState();
                 });
             } catch (Exception ex) {
                 Log.Warning(ex, "Cannot load VK stories rail.");
                 await Dispatcher.UIThread.InvokeAsync(() => {
+                    StoriesLoadFailed = true;
                     _storiesLoaded = true;
                     Stories.Clear();
-                    OnPropertyChanged(nameof(HasStoriesRail));
+                    RefreshStoriesState();
                 });
             } finally {
                 await Dispatcher.UIThread.InvokeAsync(() => IsStoriesLoading = false);
             }
+        }
+
+        private void RefreshStoriesState() {
+            OnPropertyChanged(nameof(Stories));
+            OnPropertyChanged(nameof(HasStories));
+            OnPropertyChanged(nameof(IsStoriesSkeletonVisible));
+            OnPropertyChanged(nameof(HasStoriesRail));
+            OnPropertyChanged(nameof(IsStoriesStatusVisible));
+            OnPropertyChanged(nameof(StoriesStatusText));
+            OnPropertyChanged(nameof(StoriesStatusSubtitle));
         }
 
         private async Task<IReadOnlyList<Story>> FetchStoriesAsync() {

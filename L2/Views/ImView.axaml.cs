@@ -156,6 +156,11 @@ namespace ELOR.Laney.Views {
             await dialog.ShowDialog<int>(Session.ModalWindow);
         }
 
+        private async void StoriesRefreshButton_Click(object sender, RoutedEventArgs e) {
+            if (Session?.ImViewModel == null) return;
+            await Session.ImViewModel.LoadStoriesAsync(true);
+        }
+
         // Необходимо для того, чтобы при ПКМ не пробрасывалось
         // событие нажатия к ListBox.
 

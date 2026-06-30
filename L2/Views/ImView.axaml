@@ -299,8 +299,21 @@
 
     <Grid x:Name="ChatsListRoot" Grid.Row="1" RowDefinitions="Auto *" Background="{DynamicResource LaneyGlassPanelBrush}">
       <Border x:Name="StoriesRail" IsVisible="{Binding ImViewModel.HasStoriesRail}" BorderBrush="{DynamicResource LaneyGlassBorderBrush}" BorderThickness="0,0,0,1" Background="{DynamicResource LaneyGlassPanelBrush}">
-        <Grid MinHeight="102">
-          <ScrollViewer IsVisible="{Binding !ImViewModel.IsStoriesLoading}" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled">
+        <Grid MinHeight="104" ColumnDefinitions="Auto *">
+          <Button Classes="Tertiary StoryRailItem" Margin="10,9,0,8" Click="StoriesRefreshButton_Click" ToolTip.Tip="Обновить истории">
+            <StackPanel Spacing="5">
+              <Grid Width="66" Height="66" HorizontalAlignment="Center">
+                <Border Width="66" Height="66" CornerRadius="18" Background="{DynamicResource LaneyGlassRaisedBrush}" BorderBrush="{DynamicResource LaneyGlassBorderBrush}" BorderThickness="1"/>
+                <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon20StoryOutline}" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource LaneyAccentBrush}"/>
+                <Border Width="22" Height="22" CornerRadius="11" HorizontalAlignment="Right" VerticalAlignment="Bottom" Background="{DynamicResource VKAccentBrush}" BorderBrush="{DynamicResource LaneyGlassPanelBrush}" BorderThickness="2">
+                  <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon20RecentOutline}" Width="14" Height="14" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource VKButtonPrimaryForegroundBrush}"/>
+                </Border>
+              </Grid>
+              <TextBlock Text="Истории" MaxLines="1" TextTrimming="CharacterEllipsis" TextAlignment="Center" FontSize="12" LineHeight="14" Foreground="{DynamicResource VKTextPrimaryBrush}"/>
+            </StackPanel>
+          </Button>
+
+          <ScrollViewer Grid.Column="1" IsVisible="{Binding ImViewModel.HasStories}" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled">
             <ItemsRepeater ItemsSource="{Binding ImViewModel.Stories}" Margin="12,9,12,8">
               <ItemsRepeater.Layout>
                 <StackLayout Orientation="Horizontal" Spacing="10"/>
@@ -326,7 +339,17 @@
             </ItemsRepeater>
           </ScrollViewer>
 
-          <StackPanel Orientation="Horizontal" Spacing="10" Margin="12,9,12,8" IsVisible="{Binding ImViewModel.IsStoriesLoading}">
+          <Border Grid.Column="1" Margin="12,10,12,10" CornerRadius="14" Background="{DynamicResource LaneyGlassRaisedBrush}" BorderBrush="{DynamicResource LaneyGlassBorderBrush}" BorderThickness="1" IsVisible="{Binding ImViewModel.IsStoriesStatusVisible}">
+            <Grid ColumnDefinitions="Auto *" Margin="14,0" VerticalAlignment="Center">
+              <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon20StoryOutline}" Width="24" Height="24" VerticalAlignment="Center" Foreground="{DynamicResource LaneyTextMutedBrush}"/>
+              <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="12,0,0,0" Spacing="2">
+                <TextBlock FontWeight="SemiBold" Foreground="{DynamicResource VKTextPrimaryBrush}" Text="{Binding ImViewModel.StoriesStatusText}"/>
+                <TextBlock Classes="Caption1" Foreground="{DynamicResource LaneyTextMutedBrush}" Text="{Binding ImViewModel.StoriesStatusSubtitle}" TextWrapping="Wrap"/>
+              </StackPanel>
+            </Grid>
+          </Border>
+
+          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" Margin="12,9,12,8" IsVisible="{Binding ImViewModel.IsStoriesSkeletonVisible}">
             <StackPanel Width="74" Spacing="5">
               <Border Classes="Skeleton" Width="66" Height="66" CornerRadius="18" HorizontalAlignment="Center"/>
               <Border Classes="Skeleton" Width="48" Height="10" CornerRadius="5" HorizontalAlignment="Center"/>
