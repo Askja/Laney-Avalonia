@@ -248,7 +248,7 @@ namespace ELOR.Laney.Controls {
 
         private static async Task<Avalonia.Media.Imaging.Bitmap> LoadFirstAvailableEmojiBitmapAsync(IReadOnlyList<Uri> imageUris) {
             foreach (Uri imageUri in imageUris) {
-                var bitmap = await BitmapManager.GetBitmapAsync(imageUri, EmojiSize, EmojiSize, CancellationToken.None, BitmapCacheKind.Attachment, false).ConfigureAwait(false);
+                var bitmap = await BitmapManager.GetBitmapAsync(imageUri, EmojiSize, EmojiSize, CancellationToken.None, BitmapCacheKind.Emoji, false).ConfigureAwait(false);
                 if (bitmap != null) return bitmap;
             }
 

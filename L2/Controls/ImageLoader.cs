@@ -331,7 +331,7 @@ namespace ELOR.Laney.Controls {
                 Bitmap bitmap = null;
                 foreach (Uri candidate in candidates) {
                     if (!IsCurrentCandidates(sender, state, candidates)) return;
-                    bitmap = await BitmapManager.GetBitmapAsync(candidate, decodeWidth, decodeHeight, state.Token, BitmapCacheKind.Attachment, false);
+                    bitmap = await BitmapManager.GetBitmapAsync(candidate, decodeWidth, decodeHeight, state.Token, BitmapCacheKind.Emoji, false);
                     if (bitmap != null) break;
                 }
 

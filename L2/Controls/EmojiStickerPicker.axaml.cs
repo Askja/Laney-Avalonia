@@ -38,7 +38,7 @@ namespace ELOR.Laney.Controls {
         private void EmojiStickerPicker_Unloaded(object sender, RoutedEventArgs e) {
             Unloaded -= EmojiStickerPicker_Unloaded;
             ViewModel.PropertyChanged -= ViewModel_PropertyChanged;
-            BitmapManager.ClearCachedImages();
+            BitmapManager.ClearCachedImages(BitmapCacheKind.Emoji);
         }
 
         private void EmojiStickerPicker_Loaded(object sender, RoutedEventArgs e) {

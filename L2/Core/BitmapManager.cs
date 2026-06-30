@@ -17,7 +17,8 @@ namespace ELOR.Laney.Core {
         Avatar = 1,
         Attachment = 2,
         E2E = 3,
-        Background = 4
+        Background = 4,
+        Emoji = 5
     }
 
     public readonly struct BitmapCacheSnapshot {
@@ -28,10 +29,11 @@ namespace ELOR.Laney.Core {
         public int AttachmentCount { get; }
         public int E2ECount { get; }
         public int BackgroundCount { get; }
+        public int EmojiCount { get; }
         public long SizeBytes { get; }
         public long LimitBytes { get; }
 
-        public BitmapCacheSnapshot(int entryCount, int loadingCount, int defaultCount, int avatarCount, int attachmentCount, int e2ECount, int backgroundCount, long sizeBytes, long limitBytes) {
+        public BitmapCacheSnapshot(int entryCount, int loadingCount, int defaultCount, int avatarCount, int attachmentCount, int e2ECount, int backgroundCount, int emojiCount, long sizeBytes, long limitBytes) {
             EntryCount = entryCount;
             LoadingCount = loadingCount;
             DefaultCount = defaultCount;
@@ -39,6 +41,7 @@ namespace ELOR.Laney.Core {
             AttachmentCount = attachmentCount;
             E2ECount = e2ECount;
             BackgroundCount = backgroundCount;
+            EmojiCount = emojiCount;
             SizeBytes = sizeBytes;
             LimitBytes = limitBytes;
         }
@@ -57,17 +60,34 @@ namespace ELOR.Laney.Core {
         private static DateTime lastPressureTrimUtc = DateTime.MinValue;
 
         public static void ClearCachedImages() {
+            ClearCachedImages(null);
+        }
+
+        public static void ClearCachedImages(BitmapCacheKind cacheKind) {
+            ClearCachedImages((BitmapCacheKind?)cacheKind);
+        }
+
+        private static void ClearCachedImages(BitmapCacheKind? cacheKind) {
             long ramBefore = System.Diagnostics.Process.GetCurrentProcess().PrivateMemorySize64;
             List<Bitmap> bitmapsToDispose = new List<Bitmap>();
+            List<CacheEntry> entriesToRemove = new List<CacheEntry>();
 
             lock (cacheLock) {
                 foreach (var cacheEntry in cachedImages.Values) {
+                    if (cacheKind != null && cacheEntry.Kind != cacheKind.Value) continue;
+                    entriesToRemove.Add(cacheEntry);
+                }
+
+                foreach (CacheEntry cacheEntry in entriesToRemove) {
+                    if (!RemoveCacheEntry(cacheEntry)) continue;
                     bitmapsToDispose.Add(cacheEntry.Bitmap);
                 }
 
-                cachedImages.Clear();
-                lruKeys.Clear();
-                cachedBytes = 0;
+                if (cacheKind == null) {
+                    cachedImages.Clear();
+                    lruKeys.Clear();
+                    cachedBytes = 0;
+                }
             }
 
             foreach (var bitmap in bitmapsToDispose) {
@@ -78,7 +98,8 @@ namespace ELOR.Laney.Core {
 
 #if !MAC
             Log.Information(
-                "ClearCachedImages: RAM usage before cleaning is {Before} Mb, after cleaning is {After} Mb.",
+                "ClearCachedImages({Kind}): RAM usage before cleaning is {Before} Mb, after cleaning is {After} Mb.",
+                cacheKind?.ToString() ?? "All",
                 Math.Round((double)ramBefore / 1048576, 1),
                 Math.Round((double)ramAfter / 1048576, 1));
 #endif
@@ -91,6 +112,7 @@ namespace ELOR.Laney.Core {
                 int attachmentCount = 0;
                 int e2ECount = 0;
                 int backgroundCount = 0;
+                int emojiCount = 0;
 
                 foreach (var cacheEntry in cachedImages.Values) {
                     switch (cacheEntry.Kind) {
@@ -106,6 +128,9 @@ namespace ELOR.Laney.Core {
                         case BitmapCacheKind.Background:
                             backgroundCount++;
                             break;
+                        case BitmapCacheKind.Emoji:
+                            emojiCount++;
+                            break;
                         default:
                             defaultCount++;
                             break;
@@ -120,6 +145,7 @@ namespace ELOR.Laney.Core {
                     attachmentCount,
                     e2ECount,
                     backgroundCount,
+                    emojiCount,
                     cachedBytes,
                     GetCacheLimitBytes());
             }
@@ -540,6 +566,7 @@ namespace ELOR.Laney.Core {
                 BitmapCacheKind.Avatar => Settings.ImageCacheAvatarTtlMinutes,
                 BitmapCacheKind.Attachment => Settings.ImageCacheAttachmentTtlMinutes,
                 BitmapCacheKind.Background => Math.Min(Settings.ImageCacheAttachmentTtlMinutes, 30),
+                BitmapCacheKind.Emoji => Math.Min(Settings.ImageCacheAttachmentTtlMinutes, 10),
                 BitmapCacheKind.E2E => Settings.ImageCacheE2ETtlMinutes,
                 _ => Settings.ImageCacheDefaultTtlMinutes
             };
