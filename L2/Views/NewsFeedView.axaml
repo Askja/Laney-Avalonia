@@ -39,7 +39,7 @@
     </vkui:PanelHeader>
 
     <Border Grid.Row="1" Padding="12,8,12,10" BorderBrush="{DynamicResource LaneyGlassBorderBrush}" BorderThickness="0,0,0,1">
-      <Grid RowDefinitions="Auto Auto" RowSpacing="8">
+      <Grid RowDefinitions="Auto Auto Auto" RowSpacing="8">
         <Grid ColumnDefinitions="* Auto" ColumnSpacing="10">
           <ComboBox Classes="Alternate" MinHeight="36" HorizontalAlignment="Stretch" ItemsSource="{Binding FilterOptions}" SelectedItem="{Binding CurrentFilter, Mode=TwoWay}">
             <ComboBox.ItemTemplate>
@@ -50,11 +50,21 @@
           </ComboBox>
           <CheckBox Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding HideAds, Mode=TwoWay}" Content="Без промо"/>
         </Grid>
-        <Grid Grid.Row="1" ColumnDefinitions="Auto *">
+        <Grid Grid.Row="1" ColumnDefinitions="Auto * Auto" ColumnSpacing="8" IsVisible="{Binding HideAds}">
+          <CheckBox VerticalAlignment="Center" IsChecked="{Binding StrictAds, Mode=TwoWay}" Content="Строго"/>
+          <TextBox Grid.Column="1" Classes="Search" MinHeight="34" PlaceholderText="Ключи промо: casino, промокод, erid" Text="{Binding AdKeywords, Mode=TwoWay}"/>
+          <Button Grid.Column="2" Classes="Tertiary" MinHeight="34" Padding="10,4" Click="ApplyRulesButton_Click" ToolTip.Tip="Применить ключевые слова">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon20Check}"/>
+              <TextBlock Text="Применить"/>
+            </StackPanel>
+          </Button>
+        </Grid>
+        <Grid Grid.Row="2" ColumnDefinitions="Auto *">
           <Border CornerRadius="8" Padding="8,3" Background="{DynamicResource VKAccentBrush}" IsVisible="{Binding HasBlockedAds}">
             <TextBlock Classes="Caption1" FontWeight="SemiBold" Foreground="{DynamicResource VKButtonPrimaryForegroundBrush}" Text="{Binding BlockedAdsText}"/>
           </Border>
-          <TextBlock Grid.Column="1" Classes="Caption1" HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="{DynamicResource LaneyTextMutedBrush}" Text="newsfeed.get · локальная чистка"/>
+          <TextBlock Grid.Column="1" Classes="Caption1" HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="{DynamicResource LaneyTextMutedBrush}" Text="{Binding FeedStatusText}"/>
         </Grid>
       </Grid>
     </Border>

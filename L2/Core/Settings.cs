@@ -241,6 +241,27 @@ namespace ELOR.Laney.Core {
         }
     }
 
+    public static class NewsFeedFilterIds {
+        public const string All = "all";
+        public const string Friends = "friends";
+        public const string Communities = "communities";
+        public const string Photo = "photo";
+        public const string Video = "video";
+        public const string Audio = "audio";
+        public const string Links = "links";
+        public const string Text = "text";
+        public const string Rich = "rich";
+
+        public static readonly string[] AllIds = [All, Friends, Communities, Photo, Video, Audio, Links, Text, Rich];
+
+        public static string Normalize(string filterId) {
+            if (String.IsNullOrWhiteSpace(filterId)) return All;
+
+            string normalized = filterId.Trim().ToLowerInvariant();
+            return AllIds.Contains(normalized) ? normalized : All;
+        }
+    }
+
     [Flags]
     public enum ShadowBannedAttachmentKinds {
         None = 0,
@@ -647,6 +668,11 @@ namespace ELOR.Laney.Core {
         public const string VOICE_MESSAGE_SKIP_SILENCE = "voice_message_skip_silence";
         public const string VOICE_MESSAGE_RESUME_POSITION_PREFIX = "voice_message_resume_position_";
 
+        public const string NEWS_FEED_FILTER = "news_feed_filter";
+        public const string NEWS_FEED_HIDE_ADS = "news_feed_hide_ads";
+        public const string NEWS_FEED_STRICT_ADS = "news_feed_strict_ads";
+        public const string NEWS_FEED_AD_KEYWORDS = "news_feed_ad_keywords";
+
         public const string DEBUG_LOGS_CORE = "log_to_file_core";
         public const string DEBUG_LOGS_LP = "log_to_file_lp";
         public const string DEBUG_LOGS_BITMAPMANAGER = "log_to_file_bm";
@@ -828,6 +854,10 @@ namespace ELOR.Laney.Core {
             AUDIO_DSP_MODE,
             VOICE_MESSAGE_RESUME_ENABLED,
             VOICE_MESSAGE_SKIP_SILENCE,
+            NEWS_FEED_FILTER,
+            NEWS_FEED_HIDE_ADS,
+            NEWS_FEED_STRICT_ADS,
+            NEWS_FEED_AD_KEYWORDS,
             DEBUG_LOGS_CORE,
             DEBUG_LOGS_LP,
             DEBUG_LOGS_BITMAPMANAGER,
@@ -1505,6 +1535,26 @@ namespace ELOR.Laney.Core {
         public static string AudioDspMode {
             get => AudioDspModeIds.NormalizeMode(Get(AUDIO_DSP_MODE, AudioDspModeIds.Off));
             set => Set(AUDIO_DSP_MODE, AudioDspModeIds.NormalizeMode(value));
+        }
+
+        public static string NewsFeedFilter {
+            get => NewsFeedFilterIds.Normalize(Get(NEWS_FEED_FILTER, NewsFeedFilterIds.All));
+            set => Set(NEWS_FEED_FILTER, NewsFeedFilterIds.Normalize(value));
+        }
+
+        public static bool NewsFeedHideAds {
+            get => Get(NEWS_FEED_HIDE_ADS, true);
+            set => Set(NEWS_FEED_HIDE_ADS, value);
+        }
+
+        public static bool NewsFeedStrictAds {
+            get => Get(NEWS_FEED_STRICT_ADS, false);
+            set => Set(NEWS_FEED_STRICT_ADS, value);
+        }
+
+        public static string NewsFeedAdKeywords {
+            get => Get(NEWS_FEED_AD_KEYWORDS, String.Empty);
+            set => Set(NEWS_FEED_AD_KEYWORDS, value?.Trim() ?? String.Empty);
         }
 
         public static IReadOnlyList<AudioPlaybackHistoryItem> GetAudioPlaybackHistory() {

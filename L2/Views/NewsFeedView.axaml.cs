@@ -30,6 +30,11 @@ namespace ELOR.Laney.Views {
             await ViewModel.RefreshAsync();
         }
 
+        private async void ApplyRulesButton_Click(object sender, RoutedEventArgs e) {
+            if (ViewModel == null) return;
+            await ViewModel.ApplyRulesAsync();
+        }
+
         private async void OpenPostButton_Click(object sender, RoutedEventArgs e) {
             if (sender is not Control control || control.DataContext is not NewsFeedPostViewModel item) return;
             await Launcher.LaunchUrl(item.Link);

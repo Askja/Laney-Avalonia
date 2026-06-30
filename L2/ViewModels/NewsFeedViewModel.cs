@@ -32,14 +32,13 @@ namespace ELOR.Laney.ViewModels {
 
     public sealed class NewsFeedViewModel : CommonViewModel {
         private const int PageSize = 25;
-        private const string FilterAll = "all";
-        private const string FilterPhoto = "photo";
-        private const string FilterVideo = "video";
-        private const string FilterText = "text";
 
         private readonly VKSession session;
         private TwoStringTuple _currentFilter;
         private bool _hideAds = true;
+        private bool _strictAds;
+        private string _adKeywords;
+        private IReadOnlyList<string> _customAdKeywords = Array.Empty<string>();
         private bool _initialized;
         private bool _hasMore = true;
         private string _nextFrom;
@@ -47,23 +46,34 @@ namespace ELOR.Laney.ViewModels {
 
         public NewsFeedViewModel(VKSession session) {
             this.session = session;
-            _currentFilter = FilterOptions[0];
+            _currentFilter = FilterOptions.FirstOrDefault(f => f.Item1 == Settings.NewsFeedFilter) ?? FilterOptions[0];
+            _hideAds = Settings.NewsFeedHideAds;
+            _strictAds = Settings.NewsFeedStrictAds;
+            _adKeywords = Settings.NewsFeedAdKeywords;
+            _customAdKeywords = ParseCustomAdKeywords(_adKeywords);
         }
 
         public ObservableCollection<NewsFeedPostViewModel> Posts { get; } = new ObservableCollection<NewsFeedPostViewModel>();
         public ObservableCollection<TwoStringTuple> FilterOptions { get; } = new ObservableCollection<TwoStringTuple> {
-            new TwoStringTuple(FilterAll, "Все посты"),
-            new TwoStringTuple(FilterPhoto, "С фото"),
-            new TwoStringTuple(FilterVideo, "С видео"),
-            new TwoStringTuple(FilterText, "Только текст")
+            new TwoStringTuple(NewsFeedFilterIds.All, "Все посты"),
+            new TwoStringTuple(NewsFeedFilterIds.Friends, "Друзья"),
+            new TwoStringTuple(NewsFeedFilterIds.Communities, "Сообщества"),
+            new TwoStringTuple(NewsFeedFilterIds.Photo, "С фото"),
+            new TwoStringTuple(NewsFeedFilterIds.Video, "С видео"),
+            new TwoStringTuple(NewsFeedFilterIds.Audio, "С музыкой"),
+            new TwoStringTuple(NewsFeedFilterIds.Links, "Ссылки"),
+            new TwoStringTuple(NewsFeedFilterIds.Rich, "С вложениями"),
+            new TwoStringTuple(NewsFeedFilterIds.Text, "Только текст")
         };
 
         public TwoStringTuple CurrentFilter {
             get { return _currentFilter; }
             set {
-                if (value == null || value == _currentFilter) return;
+                if (value == null || value.Item1 == _currentFilter?.Item1) return;
                 _currentFilter = value;
+                Settings.NewsFeedFilter = value.Item1;
                 OnPropertyChanged();
+                OnPropertyChanged(nameof(FeedStatusText));
                 RefreshAfterUserChange();
             }
         }
@@ -73,17 +83,52 @@ namespace ELOR.Laney.ViewModels {
             set {
                 if (_hideAds == value) return;
                 _hideAds = value;
+                Settings.NewsFeedHideAds = value;
                 OnPropertyChanged();
+                OnPropertyChanged(nameof(FeedStatusText));
                 RefreshAfterUserChange();
             }
         }
 
-        public int BlockedAdsCount { get { return _blockedAdsCount; } private set { _blockedAdsCount = value; OnPropertyChanged(); OnPropertyChanged(nameof(BlockedAdsText)); OnPropertyChanged(nameof(HasBlockedAds)); } }
+        public bool StrictAds {
+            get { return _strictAds; }
+            set {
+                if (_strictAds == value) return;
+                _strictAds = value;
+                Settings.NewsFeedStrictAds = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(FeedStatusText));
+                RefreshAfterUserChange();
+            }
+        }
+
+        public string AdKeywords {
+            get { return _adKeywords; }
+            set {
+                string normalized = value ?? String.Empty;
+                if (_adKeywords == normalized) return;
+                _adKeywords = normalized;
+                _customAdKeywords = ParseCustomAdKeywords(normalized);
+                Settings.NewsFeedAdKeywords = normalized;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(FeedStatusText));
+            }
+        }
+
+        public int BlockedAdsCount { get { return _blockedAdsCount; } private set { _blockedAdsCount = value; OnPropertyChanged(); OnPropertyChanged(nameof(BlockedAdsText)); OnPropertyChanged(nameof(HasBlockedAds)); OnPropertyChanged(nameof(FeedStatusText)); } }
         public bool HasBlockedAds => BlockedAdsCount > 0;
         public string BlockedAdsText => BlockedAdsCount == 0 ? null : $"скрыто промо: {BlockedAdsCount}";
+        public string FeedStatusText => HideAds
+            ? $"newsfeed.get · {(_strictAds ? "строгая чистка" : "мягкая чистка")}{(_customAdKeywords.Count > 0 ? $" · ключей: {_customAdKeywords.Count}" : String.Empty)}"
+            : "newsfeed.get · промо показывается";
         public bool HasPosts => Posts.Count > 0;
         public bool IsLoadingFirstPage => IsLoading && Posts.Count == 0;
         public bool CanLoadMore => _hasMore && !IsLoading;
+
+        public async Task ApplyRulesAsync() {
+            if (!_initialized) return;
+            await RefreshAsync();
+        }
 
         public async Task InitializeAsync() {
             if (_initialized) return;
@@ -197,14 +242,32 @@ namespace ELOR.Laney.ViewModels {
         }
 
         private bool MatchesCurrentFilter(WallPost post) {
-            string filter = CurrentFilter?.Item1 ?? FilterAll;
+            string filter = NewsFeedFilterIds.Normalize(CurrentFilter?.Item1);
             bool hasAttachments = post.Attachments?.Count > 0;
+            long sourceId = ResolvePostSourceId(post);
+
             return filter switch {
-                FilterPhoto => post.Attachments?.Any(a => a.Type == AttachmentType.Photo) == true,
-                FilterVideo => post.Attachments?.Any(a => a.Type == AttachmentType.Video) == true,
-                FilterText => !String.IsNullOrWhiteSpace(post.Text) && !hasAttachments,
+                NewsFeedFilterIds.Friends => sourceId > 0,
+                NewsFeedFilterIds.Communities => sourceId < 0,
+                NewsFeedFilterIds.Photo => HasAttachment(post, AttachmentType.Photo),
+                NewsFeedFilterIds.Video => HasAttachment(post, AttachmentType.Video),
+                NewsFeedFilterIds.Audio => HasAttachment(post, AttachmentType.Audio) || HasAttachment(post, AttachmentType.Podcast),
+                NewsFeedFilterIds.Links => HasAttachment(post, AttachmentType.Link) || ContainsAny(post.Text, "https://", "http://", "vk.cc/"),
+                NewsFeedFilterIds.Rich => hasAttachments,
+                NewsFeedFilterIds.Text => !String.IsNullOrWhiteSpace(post.Text) && !hasAttachments,
                 _ => true
             };
+        }
+
+        private static bool HasAttachment(WallPost post, AttachmentType type) {
+            return post.Attachments?.Any(a => a.Type == type) == true;
+        }
+
+        private static long ResolvePostSourceId(WallPost post) {
+            if (post == null) return 0;
+            if (post.OwnerOrToId != 0) return post.OwnerOrToId;
+            if (post.FromId != 0) return post.FromId;
+            return post.ToId;
         }
 
         private static WallPost TryParsePost(JsonElement item) {
@@ -224,9 +287,14 @@ namespace ELOR.Laney.ViewModels {
             return (WallPost)JsonSerializer.Deserialize(node.ToJsonString(), typeof(WallPost), BuildInJsonContext.Default);
         }
 
-        private static bool IsAdLike(JsonElement item, WallPost post, out string reason) {
+        private bool IsAdLike(JsonElement item, WallPost post, out string reason) {
             if (post?.MarkedAsAds == 1 || HasIntFlag(item, "marked_as_ads")) {
                 reason = "помечено VK";
+                return true;
+            }
+
+            if (HasAnyIntFlag(item, "is_ad", "ads_easy_promote", "ad", "promoted", "promoted_post")) {
+                reason = "promo-флаг";
                 return true;
             }
 
@@ -244,13 +312,46 @@ namespace ELOR.Laney.ViewModels {
                 return true;
             }
 
+            foreach (string keyword in _customAdKeywords) {
+                if (!ContainsAny(text, keyword)) continue;
+
+                reason = $"ключ: {keyword}";
+                return true;
+            }
+
+            if (StrictAds && ContainsAny(text,
+                "#ad",
+                "#ads",
+                "#sponsored",
+                "промокод",
+                "скидк",
+                "акци",
+                "купить",
+                "маркет",
+                "wildberries",
+                "ozon",
+                "casino",
+                "казино",
+                "ставк",
+                "розыгрыш",
+                "подписывай")) {
+                reason = "строгий фильтр";
+                return true;
+            }
+
             reason = null;
             return false;
         }
 
+        private static bool HasAnyIntFlag(JsonElement item, params string[] propertyNames) {
+            return propertyNames.Any(propertyName => HasIntFlag(item, propertyName));
+        }
+
         private static bool HasIntFlag(JsonElement item, string propertyName) {
-            return item.TryGetProperty(propertyName, out JsonElement value)
-                && value.ValueKind == JsonValueKind.Number
+            if (!item.TryGetProperty(propertyName, out JsonElement value)) return false;
+            if (value.ValueKind == JsonValueKind.True) return true;
+
+            return value.ValueKind == JsonValueKind.Number
                 && value.TryGetInt32(out int intValue)
                 && intValue != 0;
         }
@@ -260,15 +361,27 @@ namespace ELOR.Laney.ViewModels {
             return patterns.Any(p => text.Contains(p, StringComparison.OrdinalIgnoreCase));
         }
 
+        private static IReadOnlyList<string> ParseCustomAdKeywords(string keywords) {
+            if (String.IsNullOrWhiteSpace(keywords)) return Array.Empty<string>();
+
+            return keywords
+                .Split(new[] { ',', ';', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(keyword => keyword.Trim())
+                .Where(keyword => keyword.Length >= 2)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Take(40)
+                .ToArray();
+        }
+
         private static void CacheNewsOwners(JsonElement response) {
             if (response.TryGetProperty("profiles", out JsonElement profiles) && profiles.ValueKind == JsonValueKind.Array) {
                 List<User> users = (List<User>)JsonSerializer.Deserialize(profiles.GetRawText(), typeof(List<User>), BuildInJsonContext.Default);
-                CacheManager.Add(users);
+                if (users?.Count > 0) CacheManager.Add(users);
             }
 
             if (response.TryGetProperty("groups", out JsonElement groups) && groups.ValueKind == JsonValueKind.Array) {
                 List<Group> communities = (List<Group>)JsonSerializer.Deserialize(groups.GetRawText(), typeof(List<Group>), BuildInJsonContext.Default);
-                CacheManager.Add(communities);
+                if (communities?.Count > 0) CacheManager.Add(communities);
             }
         }
 
