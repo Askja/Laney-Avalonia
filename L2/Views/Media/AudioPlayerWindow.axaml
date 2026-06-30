@@ -25,7 +25,7 @@
     <KeyBinding Gesture="Up" Command="{Binding VolumeUpCommand}"/>
     <KeyBinding Gesture="Down" Command="{Binding VolumeDownCommand}"/>
   </vkw:DialogWindow.KeyBindings>
-  <Grid x:Name="Root" RowDefinitions="Auto Auto Auto Auto Auto Auto" Tag="{Binding CurrentSong}">
+  <Grid x:Name="Root" RowDefinitions="Auto Auto Auto Auto Auto Auto Auto Auto" Tag="{Binding CurrentSong}">
     <Border x:Name="TBStub" Height="12"/>
     
     <Grid x:Name="TrackInfo" Grid.Row="1" ColumnDefinitions="Auto *" Margin="12,0" Height="48">
@@ -125,8 +125,51 @@
       </Button>
     </Grid>
 
-    <Separator Grid.Row="5" Margin="0" IsVisible="{Binding IsTracklistDisplaying}" VerticalAlignment="Top"/>
-    <ScrollViewer Grid.Row="5" Height="172" IsVisible="{Binding IsTracklistDisplaying}">
+    <Grid Grid.Row="5" ColumnDefinitions="Auto * Auto Auto Auto" Height="36" Margin="12,0,12,8" ColumnSpacing="8">
+      <TextBlock VerticalAlignment="Center" Classes="Subhead" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="DSP"/>
+      <ComboBox Grid.Column="1" Classes="Alternate" MinHeight="32" ItemsSource="{Binding AudioDspModes}" SelectedItem="{Binding CurrentAudioDspMode, Mode=TwoWay}">
+        <ComboBox.ItemTemplate>
+          <DataTemplate x:DataType="dm:TwoStringTuple">
+            <TextBlock Text="{Binding Item2}"/>
+          </DataTemplate>
+        </ComboBox.ItemTemplate>
+      </ComboBox>
+      <Button Grid.Column="2" Classes="Tertiary" Width="32" Height="32" Padding="0" Command="{Binding DecreaseSeekStepCommand}">
+        <TextBlock FontSize="18" LineHeight="20" Text="-"/>
+      </Button>
+      <TextBlock Grid.Column="3" MinWidth="44" TextAlignment="Center" VerticalAlignment="Center" Classes="Subhead" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="{Binding SeekForwardLabel}"/>
+      <Button Grid.Column="4" Classes="Tertiary" Width="32" Height="32" Padding="0" Command="{Binding IncreaseSeekStepCommand}">
+        <TextBlock FontSize="18" LineHeight="20" Text="+"/>
+      </Button>
+    </Grid>
+
+    <Border Grid.Row="6" Margin="12,0,12,8" Height="64" CornerRadius="14" Background="{DynamicResource VKBackgroundSecondaryBrush}" BorderBrush="{DynamicResource VKSeparatorAlphaBrush}" BorderThickness="1">
+      <Grid ColumnDefinitions="Auto *" Margin="12,8" ColumnSpacing="12">
+        <StackPanel Width="116" VerticalAlignment="Center" Spacing="2">
+          <TextBlock Classes="Subhead" FontWeight="SemiBold" Foreground="{DynamicResource VKTextPrimaryBrush}" Text="{Binding EqualizerPreviewTitle}" TextTrimming="CharacterEllipsis"/>
+          <TextBlock Classes="Caption2" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="LibVLC bands" TextTrimming="CharacterEllipsis"/>
+        </StackPanel>
+        <ItemsRepeater Grid.Column="1" ItemsSource="{Binding EqualizerPreviewBands}" HorizontalAlignment="Right" VerticalAlignment="Center">
+          <ItemsRepeater.Layout>
+            <StackLayout Orientation="Horizontal" Spacing="8"/>
+          </ItemsRepeater.Layout>
+          <ItemsRepeater.ItemTemplate>
+            <DataTemplate x:DataType="vm:AudioEqualizerBandViewModel">
+              <StackPanel Width="24" Spacing="3">
+                <Grid Height="38">
+                  <Border Width="10" Height="{Binding Height}" CornerRadius="5" VerticalAlignment="Bottom" HorizontalAlignment="Center"
+                          Background="{DynamicResource VKAccentBrush}" ToolTip.Tip="{Binding AmpLabel}"/>
+                </Grid>
+                <TextBlock FontSize="9" LineHeight="10" TextAlignment="Center" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="{Binding Label}"/>
+              </StackPanel>
+            </DataTemplate>
+          </ItemsRepeater.ItemTemplate>
+        </ItemsRepeater>
+      </Grid>
+    </Border>
+
+    <Separator Grid.Row="7" Margin="0" IsVisible="{Binding IsTracklistDisplaying}" VerticalAlignment="Top"/>
+    <ScrollViewer Grid.Row="7" Height="172" IsVisible="{Binding IsTracklistDisplaying}">
       <ScrollViewer.Styles>
         <Style Selector="Button TextBlock">
           <Setter Property="Foreground" Value="{DynamicResource VKTextPrimaryBrush}"/>
@@ -172,7 +215,7 @@
                   </TextBlock>
                 </DockPanel>
 
-                <TextBlock Margin="0,10,12,0" Grid.Column="3" FontSize="14" HorizontalAlignment="Right" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="{Binding Duration, Converter={StaticResource tc}}"/>
+                <TextBlock Margin="0,10,12,0" Grid.Column="2" FontSize="14" HorizontalAlignment="Right" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="{Binding Duration, Converter={StaticResource tc}}"/>
               </Grid>
             </Button>
           </DataTemplate>

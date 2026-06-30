@@ -219,6 +219,10 @@ namespace ELOR.Laney.Core {
             };
         }
 
+        public static float GetEqualizerPreviewAmp(string mode, float frequency) {
+            return GetEqualizerAmp(mode, frequency);
+        }
+
         private static float GetEqualizerAmp(string mode, float frequency) {
             return mode switch {
                 AudioDspModeIds.BassBoost => GetBassBoostAmp(frequency),

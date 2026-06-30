@@ -10,6 +10,25 @@ using System.Globalization;
 using System.Linq;
 
 namespace ELOR.Laney.ViewModels {
+    public sealed class AudioEqualizerBandViewModel : ViewModelBase {
+        private double _height;
+        private string _ampLabel;
+
+        public AudioEqualizerBandViewModel(string label) {
+            Label = label;
+        }
+
+        public string Label { get; }
+        public double Height { get { return _height; } private set { _height = value; OnPropertyChanged(); } }
+        public string AmpLabel { get { return _ampLabel; } private set { _ampLabel = value; OnPropertyChanged(); } }
+
+        public void Update(float amp) {
+            float normalized = Math.Clamp(amp, -6f, 6f);
+            Height = 8 + (normalized + 6f) / 12f * 30;
+            AmpLabel = amp > 0.05f ? $"+{amp:0.#} dB" : amp < -0.05f ? $"{amp:0.#} dB" : "0 dB";
+        }
+    }
+
     public class AudioPlayerViewModel : ViewModelBase {
         private string _name;
         private ObservableCollection<AudioPlayerItem> _songs;
@@ -28,6 +47,15 @@ namespace ELOR.Laney.ViewModels {
         private DateTime _lastPlaybackHistorySaveUtc = DateTime.MinValue;
         private string _lastPlaybackHistoryKey;
         private long _lastPlaybackHistoryPositionMs = -1;
+        private static readonly (float Frequency, string Label)[] EqualizerPreviewFrequencies = [
+            (60, "60"),
+            (125, "125"),
+            (250, "250"),
+            (1000, "1k"),
+            (3000, "3k"),
+            (6000, "6k"),
+            (12000, "12k")
+        ];
 
         private RelayCommand _playPauseCommand;
         private RelayCommand _getPreviousCommand;
@@ -39,6 +67,9 @@ namespace ELOR.Laney.ViewModels {
         private RelayCommand _repeatCommand;
         private RelayCommand _cyclePlaybackRateCommand;
         private RelayCommand _resetPlaybackRateCommand;
+        private RelayCommand _cycleAudioDspModeCommand;
+        private RelayCommand _decreaseSeekStepCommand;
+        private RelayCommand _increaseSeekStepCommand;
         private RelayCommand _shareCommand;
         private RelayCommand _openTracklistCommand;
 
@@ -60,6 +91,20 @@ namespace ELOR.Laney.ViewModels {
         public string SeekBackwardLabel { get { return $"-{SeekSeconds}s"; } }
         public string SeekForwardLabel { get { return $"+{SeekSeconds}s"; } }
         public string QueueLabel { get { return $"{CurrentSongIndex}/{Songs?.Count ?? 0}"; } }
+        public ObservableCollection<TwoStringTuple> AudioDspModes { get; } = new ObservableCollection<TwoStringTuple> {
+            new TwoStringTuple(AudioDspModeIds.Off, "Выкл"),
+            new TwoStringTuple(AudioDspModeIds.Flat, "Ровный"),
+            new TwoStringTuple(AudioDspModeIds.Normalize, "Нормализация"),
+            new TwoStringTuple(AudioDspModeIds.VoiceClarity, "Чёткий голос"),
+            new TwoStringTuple(AudioDspModeIds.Night, "Ночь"),
+            new TwoStringTuple(AudioDspModeIds.BassBoost, "Больше баса")
+        };
+        public TwoStringTuple CurrentAudioDspMode { get { return GetAudioDspMode(); } set { ChangeAudioDspMode(value); } }
+        public string AudioDspModeLabel { get { return CurrentAudioDspMode?.Item2 ?? "Выкл"; } }
+        public string AudioDspShortLabel { get { return GetAudioDspShortLabel(Settings.AudioDspMode); } }
+        public bool IsAudioDspEnabled { get { return Settings.AudioDspMode != AudioDspModeIds.Off; } }
+        public ObservableCollection<AudioEqualizerBandViewModel> EqualizerPreviewBands { get; } = new ObservableCollection<AudioEqualizerBandViewModel>();
+        public string EqualizerPreviewTitle { get { return $"EQ: {AudioDspModeLabel}"; } }
         public double PositionProgress {
             get {
                 if (CurrentSong == null || CurrentSong.Duration.TotalMilliseconds <= 0) return 0;
@@ -78,6 +123,9 @@ namespace ELOR.Laney.ViewModels {
         public RelayCommand RepeatCommand { get { return _repeatCommand; } private set { _repeatCommand = value; OnPropertyChanged(); } }
         public RelayCommand CyclePlaybackRateCommand { get { return _cyclePlaybackRateCommand; } private set { _cyclePlaybackRateCommand = value; OnPropertyChanged(); } }
         public RelayCommand ResetPlaybackRateCommand { get { return _resetPlaybackRateCommand; } private set { _resetPlaybackRateCommand = value; OnPropertyChanged(); } }
+        public RelayCommand CycleAudioDspModeCommand { get { return _cycleAudioDspModeCommand; } private set { _cycleAudioDspModeCommand = value; OnPropertyChanged(); } }
+        public RelayCommand DecreaseSeekStepCommand { get { return _decreaseSeekStepCommand; } private set { _decreaseSeekStepCommand = value; OnPropertyChanged(); } }
+        public RelayCommand IncreaseSeekStepCommand { get { return _increaseSeekStepCommand; } private set { _increaseSeekStepCommand = value; OnPropertyChanged(); } }
         public RelayCommand ShareCommand { get { return _shareCommand; } private set { _shareCommand = value; OnPropertyChanged(); } }
         public RelayCommand OpenTracklistCommand { get { return _openTracklistCommand; } private set { _openTracklistCommand = value; OnPropertyChanged(); } }
 
@@ -151,6 +199,8 @@ namespace ELOR.Laney.ViewModels {
             SetVolume(Settings.AudioPlayerVolume, false);
             SetPlaybackRate(GetSavedPlaybackRate(), false);
             Instance.SetAudioDspMode(Settings.AudioDspMode);
+            EnsureEqualizerPreviewBands();
+            RefreshEqualizerPreview();
             Log.Information($"APVM initialized. Repeat={RepeatOneSong}");
 
             Instance.MediaEnded += Player_MediaEnded;
@@ -175,6 +225,9 @@ namespace ELOR.Laney.ViewModels {
             });
             CyclePlaybackRateCommand = new RelayCommand(o => CyclePlaybackRate());
             ResetPlaybackRateCommand = new RelayCommand(o => SetPlaybackRate(1f));
+            CycleAudioDspModeCommand = new RelayCommand(o => CycleAudioDspMode());
+            DecreaseSeekStepCommand = new RelayCommand(o => ChangeSeekSecondsBy(-5));
+            IncreaseSeekStepCommand = new RelayCommand(o => ChangeSeekSecondsBy(5));
             ShareCommand = new RelayCommand(o => { });
             OpenTracklistCommand = new RelayCommand(o => {
                 IsTracklistDisplaying = !IsTracklistDisplaying;
@@ -304,6 +357,35 @@ namespace ELOR.Laney.ViewModels {
 
         public void ApplyAudioDspMode() {
             Instance?.SetAudioDspMode(Settings.AudioDspMode);
+            RefreshEqualizerPreview();
+            OnPropertyChanged(nameof(CurrentAudioDspMode));
+            OnPropertyChanged(nameof(AudioDspModeLabel));
+            OnPropertyChanged(nameof(AudioDspShortLabel));
+            OnPropertyChanged(nameof(IsAudioDspEnabled));
+            OnPropertyChanged(nameof(EqualizerPreviewTitle));
+        }
+
+        public void ApplyAudioSettingsFromSettings() {
+            if (Type != AudioType.VoiceMessage) RepeatOneSong = Settings.AudioPlayerLoop;
+            SeekSeconds = Settings.AudioPlayerSeekSeconds;
+            SetVolume(Settings.AudioPlayerVolume, false);
+            SetPlaybackRate(GetSavedPlaybackRate(), false);
+            ApplyAudioDspMode();
+        }
+
+        public void ChangeSeekSecondsBy(int delta) {
+            int seconds = Math.Clamp(SeekSeconds + delta, 5, 60);
+            if (seconds == SeekSeconds) return;
+
+            SeekSeconds = seconds;
+            Settings.AudioPlayerSeekSeconds = seconds;
+            ApplyAudioSettingsToInstances();
+        }
+
+        public void CycleAudioDspMode() {
+            int index = AudioDspModes.IndexOf(CurrentAudioDspMode);
+            int nextIndex = index < 0 || index >= AudioDspModes.Count - 1 ? 0 : index + 1;
+            CurrentAudioDspMode = AudioDspModes[nextIndex];
         }
 
         public void PlayNext() {
@@ -330,6 +412,48 @@ namespace ELOR.Laney.ViewModels {
                 AudioType.VoiceMessage => Settings.AudioPlayerVoiceRate / 100f,
                 _ => Settings.AudioPlayerTrackRate / 100f
             };
+        }
+
+        private TwoStringTuple GetAudioDspMode() {
+            string id = Settings.AudioDspMode;
+            return AudioDspModes.FirstOrDefault(m => m.Item1 == id) ?? AudioDspModes[0];
+        }
+
+        private void ChangeAudioDspMode(TwoStringTuple value) {
+            if (value == null) return;
+
+            Settings.AudioDspMode = value.Item1;
+            ApplyAudioDspMode();
+        }
+
+        private static string GetAudioDspShortLabel(string mode) {
+            return AudioDspModeIds.NormalizeMode(mode) switch {
+                AudioDspModeIds.Off => "Off",
+                AudioDspModeIds.Flat => "Flat",
+                AudioDspModeIds.Normalize => "Norm",
+                AudioDspModeIds.VoiceClarity => "Voice",
+                AudioDspModeIds.Night => "Night",
+                AudioDspModeIds.BassBoost => "Bass",
+                _ => "DSP"
+            };
+        }
+
+        private void EnsureEqualizerPreviewBands() {
+            if (EqualizerPreviewBands.Count == EqualizerPreviewFrequencies.Length) return;
+
+            EqualizerPreviewBands.Clear();
+            foreach (var band in EqualizerPreviewFrequencies) {
+                EqualizerPreviewBands.Add(new AudioEqualizerBandViewModel(band.Label));
+            }
+        }
+
+        private void RefreshEqualizerPreview() {
+            EnsureEqualizerPreviewBands();
+            string mode = Settings.AudioDspMode;
+            for (int i = 0; i < EqualizerPreviewFrequencies.Length; i++) {
+                float amp = LMediaPlayer.GetEqualizerPreviewAmp(mode, EqualizerPreviewFrequencies[i].Frequency);
+                EqualizerPreviewBands[i].Update(amp);
+            }
         }
 
         private void PersistPlaybackRate(float rate) {
@@ -509,6 +633,11 @@ namespace ELOR.Laney.ViewModels {
         public static void ApplyAudioDspModeToInstances() {
             MainInstance?.ApplyAudioDspMode();
             VoiceMessageInstance?.ApplyAudioDspMode();
+        }
+
+        public static void ApplyAudioSettingsToInstances() {
+            MainInstance?.ApplyAudioSettingsFromSettings();
+            VoiceMessageInstance?.ApplyAudioSettingsFromSettings();
         }
         #endregion
     }

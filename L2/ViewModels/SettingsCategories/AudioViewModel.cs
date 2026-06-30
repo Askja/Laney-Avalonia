@@ -15,17 +15,17 @@ namespace ELOR.Laney.ViewModels.SettingsCategories {
             new TwoStringTuple(AudioDspModeIds.BassBoost, "Больше баса")
         };
 
-        public bool AudioPlayerLoop { get { return Settings.AudioPlayerLoop; } set { Settings.AudioPlayerLoop = value; OnPropertyChanged(); } }
+        public bool AudioPlayerLoop { get { return Settings.AudioPlayerLoop; } set { Settings.AudioPlayerLoop = value; AudioPlayerViewModel.ApplyAudioSettingsToInstances(); OnPropertyChanged(); } }
         public TwoStringTuple CurrentAudioDspMode { get { return GetAudioDspMode(); } set { ChangeAudioDspMode(value); OnPropertyChanged(); } }
-        public double AudioPlayerVolume { get { return Settings.AudioPlayerVolume; } set { Settings.AudioPlayerVolume = (int)Math.Round(value); OnPropertyChanged(); OnPropertyChanged(nameof(AudioPlayerVolumeLabel)); } }
+        public double AudioPlayerVolume { get { return Settings.AudioPlayerVolume; } set { Settings.AudioPlayerVolume = (int)Math.Round(value); AudioPlayerViewModel.ApplyAudioSettingsToInstances(); OnPropertyChanged(); OnPropertyChanged(nameof(AudioPlayerVolumeLabel)); } }
         public string AudioPlayerVolumeLabel { get { return $"{Settings.AudioPlayerVolume}%"; } }
-        public double AudioPlayerTrackRate { get { return Settings.AudioPlayerTrackRate / 100.0; } set { Settings.AudioPlayerTrackRate = ToRateX100(value); OnPropertyChanged(); OnPropertyChanged(nameof(AudioPlayerTrackRateLabel)); } }
+        public double AudioPlayerTrackRate { get { return Settings.AudioPlayerTrackRate / 100.0; } set { Settings.AudioPlayerTrackRate = ToRateX100(value); AudioPlayerViewModel.ApplyAudioSettingsToInstances(); OnPropertyChanged(); OnPropertyChanged(nameof(AudioPlayerTrackRateLabel)); } }
         public string AudioPlayerTrackRateLabel { get { return FormatRate(Settings.AudioPlayerTrackRate); } }
-        public double AudioPlayerPodcastRate { get { return Settings.AudioPlayerPodcastRate / 100.0; } set { Settings.AudioPlayerPodcastRate = ToRateX100(value); OnPropertyChanged(); OnPropertyChanged(nameof(AudioPlayerPodcastRateLabel)); } }
+        public double AudioPlayerPodcastRate { get { return Settings.AudioPlayerPodcastRate / 100.0; } set { Settings.AudioPlayerPodcastRate = ToRateX100(value); AudioPlayerViewModel.ApplyAudioSettingsToInstances(); OnPropertyChanged(); OnPropertyChanged(nameof(AudioPlayerPodcastRateLabel)); } }
         public string AudioPlayerPodcastRateLabel { get { return FormatRate(Settings.AudioPlayerPodcastRate); } }
-        public double AudioPlayerVoiceRate { get { return Settings.AudioPlayerVoiceRate / 100.0; } set { Settings.AudioPlayerVoiceRate = ToRateX100(value); OnPropertyChanged(); OnPropertyChanged(nameof(AudioPlayerVoiceRateLabel)); } }
+        public double AudioPlayerVoiceRate { get { return Settings.AudioPlayerVoiceRate / 100.0; } set { Settings.AudioPlayerVoiceRate = ToRateX100(value); AudioPlayerViewModel.ApplyAudioSettingsToInstances(); OnPropertyChanged(); OnPropertyChanged(nameof(AudioPlayerVoiceRateLabel)); } }
         public string AudioPlayerVoiceRateLabel { get { return FormatRate(Settings.AudioPlayerVoiceRate); } }
-        public double AudioPlayerSeekSeconds { get { return Settings.AudioPlayerSeekSeconds; } set { Settings.AudioPlayerSeekSeconds = (int)Math.Round(value); OnPropertyChanged(); OnPropertyChanged(nameof(AudioPlayerSeekSecondsLabel)); } }
+        public double AudioPlayerSeekSeconds { get { return Settings.AudioPlayerSeekSeconds; } set { Settings.AudioPlayerSeekSeconds = (int)Math.Round(value); AudioPlayerViewModel.ApplyAudioSettingsToInstances(); OnPropertyChanged(); OnPropertyChanged(nameof(AudioPlayerSeekSecondsLabel)); } }
         public string AudioPlayerSeekSecondsLabel { get { return $"{Settings.AudioPlayerSeekSeconds} сек"; } }
         public bool VoiceMessageResumeEnabled { get { return Settings.VoiceMessageResumeEnabled; } set { Settings.VoiceMessageResumeEnabled = value; OnPropertyChanged(); } }
         public bool VoiceMessageSkipSilence { get { return Settings.VoiceMessageSkipSilence; } set { Settings.VoiceMessageSkipSilence = value; OnPropertyChanged(); } }
@@ -51,7 +51,7 @@ namespace ELOR.Laney.ViewModels.SettingsCategories {
             if (value == null) return;
 
             Settings.AudioDspMode = value.Item1;
-            AudioPlayerViewModel.ApplyAudioDspModeToInstances();
+            AudioPlayerViewModel.ApplyAudioSettingsToInstances();
             OnPropertyChanged(nameof(CurrentAudioDspMode));
         }
 
