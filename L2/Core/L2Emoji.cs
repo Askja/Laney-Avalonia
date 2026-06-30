@@ -87,7 +87,9 @@ namespace ELOR.Laney.Core {
             if (Cache.TryGetValue(cacheKey, out ObservableCollection<EmojiGroup> cached)) return cached;
 
             ObservableCollection<EmojiGroup> emojis = normalizedPackId switch {
+                EmojiPackIds.Vk => BuildTelegramLikePack(),
                 EmojiPackIds.TelegramLike => BuildTelegramLikePack(),
+                EmojiPackIds.Noto => BuildTelegramLikePack(),
                 EmojiPackIds.Twemoji => BuildTelegramLikePack(),
                 EmojiPackIds.Fallback => BuildFallbackPack(),
                 EmojiPackIds.Custom => BuildCustomPack(normalizedPath) ?? BuildSystemPack(),

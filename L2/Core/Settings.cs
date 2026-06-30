@@ -222,13 +222,15 @@ namespace ELOR.Laney.Core {
     public static class EmojiPackIds {
         public const string Inherit = "inherit";
         public const string System = "system";
+        public const string Vk = "vk";
         public const string TelegramLike = "telegram_like";
+        public const string Noto = "noto";
         public const string Twemoji = "twemoji";
         public const string Fallback = "fallback";
         public const string Custom = "custom";
 
-        public static readonly string[] All = [System, TelegramLike, Twemoji, Fallback, Custom];
-        public static readonly string[] AllWithInherit = [Inherit, System, TelegramLike, Twemoji, Fallback, Custom];
+        public static readonly string[] All = [System, Vk, TelegramLike, Noto, Twemoji, Fallback, Custom];
+        public static readonly string[] AllWithInherit = [Inherit, System, Vk, TelegramLike, Noto, Twemoji, Fallback, Custom];
 
         public static string Normalize(string packId, bool allowInherit = false) {
             if (String.IsNullOrWhiteSpace(packId)) return allowInherit ? Inherit : System;

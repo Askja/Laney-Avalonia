@@ -240,7 +240,9 @@ namespace ELOR.Laney.ViewModels.Modals {
         public ObservableCollection<TwoStringTuple> PeerEmojiPackOptions { get; } = new ObservableCollection<TwoStringTuple> {
             new TwoStringTuple(EmojiPackIds.Inherit, "Наследовать"),
             new TwoStringTuple(EmojiPackIds.System, "Системные"),
-            new TwoStringTuple(EmojiPackIds.TelegramLike, "Telegram/Noto Color"),
+            new TwoStringTuple(EmojiPackIds.Vk, "VK emoji"),
+            new TwoStringTuple(EmojiPackIds.TelegramLike, "Telegram/iOS font"),
+            new TwoStringTuple(EmojiPackIds.Noto, "Noto Color"),
             new TwoStringTuple(EmojiPackIds.Twemoji, "Twemoji"),
             new TwoStringTuple(EmojiPackIds.Fallback, "Запасной набор"),
             new TwoStringTuple(EmojiPackIds.Custom, "Кастомный manifest")

@@ -55,7 +55,7 @@ namespace ELOR.Laney.Controls {
 
         private void ChangeTabContentTemplate() {
             var content = ViewModel.SelectedTab.Content;
-            if (content is ObservableCollection<EmojiGroup>) {
+            if (content is ObservableCollection<EmojiPickerGroup>) {
                 StickersTabContent.IsVisible = false;
                 LocalStickersTabContent.IsVisible = false;
                 EmojisTabContent.IsVisible = true;
@@ -72,15 +72,23 @@ namespace ELOR.Laney.Controls {
 
         private void EmojiListBoxItem_Tapped(object sender, TappedEventArgs e) {
             Control c = sender as Control;
-            SingleEmoji emoji = (SingleEmoji)c.DataContext;
-            EmojiPicked?.Invoke(this, emoji.ToString());
+            if (c.DataContext is EmojiPickerEmoji pickerEmoji) {
+                EmojiPicked?.Invoke(this, pickerEmoji.Text);
+                return;
+            }
+
+            if (c.DataContext is SingleEmoji emoji) EmojiPicked?.Invoke(this, emoji.ToString());
         }
 
         private void EmojiListBox_KeyUp(object sender, KeyEventArgs e) {
             if (e.Key == Key.Enter) {
                 ListBox lb = sender as ListBox;
-                SingleEmoji emoji = (SingleEmoji)lb.SelectedItem;
-                EmojiPicked?.Invoke(this, emoji.ToString());
+                if (lb.SelectedItem is EmojiPickerEmoji pickerEmoji) {
+                    EmojiPicked?.Invoke(this, pickerEmoji.Text);
+                    return;
+                }
+
+                if (lb.SelectedItem is SingleEmoji emoji) EmojiPicked?.Invoke(this, emoji.ToString());
             }
         }
 

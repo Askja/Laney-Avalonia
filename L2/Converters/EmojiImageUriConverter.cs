@@ -14,7 +14,14 @@ namespace ELOR.Laney.Converters {
                 _ => null
             };
 
-            Uri uri = EmojiAssetResolver.ResolvePickerImageUri(emoji);
+            long peerId = parameter switch {
+                long longValue => longValue,
+                int intValue => intValue,
+                string textValue when Int64.TryParse(textValue, out long parsed) => parsed,
+                _ => 0
+            };
+
+            Uri uri = EmojiAssetResolver.ResolvePickerImageUri(emoji, peerId);
             return uri ?? AvaloniaProperty.UnsetValue;
         }
 

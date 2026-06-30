@@ -2,6 +2,8 @@
 using ELOR.Laney.DataModels;
 using ELOR.Laney.Execute;
 using ELOR.VKAPILib.Objects;
+using Avalonia.Media;
+using NeoSmart.Unicode;
 using Serilog;
 using System;
 using System.Collections.Generic;
@@ -11,6 +13,47 @@ using System.Threading.Tasks;
 using VKUI.Controls;
 
 namespace ELOR.Laney.ViewModels.Controls {
+    public sealed class EmojiPickerEmoji {
+        private readonly string _packId;
+        private readonly long _peerId;
+        private readonly bool _canUseImage;
+        private bool _imageUriResolved;
+        private Uri _imageUri;
+
+        public EmojiPickerEmoji(SingleEmoji emoji, string packId, long peerId) {
+            Emoji = emoji;
+            Text = emoji.ToString();
+            _packId = packId;
+            _peerId = peerId;
+            _canUseImage = EmojiAssetResolver.IsImageBackedPack(packId);
+            FontFamily = ELOR.Laney.Controls.MessageEmojiInlineRenderer.GetEmojiTextFontFamily(packId);
+        }
+
+        public SingleEmoji Emoji { get; }
+        public string Text { get; }
+        public Uri ImageUri => ResolveImageUri();
+        public bool HasImage => ResolveImageUri() != null;
+        public bool IsTextVisible => ImageUri == null;
+        public FontFamily FontFamily { get; }
+
+        private Uri ResolveImageUri() {
+            if (!_canUseImage) return null;
+            if (_imageUriResolved) return _imageUri;
+
+            _imageUri = EmojiAssetResolver.ResolveImageUri(Text, _packId, _peerId);
+            _imageUriResolved = true;
+            return _imageUri;
+        }
+    }
+
+    public sealed class EmojiPickerGroup : ObservableCollection<EmojiPickerEmoji> {
+        public EmojiPickerGroup(EmojiGroup group, string packId, long peerId) : base(group.Select(e => new EmojiPickerEmoji(e, packId, peerId))) {
+            Key = group.Key;
+        }
+
+        public string Key { get; }
+    }
+
     public class EmojiStickerPickerViewModel : CommonViewModel {
         private ObservableCollection<TabItem<object>> _tabs = new ObservableCollection<TabItem<object>>();
         private TabItem<object> _selectedTab;
@@ -29,12 +72,17 @@ namespace ELOR.Laney.ViewModels.Controls {
 
         public EmojiStickerPickerViewModel(VKSession session, long peerId = 0) {
             this.session = session;
-            TabItem<object> emojiTab = new TabItem<object>(Assets.i18n.Resources.emoji, L2Emoji.GetForPeer(peerId), VKIconNames.Icon20SmileOutline);
+            TabItem<object> emojiTab = new TabItem<object>(Assets.i18n.Resources.emoji, BuildEmojiGroups(peerId), VKIconNames.Icon20SmileOutline);
             Tabs.Add(emojiTab);
             AddLocalStickersTab();
             SelectedTab = Tabs.FirstOrDefault();
 
             new System.Action(async () => await LoadStickerPacksAsync())();
+        }
+
+        private static ObservableCollection<EmojiPickerGroup> BuildEmojiGroups(long peerId) {
+            string packId = Settings.ResolvePeerEmojiPack(peerId);
+            return new ObservableCollection<EmojiPickerGroup>(L2Emoji.GetForPeer(peerId).Select(g => new EmojiPickerGroup(g, packId, peerId)));
         }
 
         private void AddLocalStickersTab() {

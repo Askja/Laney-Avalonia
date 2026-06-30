@@ -17,9 +17,15 @@ namespace ELOR.Laney.Controls {
         private const int MaxPackImageTextLength = 160;
         private const int MaxSystemEmojiLetters = 180;
         private const double EmojiSize = 20;
-        private static readonly FontFamily EmojiFontFamily = new FontFamily("Segoe UI Emoji");
+        private static readonly FontFamily SystemEmojiFontFamily = new FontFamily("Segoe UI Emoji, Apple Color Emoji, Noto Color Emoji, Twemoji Mozilla, EmojiOne Color");
+        private static readonly FontFamily TelegramEmojiFontFamily = new FontFamily("Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, Twemoji Mozilla, EmojiOne Color");
 
-        public static FontFamily EmojiTextFontFamily => EmojiFontFamily;
+        public static FontFamily EmojiTextFontFamily => SystemEmojiFontFamily;
+
+        public static FontFamily GetEmojiTextFontFamily(string packId) {
+            string pack = EmojiPackIds.Normalize(packId);
+            return pack == EmojiPackIds.TelegramLike ? TelegramEmojiFontFamily : SystemEmojiFontFamily;
+        }
 
         public static void Prewarm() { }
 
@@ -27,7 +33,7 @@ namespace ELOR.Laney.Controls {
             if (String.IsNullOrEmpty(text) || text.Length > MaxRichTextLength) return false;
 
             string pack = Settings.ResolvePeerEmojiPack(peerId);
-            if (pack != EmojiPackIds.TelegramLike && pack != EmojiPackIds.Twemoji) return false;
+            if (pack == EmojiPackIds.Fallback || pack == EmojiPackIds.Custom) return false;
 
             int index = 0;
             while (index < text.Length) {
@@ -47,10 +53,10 @@ namespace ELOR.Laney.Controls {
             if (IsCustomSpritePack(pack, peerId)) return TryApplyCustomSpritePack(target, text, pack, peerId);
             if (IsImageBackedPack(pack)) {
                 return TryApplyPackImageInlines(target, text, pack, peerId)
-                    || TryApplySystemEmojiRuns(target, text);
+                    || TryApplyEmojiFontRuns(target, text, GetEmojiTextFontFamily(pack));
             }
 
-            return false;
+            return pack != EmojiPackIds.Fallback && TryApplyEmojiFontRuns(target, text, GetEmojiTextFontFamily(pack));
         }
 
         private static bool TryApplyCustomSpritePack(TextBlock target, string text, string pack, long peerId) {
@@ -142,7 +148,7 @@ namespace ELOR.Laney.Controls {
             return true;
         }
 
-        private static bool TryApplySystemEmojiRuns(TextBlock target, string text) {
+        private static bool TryApplyEmojiFontRuns(TextBlock target, string text, FontFamily fontFamily) {
             if (CountTextLetters(text, MaxSystemEmojiLetters) > MaxSystemEmojiLetters) return false;
 
             InlineCollection inlines = new InlineCollection();
@@ -156,7 +162,7 @@ namespace ELOR.Laney.Controls {
                     FlushText(inlines, ref buffer);
                     inlines.Add(new Run {
                         Text = textElement,
-                        FontFamily = EmojiFontFamily
+                        FontFamily = fontFamily
                     });
                     hasEmoji = true;
                 } else {
@@ -181,7 +187,7 @@ namespace ELOR.Laney.Controls {
         }
 
         private static bool IsImageBackedPack(string pack) {
-            return pack == EmojiPackIds.TelegramLike || pack == EmojiPackIds.Twemoji;
+            return pack == EmojiPackIds.Vk || pack == EmojiPackIds.Noto || pack == EmojiPackIds.Twemoji;
         }
 
         private static bool TryMatchEmoji(string text, int index, string pack, long peerId, out string emoji, out Uri imageUri) {

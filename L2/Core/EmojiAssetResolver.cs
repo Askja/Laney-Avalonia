@@ -22,10 +22,26 @@ namespace ELOR.Laney.Core {
             }
 
             return pack switch {
-                EmojiPackIds.TelegramLike => BuildNotoPngUri(emoji),
+                EmojiPackIds.Vk => BuildVkPngUri(emoji),
+                EmojiPackIds.Noto => BuildNotoPngUri(emoji),
                 EmojiPackIds.Twemoji => BuildTwemojiPngUri(emoji),
                 _ => null
             };
+        }
+
+        public static bool IsImageBackedPack(string packId) {
+            string pack = EmojiPackIds.Normalize(packId);
+            return pack == EmojiPackIds.Vk
+                || pack == EmojiPackIds.Noto
+                || pack == EmojiPackIds.Twemoji
+                || pack == EmojiPackIds.Custom;
+        }
+
+        private static Uri BuildVkPngUri(string emoji) {
+            string code = BuildVkCodepointName(emoji);
+            return String.IsNullOrEmpty(code)
+                ? null
+                : new Uri($"https://vk.com/images/emoji/{code}.png");
         }
 
         private static Uri BuildNotoPngUri(string emoji) {
@@ -52,6 +68,32 @@ namespace ELOR.Laney.Core {
                 if (codepoint == VariationSelector16 && !hasJoiner) continue;
                 if (builder.Length > 0) builder.Append('-');
                 builder.Append(codepoint.ToString("x", CultureInfo.InvariantCulture));
+            }
+
+            return StringBuilderCache.GetStringAndRelease(builder);
+        }
+
+        private static string BuildVkCodepointName(string emoji) {
+            StringBuilder builder = StringBuilderCache.Acquire();
+
+            foreach (Rune rune in emoji.EnumerateRunes()) {
+                int value = rune.Value;
+                if (value == VariationSelector16) continue;
+                if (value == ZeroWidthJoiner) {
+                    StringBuilderCache.Release(builder);
+                    return String.Empty;
+                }
+
+                if (value <= 0xFFFF) {
+                    builder.Append(value.ToString("X4", CultureInfo.InvariantCulture));
+                    continue;
+                }
+
+                int normalized = value - 0x10000;
+                int high = 0xD800 + (normalized >> 10);
+                int low = 0xDC00 + (normalized & 0x3FF);
+                builder.Append(high.ToString("X4", CultureInfo.InvariantCulture));
+                builder.Append(low.ToString("X4", CultureInfo.InvariantCulture));
             }
 
             return StringBuilderCache.GetStringAndRelease(builder);
