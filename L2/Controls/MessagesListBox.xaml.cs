@@ -135,7 +135,7 @@ namespace ELOR.Laney.Controls {
         public double? GetItemTopInViewport(IMessageListItem item) {
             if (item == null || ScrollViewer == null) return null;
 
-            Control container = ContainerFromItem(item);
+            Control container = FindRealizedControlForItem(item);
             Point? currentTop = container?.TranslatePoint(new Point(0, 0), ScrollViewer);
             return currentTop?.Y;
         }
@@ -420,6 +420,7 @@ namespace ELOR.Laney.Controls {
             double newHeight = Scroll.Extent.Height;
             double diff = newHeight - oldHeight;
             if (Settings.ShowDebugCounters) Debug.WriteLine($"Trying to restore scroll position after previous messages loaded. Old height: {oldHeight}, new height: {newHeight}, diff: {diff}");
+            if (diff > 0) EnsureApproximateOffset(oldOffset, diff);
 
             bool heightStable = !Double.IsNaN(_restoreScrollLastHeight) && Math.Abs(newHeight - _restoreScrollLastHeight) <= 1;
             _restoreScrollLastHeight = newHeight;
@@ -443,8 +444,7 @@ namespace ELOR.Laney.Controls {
                     return;
                 }
 
-                ScrollIntoView(anchor.Item);
-                if (Settings.ShowDebugCounters) Debug.WriteLine($"Anchor container is not ready. Trying in next frame, attempts: {_restoreScrollAttempts}.");
+                if (Settings.ShowDebugCounters) Debug.WriteLine($"Anchor container is not ready. Keeping compensated offset, attempts: {_restoreScrollAttempts}.");
                 RequestNextFrame(() => TryRestoreScroll(anchor, oldHeight, oldOffset));
                 return;
             }
@@ -470,7 +470,6 @@ namespace ELOR.Laney.Controls {
             _restoreScrollLastHeight = newHeight;
 
             bool anchorStable = TryRestoreAnchor(anchor);
-            if (!anchorStable && ContainerFromItem(anchor.Item) == null) ScrollIntoView(anchor.Item);
             _restoreScrollStableFrames = heightStable && anchorStable
                 ? (byte)Math.Min(_restoreScrollStableFrames + 1, RestoreRequiredStableFrames)
                 : (byte)0;
@@ -555,7 +554,7 @@ namespace ELOR.Laney.Controls {
                     if (ScrollViewer.GetVisualAt(new Point(x, y)) is not Control visual) continue;
                     if (FindDataContext<IMessageListItem>(visual) is not IMessageListItem item) continue;
 
-                    Control container = ContainerFromItem(item);
+                    Control container = FindRealizedControlForItem(item);
                     double top = container?.TranslatePoint(new Point(0, 0), ScrollViewer)?.Y ?? y;
                     return new ScrollAnchor(item, top);
                 }
@@ -598,7 +597,7 @@ namespace ELOR.Laney.Controls {
         private bool TryRestoreAnchor(ScrollAnchor anchor) {
             if (!anchor.IsValid || ScrollViewer == null) return false;
 
-            Control container = ContainerFromItem(anchor.Item);
+            Control container = FindRealizedControlForItem(anchor.Item);
             if (container == null) return false;
 
             Point? currentTop = container.TranslatePoint(new Point(0, 0), ScrollViewer);
@@ -611,7 +610,7 @@ namespace ELOR.Laney.Controls {
             double nextOffset = Math.Clamp(ScrollViewer.Offset.Y + delta, 0, maxOffset);
             ScrollViewer.Offset = new Vector(ScrollViewer.Offset.X, nextOffset);
 
-            Control updatedContainer = ContainerFromItem(anchor.Item);
+            Control updatedContainer = FindRealizedControlForItem(anchor.Item);
             Point? updatedTop = updatedContainer?.TranslatePoint(new Point(0, 0), ScrollViewer);
             if (updatedTop == null) return false;
 
@@ -674,7 +673,7 @@ namespace ELOR.Laney.Controls {
             top = 0;
             bottom = 0;
 
-            Control container = ContainerFromItem(item);
+            Control container = FindRealizedControlForItem(item);
             if (container == null || container.Bounds.Height <= 0) return false;
 
             Point? translated = container.TranslatePoint(new Point(0, 0), ScrollViewer);
@@ -683,6 +682,28 @@ namespace ELOR.Laney.Controls {
             top = translated.Value.Y;
             bottom = top + container.Bounds.Height;
             return true;
+        }
+
+        private Control FindRealizedControlForItem(object item) {
+            if (item == null) return null;
+
+            Control container = ContainerFromItem(item);
+            if (container != null) return container;
+
+            foreach (var descendant in this.GetVisualDescendants()) {
+                if (descendant is not Control control) continue;
+                if (!ReferenceEquals(control.DataContext, item)) continue;
+
+                Control current = control;
+                while (current?.Parent is Control parent && !ReferenceEquals(parent, this)) {
+                    if (parent is ListBoxItem) return parent;
+                    current = parent;
+                }
+
+                return current;
+            }
+
+            return null;
         }
 
         private IEnumerable<double> GetProbeXPositions() {
@@ -803,7 +824,7 @@ namespace ELOR.Laney.Controls {
                 return false;
             }
 
-            if (ContainerFromItem(_layoutAnchorGuard.Item) == null) return false;
+            if (FindRealizedControlForItem(_layoutAnchorGuard.Item) == null) return false;
 
             _isRestoringLayoutAnchor = true;
             try {
