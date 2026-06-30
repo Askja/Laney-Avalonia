@@ -1269,6 +1269,7 @@ namespace ELOR.Laney.Views {
                 TryOpenPerfDemoChat();
                 TryOpenPerfNewsFeed();
                 TryOpenPerfSettings();
+                TryRunPerfSettingsAudit();
             })();
         }
 
@@ -1426,6 +1427,34 @@ namespace ELOR.Laney.Views {
                 Log.Information("Opening settings for perf/demo smoke.");
                 SettingsWindow settings = new SettingsWindow();
                 await settings.ShowDialog(this);
+            }, DispatcherPriority.Background);
+        }
+
+        private void TryRunPerfSettingsAudit() {
+            if (!App.HasCmdLineValue("perf-settings-audit")) return;
+
+            Dispatcher.UIThread.Post(() => {
+                try {
+                    SettingsViewModel settings = new SettingsViewModel();
+                    if (Session != null) settings.SetAccountId(Session.Id);
+                    SettingsAuditReport report = settings.RunAudit();
+                    Log.Information(
+                        "Settings audit result: passed={Passed}; categories={Checked}/{Total}; cells={Cells}; emptyHeader={Empty}; missingIcon={Missing}; genericIcon={Generic}; categoryErrors={Errors}",
+                        report.Passed,
+                        report.CategoryViewsChecked,
+                        report.CategoriesTotal,
+                        report.CellsChecked,
+                        report.EmptyHeaderCount,
+                        report.MissingIconCount,
+                        report.GenericIconCount,
+                        report.CategoryExceptionCount);
+
+                    foreach (SettingsAuditIssue issue in report.Issues.Take(80)) {
+                        Log.Warning("Settings audit issue: category={Category}; header={Header}; reason={Reason}; icon={Icon}", issue.Category, issue.Header, issue.Reason, issue.IconId);
+                    }
+                } catch (Exception ex) {
+                    Log.Error(ex, "Settings audit failed.");
+                }
             }, DispatcherPriority.Background);
         }
 

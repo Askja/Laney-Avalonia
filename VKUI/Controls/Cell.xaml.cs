@@ -80,7 +80,7 @@ namespace VKUI.Controls {
         private void CheckBeforeValue() {
             if (SemanticIconControl == null || BeforeControl == null) return;
 
-            bool canShowSemanticIcon = AutoBeforeIcon && !String.IsNullOrWhiteSpace(Header) && ShouldShowSemanticIcon(Before);
+            bool canShowSemanticIcon = AutoBeforeIcon && !String.IsNullOrWhiteSpace(Header) && ShouldShowSemanticIconFor(Before);
             SemanticIconControl.Content = canShowSemanticIcon ? CreateSemanticIcon(Header) : null;
             SemanticIconControl.IsVisible = canShowSemanticIcon;
 
@@ -110,16 +110,20 @@ namespace VKUI.Controls {
             }
         }
 
-        private static string GetSemanticIconId(string header) {
+        public const string DefaultSemanticIconId = VKIconNames.Icon20GearOutline;
+
+        public static string GetSemanticIconIdForHeader(string header) {
+            if (String.IsNullOrWhiteSpace(header)) return DefaultSemanticIconId;
+
             string text = header.ToLowerInvariant();
 
             if (ContainsAny(text, "поиск", "search")) return VKIconNames.Icon28SearchOutline;
             if (ContainsAny(text, "профиль", "аккаунт", "учет", "учёт")) return VKIconNames.Icon20UserOutline;
             if (ContainsAny(text, "язык", "language")) return VKIconNames.Icon20EducationOutline;
             if (ContainsAny(text, "panic-замок", "panic lock", "горячая клавиша panic")) return VKIconNames.Icon20LockOutline;
-            if (ContainsAny(text, "стример", "privacy", "приват", "невидим", "прочитан", "online", "stories", "story", "набор текста", "panic", "blacklist", "заблок", "не отмечать", "не показывать набор", "не слать", "буфер", "clipboard")) return VKIconNames.Icon28PrivacyOutline;
+            if (ContainsAny(text, "стример", "privacy", "приват", "невидим", "прочитан", "online", "stories", "story", "набор текста", "panic", "blacklist", "заблок", "не отмечать", "не показывать набор", "не слать", "буфер", "clipboard", "скрыть")) return VKIconNames.Icon28PrivacyOutline;
             if (ContainsAny(text, "упомин", "mention")) return VKIconNames.Icon20MentionOutline;
-            if (ContainsAny(text, "автозапуск", "startup", "start", "запуск")) return VKIconNames.Icon20DoorEnterArrowRightOutline;
+            if (ContainsAny(text, "автозапуск", "startup", "start", "запуск", "свернут", "свёрнут", "minimized")) return VKIconNames.Icon20DoorEnterArrowRightOutline;
             if (ContainsAny(text, "пресет", "тема", "палитра", "акцент", "оформ", "цвет", "прозрач", "яркость", "затемн")) return VKIconNames.Icon28PaletteOutline;
             if (ContainsAny(text, "enter отправляет", "отправк", "отправляет", "send")) return VKIconNames.Icon28Send;
             if (ContainsAny(text, "шрифт", "формат", "текст", "подпись")) return VKIconNames.Icon24TextLiveOutline;
@@ -150,9 +154,9 @@ namespace VKUI.Controls {
             if (ContainsAny(text, "шаблоны группы", "бот", "клавиатур")) return VKIconNames.Icon28KeyboardBotsOutline;
             if (ContainsAny(text, "ссыл", "парсить ссылки")) return VKIconNames.Icon24LinkedOutline;
             if (ContainsAny(text, "очист", "удал")) return VKIconNames.Icon20DeleteOutline;
-            if (ContainsAny(text, "режим", "по умолчанию", "обычный", "активный режим")) return VKIconNames.Icon28SettingsOutline;
+            if (ContainsAny(text, "режим", "по умолчанию", "обычный", "активный режим", "настройк")) return VKIconNames.Icon28SettingsOutline;
 
-            return VKIconNames.Icon20GearOutline;
+            return DefaultSemanticIconId;
         }
 
         private static bool ContainsAny(string text, params string[] values) {
@@ -163,7 +167,7 @@ namespace VKUI.Controls {
             return false;
         }
 
-        private static bool ShouldShowSemanticIcon(Control before) {
+        public static bool ShouldShowSemanticIconFor(Control before) {
             if (before == null) return true;
             if (before is RadioButton || before is CheckBox) return true;
 
@@ -174,7 +178,7 @@ namespace VKUI.Controls {
             return new VKIcon {
                 Width = 24,
                 Height = 24,
-                Id = GetSemanticIconId(header)
+                Id = GetSemanticIconIdForHeader(header)
             };
         }
 

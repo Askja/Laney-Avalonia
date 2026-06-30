@@ -54,6 +54,7 @@ namespace ELOR.Laney.ViewModels {
             if (ELOR.Laney.Core.Settings.Get("god", false)) Categories.Add(new SettingsCategory(VKIconNames.Icon28BugOutline, Localizer.Get("settings_debug"), new DebugPage(), null));
 #endif
 
+            ApplyCategoryDataContexts();
             SelectedCategory = Categories.FirstOrDefault();
             BuildSearchIndex();
             UpdateSearchResults();
@@ -62,6 +63,56 @@ namespace ELOR.Laney.ViewModels {
         public void SetAccountId(long accountId) {
             foreach (AppearanceViewModel viewModel in Categories.Select(c => c.ViewModel).OfType<AppearanceViewModel>()) {
                 viewModel.SetAccountId(accountId);
+            }
+        }
+
+        public SettingsAuditReport RunAudit() {
+            SettingsAuditReport report = new SettingsAuditReport(Categories.Count);
+            ApplyCategoryDataContexts();
+
+            foreach (SettingsCategory category in Categories) {
+                try {
+                    AuditCategory(category, report);
+                } catch (Exception ex) {
+                    report.AddIssue(category?.Title ?? "unknown", String.Empty, $"category_exception:{ex.GetType().Name}:{ex.Message}", null);
+                }
+            }
+
+            return report;
+        }
+
+        private void AuditCategory(SettingsCategory category, SettingsAuditReport report) {
+            if (category?.View == null) return;
+
+            report.CategoryViewsChecked++;
+            foreach (Control control in EnumerateLogicalControls(category.View)) {
+                if (control is not Cell cell) continue;
+
+                report.CellsChecked++;
+                string header = NormalizeText(cell.Header);
+                if (String.IsNullOrWhiteSpace(header)) {
+                    report.AddIssue(category.Title, header, "empty_header", null);
+                    continue;
+                }
+
+                bool canShowSemanticIcon = cell.AutoBeforeIcon && Cell.ShouldShowSemanticIconFor(cell.Before);
+                bool hasExplicitBefore = cell.Before != null && !Cell.ShouldShowSemanticIconFor(cell.Before);
+                if (!canShowSemanticIcon && !hasExplicitBefore) {
+                    report.AddIssue(category.Title, header, "missing_icon", null);
+                    continue;
+                }
+
+                if (canShowSemanticIcon) {
+                    string iconId = Cell.GetSemanticIconIdForHeader(header);
+                    if (iconId == Cell.DefaultSemanticIconId) report.AddIssue(category.Title, header, "generic_icon", iconId);
+                }
+            }
+        }
+
+        private void ApplyCategoryDataContexts() {
+            foreach (SettingsCategory category in Categories) {
+                if (category?.View == null || category.ViewModel == null) continue;
+                category.View.DataContext = category.ViewModel;
             }
         }
 
@@ -178,6 +229,57 @@ namespace ELOR.Laney.ViewModels {
                     }
                 }
             }
+        }
+    }
+
+    public sealed class SettingsAuditReport {
+        private readonly List<SettingsAuditIssue> _issues = new List<SettingsAuditIssue>();
+
+        public int CategoriesTotal { get; }
+        public int CategoryViewsChecked { get; set; }
+        public int CellsChecked { get; set; }
+        public int EmptyHeaderCount { get; private set; }
+        public int MissingIconCount { get; private set; }
+        public int GenericIconCount { get; private set; }
+        public int CategoryExceptionCount { get; private set; }
+        public IReadOnlyList<SettingsAuditIssue> Issues => _issues;
+        public bool Passed => EmptyHeaderCount == 0 && MissingIconCount == 0 && GenericIconCount == 0 && CategoryExceptionCount == 0;
+
+        public SettingsAuditReport(int categoriesTotal) {
+            CategoriesTotal = categoriesTotal;
+        }
+
+        public void AddIssue(string category, string header, string reason, string iconId) {
+            switch (reason.Split(':')[0]) {
+                case "empty_header":
+                    EmptyHeaderCount++;
+                    break;
+                case "missing_icon":
+                    MissingIconCount++;
+                    break;
+                case "generic_icon":
+                    GenericIconCount++;
+                    break;
+                case "category_exception":
+                    CategoryExceptionCount++;
+                    break;
+            }
+
+            _issues.Add(new SettingsAuditIssue(category, header, reason, iconId));
+        }
+    }
+
+    public sealed class SettingsAuditIssue {
+        public string Category { get; }
+        public string Header { get; }
+        public string Reason { get; }
+        public string IconId { get; }
+
+        public SettingsAuditIssue(string category, string header, string reason, string iconId) {
+            Category = category;
+            Header = header;
+            Reason = reason;
+            IconId = iconId;
         }
     }
 }
