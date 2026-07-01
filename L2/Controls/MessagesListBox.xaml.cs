@@ -1118,6 +1118,10 @@ namespace ELOR.Laney.Controls {
             SuppressPreviousRestoreManualDetection(120);
             _isRestoringLayoutAnchor = true;
             try {
+                if (FindRealizedControlForItem(anchor.Item) == null) {
+                    ScrollIntoView(anchor.Item);
+                }
+
                 return TryRestoreAnchor(anchor, maxDelta);
             } finally {
                 _isRestoringLayoutAnchor = false;

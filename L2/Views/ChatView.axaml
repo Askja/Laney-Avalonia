@@ -183,10 +183,10 @@
       </Grid>
     </Border>
 
-    <controls:MessagesListBox x:Name="MessagesList" Classes="MessagesList" Grid.Row="2" VerticalAlignment="Bottom" Background="Transparent" SelectionMode="Multiple,Toggle" Selection="{Binding SelectedMessages, Mode=TwoWay}" ItemsSource="{Binding DisplayedMessages, Mode=OneWay}">
+    <controls:MessagesListBox x:Name="MessagesList" Classes="MessagesList" Grid.Row="2" VerticalAlignment="Stretch" Background="Transparent" SelectionMode="Multiple,Toggle" Selection="{Binding SelectedMessages, Mode=TwoWay}" ItemsSource="{Binding DisplayedMessages, Mode=OneWay}">
       <controls:MessagesListBox.ItemsPanel>
         <ItemsPanelTemplate>
-          <VirtualizingStackPanel CacheLength="0.5"/>
+          <VirtualizingStackPanel CacheLength="0.1"/>
         </ItemsPanelTemplate>
       </controls:MessagesListBox.ItemsPanel>
       <controls:MessagesListBox.Styles>

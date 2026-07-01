@@ -1314,7 +1314,7 @@ namespace ELOR.Laney.Views {
                 if (App.HasCmdLineValue("perf-exit-after-qa")) {
                     await Task.Delay(14000);
                     Log.Information("Closing after perf settings QA.");
-                    App.Current?.DesktopLifetime?.Shutdown();
+                    ShutdownAfterPerfQa();
                 }
             }, DispatcherPriority.Background);
         }
@@ -1330,7 +1330,7 @@ namespace ELOR.Laney.Views {
                 if (App.HasCmdLineValue("perf-exit-after-qa")) {
                     await Task.Delay(500);
                     Log.Information("Closing after perf emoji QA.");
-                    App.Current?.DesktopLifetime?.Shutdown();
+                    ShutdownAfterPerfQa();
                 }
             }, DispatcherPriority.Background);
         }
@@ -1374,17 +1374,21 @@ namespace ELOR.Laney.Views {
 
             BitmapCacheSnapshot snapshot = BitmapManager.GetCacheSnapshot();
             double privateMemoryMb = Math.Round((double)Process.GetCurrentProcess().PrivateMemorySize64 / 1048576, 2);
+            double memoryBudgetMb = GetPerfMemoryBudgetMb();
+            bool memoryBudgetOk = CheckPerfMemoryBudget("emoji", "privateMemory", privateMemoryMb, memoryBudgetMb);
             bool passed = failed == 0 && snapshot.EmojiCount <= samples.Count && snapshot.SizeBytes <= 2 * 1024 * 1024;
 
             Log.Information(
-                "Perf emoji QA result: passed={Passed}; loaded={Loaded}/{Total}; failed={Failed}; emojiCache={EmojiCache}; cacheBytes={CacheBytes}; privateMemory={PrivateMemoryMb:F2}MB; details={Details}",
+                "Perf emoji QA result: passed={Passed}; memoryBudgetOk={MemoryBudgetOk}; loaded={Loaded}/{Total}; failed={Failed}; emojiCache={EmojiCache}; cacheBytes={CacheBytes}; privateMemory={PrivateMemoryMb:F2}MB; memoryBudget={MemoryBudgetMb:F0}MB; details={Details}",
                 passed,
+                memoryBudgetOk,
                 loaded,
                 samples.Count,
                 failed,
                 snapshot.EmojiCount,
                 snapshot.SizeBytes,
                 privateMemoryMb,
+                memoryBudgetMb,
                 String.Join("; ", details));
         }
 
@@ -1399,7 +1403,7 @@ namespace ELOR.Laney.Views {
                 if (App.HasCmdLineValue("perf-exit-after-qa")) {
                     await Task.Delay(500);
                     Log.Information("Closing after perf news feed QA.");
-                    App.Current?.DesktopLifetime?.Shutdown();
+                    ShutdownAfterPerfQa();
                 }
             }, DispatcherPriority.Background);
         }
@@ -1414,9 +1418,12 @@ namespace ELOR.Laney.Views {
                 NewsFeedViewModel viewModel = new NewsFeedViewModel(Session);
                 NewsFeedRulesQaReport report = await viewModel.RunRulesQaAsync();
                 double privateMemoryMb = Math.Round((double)Process.GetCurrentProcess().PrivateMemorySize64 / 1048576, 2);
+                double memoryBudgetMb = GetPerfMemoryBudgetMb();
+                bool memoryBudgetOk = CheckPerfMemoryBudget("newsfeed", "privateMemory", privateMemoryMb, memoryBudgetMb);
                 Log.Information(
-                    "Perf news feed QA result: passed={Passed}; hiddenPosts={HiddenPosts}; blockedAds={BlockedAds}; hiddenHasPromos={HiddenHasPromos}; blockedSourcePosts={BlockedSourcePosts}; blockedSourceVisible={BlockedSourceVisible}; visiblePosts={VisiblePosts}; visiblePromos={VisiblePromos}; privateMemory={PrivateMemoryMb:F2}MB",
+                    "Perf news feed QA result: passed={Passed}; memoryBudgetOk={MemoryBudgetOk}; hiddenPosts={HiddenPosts}; blockedAds={BlockedAds}; hiddenHasPromos={HiddenHasPromos}; blockedSourcePosts={BlockedSourcePosts}; blockedSourceVisible={BlockedSourceVisible}; visiblePosts={VisiblePosts}; visiblePromos={VisiblePromos}; privateMemory={PrivateMemoryMb:F2}MB; memoryBudget={MemoryBudgetMb:F0}MB",
                     report.Passed,
+                    memoryBudgetOk,
                     report.HiddenPosts,
                     report.BlockedAds,
                     report.HiddenHasPromos,
@@ -1424,7 +1431,8 @@ namespace ELOR.Laney.Views {
                     report.BlockedSourceVisible,
                     report.VisiblePosts,
                     report.VisiblePromos,
-                    privateMemoryMb);
+                    privateMemoryMb,
+                    memoryBudgetMb);
             } catch (Exception ex) {
                 Log.Error(ex, "Perf news feed QA failed.");
             }
@@ -1441,7 +1449,7 @@ namespace ELOR.Laney.Views {
                 if (App.HasCmdLineValue("perf-exit-after-qa")) {
                     await Task.Delay(500);
                     Log.Information("Closing after perf music export QA.");
-                    App.Current?.DesktopLifetime?.Shutdown();
+                    ShutdownAfterPerfQa();
                 }
             }, DispatcherPriority.Background);
         }
@@ -1457,9 +1465,12 @@ namespace ELOR.Laney.Views {
                 try {
                     MusicExportQaReport report = await viewModel.RunExportQaAsync(true);
                     double privateMemoryMb = Math.Round((double)Process.GetCurrentProcess().PrivateMemorySize64 / 1048576, 2);
+                    double memoryBudgetMb = GetPerfMemoryBudgetMb();
+                    bool memoryBudgetOk = CheckPerfMemoryBudget("music-export", "privateMemory", privateMemoryMb, memoryBudgetMb);
                     Log.Information(
-                        "Perf music export QA result: passed={Passed}; reason={Reason}; fileBytes={FileBytes}; sidecar={Sidecar}; id3Header={Id3Header}; id3Tagged={Id3Tagged}; cover={Cover}; coverBytes={CoverBytes}; privateMemory={PrivateMemoryMb:F2}MB",
+                        "Perf music export QA result: passed={Passed}; memoryBudgetOk={MemoryBudgetOk}; reason={Reason}; fileBytes={FileBytes}; sidecar={Sidecar}; id3Header={Id3Header}; id3Tagged={Id3Tagged}; cover={Cover}; coverBytes={CoverBytes}; privateMemory={PrivateMemoryMb:F2}MB; memoryBudget={MemoryBudgetMb:F0}MB",
                         report.Passed,
+                        memoryBudgetOk,
                         report.Reason,
                         report.FileBytes,
                         report.SidecarExists,
@@ -1467,7 +1478,8 @@ namespace ELOR.Laney.Views {
                         report.Id3Tagged,
                         report.CoverExists,
                         report.CoverBytes,
-                        privateMemoryMb);
+                        privateMemoryMb,
+                        memoryBudgetMb);
                 } finally {
                     viewModel.Dispose();
                 }
@@ -1485,13 +1497,33 @@ namespace ELOR.Laney.Views {
             Dispatcher.UIThread.Post(() => {
                 Log.Information("Opening perf demo chat {0}", peerId);
                 Session.GoToChat(peerId);
-                if (App.HasCmdLineValue("perf-live-qa")) {
-                    _ = RunPerfLiveQaAsync(peerId);
-                }
-                if (App.HasCmdLineValue("perf-scroll-qa")) {
-                    _ = RunPerfScrollQaAsync(peerId);
+                if (App.HasCmdLineValue("perf-live-qa") || App.HasCmdLineValue("perf-scroll-qa")) {
+                    _ = RunPerfChatQaAsync(peerId);
                 }
             }, DispatcherPriority.Background);
+        }
+
+        private async Task RunPerfChatQaAsync(long peerId) {
+            if (App.HasCmdLineValue("perf-live-qa")) {
+                await RunPerfLiveQaAsync(peerId);
+            }
+
+            if (App.HasCmdLineValue("perf-scroll-qa")) {
+                if (App.HasCmdLineValue("perf-live-qa")) await SettleAfterPerfChatPhaseAsync();
+                await RunPerfScrollQaAsync(peerId);
+            }
+
+            if (App.HasCmdLineValue("perf-exit-after-qa")) {
+                await Task.Delay(500);
+                Log.Information("Closing after perf chat QA.");
+                ShutdownAfterPerfQa();
+            }
+        }
+
+        private static async Task SettleAfterPerfChatPhaseAsync() {
+            BitmapManager.TrimForMemoryPressure();
+            GC.Collect(2, GCCollectionMode.Optimized, false);
+            await Task.Delay(1200);
         }
 
         private async Task RunPerfScrollQaAsync(long peerId) {
@@ -1514,7 +1546,17 @@ namespace ELOR.Laney.Views {
                 ChatPerfScrollQaResult result = await ChatView.RunPerfScrollQaAsync(TimeSpan.FromSeconds(4));
                 bool fpsOk = result.AverageFps >= 58 && result.JankFrames <= 8;
                 double memoryBudgetMb = GetPerfMemoryBudgetMb();
-                bool memoryBudgetOk = result.PeakPrivateMemoryMb <= memoryBudgetMb;
+                bool memoryBudgetOk = CheckPerfMemoryBudget("scroll", "peakPrivateMemory", result.PeakPrivateMemoryMb, memoryBudgetMb);
+                if (!fpsOk || !result.CanScrollAwayFromBottom) {
+                    Environment.ExitCode = Math.Max(Environment.ExitCode, 2);
+                    Log.Error(
+                        "Perf scroll QA failed gate: fpsOk={FpsOk}; canLeaveBottom={CanLeaveBottom}; avgFps={AverageFps:F1}; jank={JankFrames}",
+                        fpsOk,
+                        result.CanScrollAwayFromBottom,
+                        result.AverageFps,
+                        result.JankFrames);
+                }
+
                 Log.Information(
                     "Perf scroll QA result: fpsOk={FpsOk}; memoryBudgetOk={MemoryBudgetOk}; canLeaveBottom={CanLeaveBottom}; leaveBottom={LeaveBottomFinal:F1}/{LeaveBottomTarget:F1}; leaveBottomMax={LeaveBottomMax:F1}; leaveBottomDistance={LeaveBottomDistance:F1}; leaveBottomError={LeaveBottomError:F1}; avgFps={AverageFps:F1}; avgFrame={AverageFrameMs:F2}ms; lastFrame={LastFrameMs:F2}ms; maxFrame={MaxFrameMs:F2}ms; jank={JankFrames}; visibleControls={VisibleControls}; samples={Samples}; privateMemory={PrivateMemoryMb:F2}MB; peakPrivateMemory={PeakPrivateMemoryMb:F2}MB; memoryBudget={MemoryBudgetMb:F0}MB",
                     fpsOk,
@@ -1591,7 +1633,20 @@ namespace ELOR.Laney.Views {
                 bool nextOk = afterNextCount >= afterPreviousCount && afterNextLastId >= lastId;
                 bool unreadNavigationOk = chat.UnreadMessagesCount >= 0 && chat.UnreadReactions?.Count >= 0 || chat.UnreadReactions == null;
                 double memoryBudgetMb = GetPerfMemoryBudgetMb();
-                bool memoryBudgetOk = boundaryStress.PeakPrivateMemoryMb <= memoryBudgetMb;
+                bool memoryBudgetOk = CheckPerfMemoryBudget("live", "peakPrivateMemory", boundaryStress.PeakPrivateMemoryMb, memoryBudgetMb);
+                if (!scrollToOk || !selectionOk || !previousOk || !nextOk || !unreadNavigationOk) {
+                    Environment.ExitCode = Math.Max(Environment.ExitCode, 2);
+                    Log.Error(
+                        "Perf live QA failed gate: scrollTo={ScrollTo}; selection={Selection}; previous={Previous}; next={Next}; unreadNavigation={Unread}; boundaryStress={BoundaryStress}; maxDrift={MaxDrift:F2}px; maxTransientDrift={MaxTransientDrift:F2}px",
+                        scrollToOk,
+                        selectionOk,
+                        previousOk,
+                        nextOk,
+                        unreadNavigationOk,
+                        boundaryStress.Passed,
+                        boundaryStress.MaxAnchorDriftPx,
+                        boundaryStress.MaxTransientDriftPx);
+                }
 
                 Log.Information(
                     "Perf live QA result: scrollTo={ScrollTo}; selection={Selection}; previous={Previous}; previousAnchor={PreviousAnchor}; next={Next}; unreadNavigation={Unread}; memoryBudgetOk={MemoryBudgetOk}; initial={InitialCount} first={FirstId} last={LastId} afterPrevious={AfterPreviousCount}/{AfterPreviousFirstId} afterNext={AfterNextCount}/{AfterNextLastId}; boundaryStress={BoundaryStressPassed} iterations={BoundaryIterations}/{BoundaryRequested} loaded={BoundaryLoadedIterations} stable={BoundaryStableIterations} rejected={BoundaryRejectedIterations} maxDrift={BoundaryMaxDrift:F2}px maxTransientDrift={BoundaryMaxTransientDrift:F2}px maxCompensationError={BoundaryMaxCompensation:F2}px stop={BoundaryStopReason}; boundaryReady={BoundaryReady}; boundaryHasHolder={BoundaryHasHolder}; boundaryHolderReady={BoundaryHolderReady}; boundaryCanScroll={BoundaryCanScroll}; boundaryPrevFlag={BoundaryPrevFlag}; boundaryNextFlag={BoundaryNextFlag}; boundaryTrigger={BoundaryTrigger}; boundarySkip={BoundarySkip}; boundaryStarted={BoundaryStarted}; boundaryLoaded={BoundaryLoaded}; boundaryAnchorId={BoundaryAnchorId}; boundaryUserDelta={BoundaryUserDelta:F1}; boundaryDrift={BoundaryDrift:F2}px boundaryTransientDrift={BoundaryTransientDrift:F2}px; boundaryRestore={RestoreOldOffset:F1}/{RestoreOldHeight:F1}->{RestoreFinalOffset:F1}/{RestoreFinalHeight:F1}; boundaryOffset={BoundaryOffset:F1}/{BoundaryExtent:F1}; privateMemory={PrivateMemoryMb:F2}MB peakPrivateMemory={PeakPrivateMemoryMb:F2}MB memoryBudget={MemoryBudgetMb:F0}MB",
@@ -1642,8 +1697,37 @@ namespace ELOR.Laney.Views {
                     boundaryStress.FinalPrivateMemoryMb,
                     boundaryStress.PeakPrivateMemoryMb,
                     memoryBudgetMb);
+
+                LogProblemBoundaryIterations(boundaryStress);
             } catch (Exception ex) {
                 Log.Error(ex, "Perf live QA failed.");
+            }
+        }
+
+        private static void LogProblemBoundaryIterations(ChatHistoryBoundaryStressQaResult boundaryStress) {
+            int index = 0;
+            foreach (ChatHistoryBoundaryQaResult result in boundaryStress.Results) {
+                index++;
+                if (result.TriggerAccepted && result.PreviousLoaded && result.AnchorStable) continue;
+
+                Log.Warning(
+                    "Perf live QA boundary issue: index={Index}; trigger={Trigger}; loaded={Loaded}; stable={Stable}; beforeFirst={BeforeFirst}; afterFirst={AfterFirst}; anchor={Anchor}; drift={Drift:F2}px transient={Transient:F2}px; restore={OldOffset:F1}/{OldHeight:F1}->{FinalOffset:F1}/{FinalHeight:F1}; offset={Offset:F1}/{Extent:F1}; skip={Skip}",
+                    index,
+                    result.TriggerAccepted,
+                    result.PreviousLoaded,
+                    result.AnchorStable,
+                    result.BeforeFirstId,
+                    result.AfterFirstId,
+                    result.AnchorId,
+                    result.AnchorDriftPx,
+                    result.MaxTransientDriftPx,
+                    result.RestoreOldOffset,
+                    result.RestoreOldHeight,
+                    result.RestoreFinalOffset,
+                    result.RestoreFinalHeight,
+                    result.FinalOffset,
+                    result.FinalExtent,
+                    result.TriggerSkipReason);
             }
         }
 
@@ -1655,6 +1739,25 @@ namespace ELOR.Laney.Views {
         private static double GetPerfMemoryBudgetMb() {
             string value = App.GetCmdLineValue("perf-memory-budget-mb");
             return Double.TryParse(value, out double parsed) && parsed > 0 ? parsed : 350;
+        }
+
+        private static bool CheckPerfMemoryBudget(string scenario, string metric, double observedMb, double memoryBudgetMb) {
+            bool ok = observedMb <= memoryBudgetMb;
+            if (!ok) {
+                Environment.ExitCode = Math.Max(Environment.ExitCode, 2);
+                Log.Error(
+                    "Perf memory budget exceeded: scenario={Scenario}; metric={Metric}; observed={Observed:F2}MB; budget={Budget:F0}MB",
+                    scenario,
+                    metric,
+                    observedMb,
+                    memoryBudgetMb);
+            }
+
+            return ok;
+        }
+
+        private static void ShutdownAfterPerfQa() {
+            App.Current?.DesktopLifetime?.Shutdown(Environment.ExitCode);
         }
 
         private void TryOpenPerfSettings() {
