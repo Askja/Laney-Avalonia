@@ -44,6 +44,7 @@ namespace ELOR.Laney.Views {
         private bool isChatListSplitterDragging;
         private static bool perfSettingsQaScheduled;
         private static bool perfEmojiQaScheduled;
+        private static bool perfNewsFeedQaScheduled;
         private const int AccountRailColumnIndex = 0;
         private const int ChatListColumnIndex = 1;
         private const int ChatColumnIndex = 3;
@@ -99,6 +100,7 @@ namespace ELOR.Laney.Views {
             PanicLockUnlockButton.Content = Localizer.Get("panic_lock_unlock");
             TrySchedulePerfSettingsQa();
             TrySchedulePerfEmojiQa();
+            TrySchedulePerfNewsFeedQa();
         }
 
         private void AudioPlayerViewModel_InstancesChanged(object sender, EventArgs e) {
@@ -139,6 +141,7 @@ namespace ELOR.Laney.Views {
         private async void MainWindow_Opened(object? sender, EventArgs e) {
             TrySchedulePerfSettingsQa();
             TrySchedulePerfEmojiQa();
+            TrySchedulePerfNewsFeedQa();
 
             if (Settings.FirstRunOnboardingDone || Session == null || App.HasCmdLineValue("perf-open-settings")) return;
 
@@ -1279,6 +1282,7 @@ namespace ELOR.Laney.Views {
                 TryOpenPerfSettings();
                 TrySchedulePerfSettingsQa();
                 TrySchedulePerfEmojiQa();
+                TrySchedulePerfNewsFeedQa();
             })();
         }
 
@@ -1365,6 +1369,46 @@ namespace ELOR.Laney.Views {
                 snapshot.SizeBytes,
                 privateMemoryMb,
                 String.Join("; ", details));
+        }
+
+        private void TrySchedulePerfNewsFeedQa() {
+            if (perfNewsFeedQaScheduled) return;
+            if (!App.HasCmdLineValue("perf-newsfeed-qa")) return;
+
+            perfNewsFeedQaScheduled = true;
+            Dispatcher.UIThread.Post(async () => {
+                await Task.Delay(1700);
+                await RunPerfNewsFeedQaAsync();
+                if (App.HasCmdLineValue("perf-exit-after-qa")) {
+                    await Task.Delay(500);
+                    Log.Information("Closing after perf news feed QA.");
+                    App.Current?.DesktopLifetime?.Shutdown();
+                }
+            }, DispatcherPriority.Background);
+        }
+
+        private async Task RunPerfNewsFeedQaAsync() {
+            try {
+                if (!DemoMode.IsEnabled) {
+                    Log.Error("Perf news feed QA skipped: demo mode is required.");
+                    return;
+                }
+
+                NewsFeedViewModel viewModel = new NewsFeedViewModel(Session);
+                NewsFeedRulesQaReport report = await viewModel.RunRulesQaAsync();
+                double privateMemoryMb = Math.Round((double)Process.GetCurrentProcess().PrivateMemorySize64 / 1048576, 2);
+                Log.Information(
+                    "Perf news feed QA result: passed={Passed}; hiddenPosts={HiddenPosts}; blockedAds={BlockedAds}; hiddenHasPromos={HiddenHasPromos}; visiblePosts={VisiblePosts}; visiblePromos={VisiblePromos}; privateMemory={PrivateMemoryMb:F2}MB",
+                    report.Passed,
+                    report.HiddenPosts,
+                    report.BlockedAds,
+                    report.HiddenHasPromos,
+                    report.VisiblePosts,
+                    report.VisiblePromos,
+                    privateMemoryMb);
+            } catch (Exception ex) {
+                Log.Error(ex, "Perf news feed QA failed.");
+            }
         }
 
         private void TryOpenPerfDemoChat() {

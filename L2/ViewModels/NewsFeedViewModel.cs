@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
@@ -32,6 +33,8 @@ namespace ELOR.Laney.ViewModels {
 
     public sealed class NewsFeedViewModel : CommonViewModel {
         private const int PageSize = 25;
+        private const int MaxAdScanTextLength = 12000;
+        private const int MaxAdScanDepth = 5;
 
         private readonly VKSession session;
         private TwoStringTuple _currentFilter;
@@ -124,6 +127,7 @@ namespace ELOR.Laney.ViewModels {
         public bool HasPosts => Posts.Count > 0;
         public bool IsLoadingFirstPage => IsLoading && Posts.Count == 0;
         public bool CanLoadMore => _hasMore && !IsLoading;
+        public string FeedCounterText => Posts.Count == 0 ? "постов нет" : $"показано: {Posts.Count}";
 
         public async Task ApplyRulesAsync() {
             if (!_initialized) return;
@@ -165,9 +169,55 @@ namespace ELOR.Laney.ViewModels {
             }
         }
 
+        public async Task<NewsFeedRulesQaReport> RunRulesQaAsync() {
+            TwoStringTuple originalFilter = _currentFilter;
+            bool originalHideAds = _hideAds;
+            bool originalStrictAds = _strictAds;
+            string originalKeywords = _adKeywords;
+            bool wasInitialized = _initialized;
+
+            try {
+                _initialized = true;
+                await ApplyRulesForQaAsync(NewsFeedFilterIds.All, true, true, "casino; промокод; erid; adfox");
+                int hiddenPosts = Posts.Count;
+                int blocked = BlockedAdsCount;
+                bool hiddenHasPromos = Posts.Any(p => p.IsAdLike);
+
+                await ApplyRulesForQaAsync(NewsFeedFilterIds.All, false, true, "casino; промокод; erid; adfox");
+                int visiblePosts = Posts.Count;
+                int visiblePromos = Posts.Count(p => p.IsAdLike);
+
+                return new NewsFeedRulesQaReport {
+                    Passed = blocked >= 3 && !hiddenHasPromos && visiblePromos >= blocked && visiblePosts > hiddenPosts,
+                    HiddenPosts = hiddenPosts,
+                    BlockedAds = blocked,
+                    HiddenHasPromos = hiddenHasPromos,
+                    VisiblePosts = visiblePosts,
+                    VisiblePromos = visiblePromos
+                };
+            } finally {
+                _initialized = wasInitialized;
+                await ApplyRulesForQaAsync(originalFilter?.Item1 ?? NewsFeedFilterIds.All, originalHideAds, originalStrictAds, originalKeywords);
+            }
+        }
+
         private void RefreshAfterUserChange() {
             if (!_initialized) return;
             new System.Action(async () => await RefreshAsync())();
+        }
+
+        private async Task ApplyRulesForQaAsync(string filterId, bool hideAds, bool strictAds, string keywords) {
+            _currentFilter = FilterOptions.FirstOrDefault(f => f.Item1 == NewsFeedFilterIds.Normalize(filterId)) ?? FilterOptions[0];
+            _hideAds = hideAds;
+            _strictAds = strictAds;
+            _adKeywords = keywords ?? String.Empty;
+            _customAdKeywords = ParseCustomAdKeywords(_adKeywords);
+            OnPropertyChanged(nameof(CurrentFilter));
+            OnPropertyChanged(nameof(HideAds));
+            OnPropertyChanged(nameof(StrictAds));
+            OnPropertyChanged(nameof(AdKeywords));
+            OnPropertyChanged(nameof(FeedStatusText));
+            await RefreshAsync();
         }
 
         private async Task LoadApiPageAsync() {
@@ -200,18 +250,7 @@ namespace ELOR.Laney.ViewModels {
 
             if (!response.TryGetProperty("items", out JsonElement items) || items.ValueKind != JsonValueKind.Array) return;
 
-            foreach (JsonElement item in items.EnumerateArray()) {
-                WallPost post = TryParsePost(item);
-                if (post == null || !MatchesCurrentFilter(post)) continue;
-
-                bool isAd = IsAdLike(item, post, out string reason);
-                if (HideAds && isAd) {
-                    BlockedAdsCount++;
-                    continue;
-                }
-
-                Posts.Add(new NewsFeedPostViewModel(session, post, isAd, reason));
-            }
+            foreach (JsonElement item in items.EnumerateArray()) AddJsonNewsItem(item);
 
             RefreshPostState();
         }
@@ -219,26 +258,66 @@ namespace ELOR.Laney.ViewModels {
         private void LoadDemoPosts() {
             IEnumerable<ChatViewModel> chats = session?.ImViewModel?.SortedChats ?? Enumerable.Empty<ChatViewModel>();
             int index = 0;
-            foreach (ChatViewModel chat in chats.Take(18)) {
-                string preview = chat.LastMessage?.DisplayPreviewText;
-                WallPost post = new WallPost {
-                    OwnerId = chat.PeerId,
-                    FromId = chat.PeerId,
-                    ToId = chat.PeerId,
-                    Id = ++index,
-                    DateUnix = (int)DateTimeOffset.Now.AddMinutes(-index * 17).ToUnixTimeSeconds(),
-                    Text = String.IsNullOrWhiteSpace(preview)
-                        ? $"{chat.DisplayTitle}\nНовость из demo-ленты Laney."
-                        : $"{chat.DisplayTitle}\n{preview}",
-                    Attachments = new List<Attachment>()
-                };
 
-                if (!MatchesCurrentFilter(post)) continue;
-                Posts.Add(new NewsFeedPostViewModel(session, post, false, null));
+            AddDemoJsonPost(
+                ++index,
+                -10001,
+                "Нормальный пост Laney",
+                "Новая сборка: меньше RAM, аккуратнее скролл, без рекламной шелухи.");
+            AddDemoJsonPost(
+                ++index,
+                -10002,
+                "Промо с маркировкой",
+                "Скидка дня. erid: demo-12345. #реклама",
+                "\"marked_as_ads\":1");
+            AddDemoJsonPost(
+                ++index,
+                -10003,
+                "Промо во вложении",
+                "Подборка ссылок без явной метки в тексте",
+                "\"attachments\":[{\"type\":\"link\",\"link\":{\"url\":\"https://promo.example/?utm_source=adfox&erid=demo-link\",\"title\":\"Промокод внутри\"}}]");
+            AddDemoJsonPost(
+                ++index,
+                -10004,
+                "Строгий промо-фильтр",
+                "Промокод LANEY на casino-тест, который должен уйти только в strict режиме.");
+
+            foreach (ChatViewModel chat in chats.Take(16)) {
+                string preview = chat.LastMessage?.DisplayPreviewText;
+                AddDemoJsonPost(
+                    ++index,
+                    chat.PeerId,
+                    chat.DisplayTitle,
+                    String.IsNullOrWhiteSpace(preview)
+                        ? "Новость из demo-ленты Laney."
+                        : preview);
             }
 
             _hasMore = false;
             RefreshPostState();
+        }
+
+        private void AddDemoJsonPost(int id, long sourceId, string title, string text, string extraJson = null) {
+            string escapedText = JsonEncodedText.Encode($"{title}\n{text}".Trim()).ToString();
+            string extra = String.IsNullOrWhiteSpace(extraJson) ? String.Empty : $",{extraJson}";
+            string json = $"{{\"type\":\"post\",\"source_id\":{sourceId},\"post_id\":{id},\"date\":{DateTimeOffset.Now.AddMinutes(-id * 17).ToUnixTimeSeconds()},\"text\":\"{escapedText}\"{extra}}}";
+
+            using JsonDocument document = JsonDocument.Parse(json);
+            AddJsonNewsItem(document.RootElement);
+        }
+
+        private void AddJsonNewsItem(JsonElement item) {
+            WallPost post = TryParsePost(item);
+            if (post == null || !MatchesCurrentFilter(post)) return;
+
+            bool isAd = IsAdLike(item, post, out string reason);
+            if (HideAds && isAd) {
+                BlockedAdsCount++;
+                return;
+            }
+
+            Posts.Add(new NewsFeedPostViewModel(session, post, isAd, reason));
+            OnPropertyChanged(nameof(FeedCounterText));
         }
 
         private bool MatchesCurrentFilter(WallPost post) {
@@ -298,6 +377,8 @@ namespace ELOR.Laney.ViewModels {
                 return true;
             }
 
+            if (HasPromotionalJsonMarker(item, out reason)) return true;
+
             if (item.TryGetProperty("type", out JsonElement typeElement)) {
                 string type = typeElement.GetString();
                 if (ContainsAny(type, "ads", "ad", "promo", "promoted")) {
@@ -306,8 +387,8 @@ namespace ELOR.Laney.ViewModels {
                 }
             }
 
-            string text = post?.Text;
-            if (ContainsAny(text, "erid:", "erid ", "erid=", "#реклама", "реклама.", "sponsored", "adfox")) {
+            string text = BuildAdScanText(item, post);
+            if (ContainsAny(text, "erid:", "erid ", "erid=", "erid-", "#реклама", "реклама.", "sponsored", "adfox", "utm_source=ad", "utm_medium=cpc")) {
                 reason = "рекламная метка";
                 return true;
             }
@@ -341,6 +422,94 @@ namespace ELOR.Laney.ViewModels {
 
             reason = null;
             return false;
+        }
+
+        private static string BuildAdScanText(JsonElement item, WallPost post) {
+            StringBuilder builder = StringBuilderCache.Acquire();
+            AppendLimited(builder, post?.Text);
+            AppendJsonScanText(item, builder, 0);
+            return StringBuilderCache.GetStringAndRelease(builder);
+        }
+
+        private static void AppendJsonScanText(JsonElement element, StringBuilder builder, int depth) {
+            if (builder.Length >= MaxAdScanTextLength || depth > MaxAdScanDepth) return;
+
+            switch (element.ValueKind) {
+                case JsonValueKind.Object:
+                    foreach (JsonProperty property in element.EnumerateObject()) {
+                        AppendLimited(builder, property.Name);
+                        AppendJsonScanText(property.Value, builder, depth + 1);
+                        if (builder.Length >= MaxAdScanTextLength) return;
+                    }
+                    break;
+                case JsonValueKind.Array:
+                    foreach (JsonElement child in element.EnumerateArray()) {
+                        AppendJsonScanText(child, builder, depth + 1);
+                        if (builder.Length >= MaxAdScanTextLength) return;
+                    }
+                    break;
+                case JsonValueKind.String:
+                    AppendLimited(builder, element.GetString());
+                    break;
+            }
+        }
+
+        private static void AppendLimited(StringBuilder builder, string value) {
+            if (String.IsNullOrWhiteSpace(value) || builder.Length >= MaxAdScanTextLength) return;
+
+            int remaining = MaxAdScanTextLength - builder.Length;
+            builder.Append(' ');
+            builder.Append(value.Length <= remaining ? value : value[..remaining]);
+        }
+
+        private static bool HasPromotionalJsonMarker(JsonElement element, out string reason) {
+            reason = null;
+            return HasPromotionalJsonMarkerCore(element, 0, out reason);
+        }
+
+        private static bool HasPromotionalJsonMarkerCore(JsonElement element, int depth, out string reason) {
+            reason = null;
+            if (depth > MaxAdScanDepth) return false;
+
+            if (element.ValueKind == JsonValueKind.Object) {
+                foreach (JsonProperty property in element.EnumerateObject()) {
+                    string name = property.Name;
+                    if (IsPromotionalPropertyName(name) && IsTruthyPromoValue(property.Value)) {
+                        reason = $"json: {name}";
+                        return true;
+                    }
+
+                    if (HasPromotionalJsonMarkerCore(property.Value, depth + 1, out reason)) return true;
+                }
+            } else if (element.ValueKind == JsonValueKind.Array) {
+                foreach (JsonElement child in element.EnumerateArray()) {
+                    if (HasPromotionalJsonMarkerCore(child, depth + 1, out reason)) return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool IsPromotionalPropertyName(string name) {
+            return String.Equals(name, "ad", StringComparison.OrdinalIgnoreCase)
+                || String.Equals(name, "is_ad", StringComparison.OrdinalIgnoreCase)
+                || String.Equals(name, "marked_as_ads", StringComparison.OrdinalIgnoreCase)
+                || String.Equals(name, "ads_easy_promote", StringComparison.OrdinalIgnoreCase)
+                || String.Equals(name, "promoted", StringComparison.OrdinalIgnoreCase)
+                || String.Equals(name, "promoted_post", StringComparison.OrdinalIgnoreCase)
+                || String.Equals(name, "ad_data", StringComparison.OrdinalIgnoreCase)
+                || String.Equals(name, "ads", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsTruthyPromoValue(JsonElement value) {
+            return value.ValueKind switch {
+                JsonValueKind.True => true,
+                JsonValueKind.Number => value.TryGetInt32(out int intValue) && intValue != 0,
+                JsonValueKind.String => !String.IsNullOrWhiteSpace(value.GetString()),
+                JsonValueKind.Object => true,
+                JsonValueKind.Array => value.GetArrayLength() > 0,
+                _ => false
+            };
         }
 
         private static bool HasAnyIntFlag(JsonElement item, params string[] propertyNames) {
@@ -407,6 +576,16 @@ namespace ELOR.Laney.ViewModels {
             OnPropertyChanged(nameof(HasPosts));
             OnPropertyChanged(nameof(IsLoadingFirstPage));
             OnPropertyChanged(nameof(CanLoadMore));
+            OnPropertyChanged(nameof(FeedCounterText));
         }
+    }
+
+    public sealed class NewsFeedRulesQaReport {
+        public bool Passed { get; set; }
+        public int HiddenPosts { get; set; }
+        public int BlockedAds { get; set; }
+        public bool HiddenHasPromos { get; set; }
+        public int VisiblePosts { get; set; }
+        public int VisiblePromos { get; set; }
     }
 }
