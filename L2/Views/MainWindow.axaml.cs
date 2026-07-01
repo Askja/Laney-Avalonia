@@ -1590,7 +1590,7 @@ namespace ELOR.Laney.Views {
                 bool memoryBudgetOk = boundaryStress.PeakPrivateMemoryMb <= memoryBudgetMb;
 
                 Log.Information(
-                    "Perf live QA result: scrollTo={ScrollTo}; selection={Selection}; previous={Previous}; previousAnchor={PreviousAnchor}; next={Next}; unreadNavigation={Unread}; memoryBudgetOk={MemoryBudgetOk}; initial={InitialCount} first={FirstId} last={LastId} afterPrevious={AfterPreviousCount}/{AfterPreviousFirstId} afterNext={AfterNextCount}/{AfterNextLastId}; boundaryStress={BoundaryStressPassed} iterations={BoundaryIterations}/{BoundaryRequested} loaded={BoundaryLoadedIterations} stable={BoundaryStableIterations} rejected={BoundaryRejectedIterations} maxDrift={BoundaryMaxDrift:F2}px maxCompensationError={BoundaryMaxCompensation:F2}px stop={BoundaryStopReason}; boundaryReady={BoundaryReady}; boundaryHasHolder={BoundaryHasHolder}; boundaryHolderReady={BoundaryHolderReady}; boundaryCanScroll={BoundaryCanScroll}; boundaryPrevFlag={BoundaryPrevFlag}; boundaryNextFlag={BoundaryNextFlag}; boundaryTrigger={BoundaryTrigger}; boundarySkip={BoundarySkip}; boundaryStarted={BoundaryStarted}; boundaryLoaded={BoundaryLoaded}; boundaryAnchorId={BoundaryAnchorId}; boundaryUserDelta={BoundaryUserDelta:F1}; boundaryDrift={BoundaryDrift:F2}px; boundaryRestore={RestoreOldOffset:F1}/{RestoreOldHeight:F1}->{RestoreFinalOffset:F1}/{RestoreFinalHeight:F1}; boundaryOffset={BoundaryOffset:F1}/{BoundaryExtent:F1}; privateMemory={PrivateMemoryMb:F2}MB peakPrivateMemory={PeakPrivateMemoryMb:F2}MB memoryBudget={MemoryBudgetMb:F0}MB",
+                    "Perf live QA result: scrollTo={ScrollTo}; selection={Selection}; previous={Previous}; previousAnchor={PreviousAnchor}; next={Next}; unreadNavigation={Unread}; memoryBudgetOk={MemoryBudgetOk}; initial={InitialCount} first={FirstId} last={LastId} afterPrevious={AfterPreviousCount}/{AfterPreviousFirstId} afterNext={AfterNextCount}/{AfterNextLastId}; boundaryStress={BoundaryStressPassed} iterations={BoundaryIterations}/{BoundaryRequested} loaded={BoundaryLoadedIterations} stable={BoundaryStableIterations} rejected={BoundaryRejectedIterations} maxDrift={BoundaryMaxDrift:F2}px maxTransientDrift={BoundaryMaxTransientDrift:F2}px maxCompensationError={BoundaryMaxCompensation:F2}px stop={BoundaryStopReason}; boundaryReady={BoundaryReady}; boundaryHasHolder={BoundaryHasHolder}; boundaryHolderReady={BoundaryHolderReady}; boundaryCanScroll={BoundaryCanScroll}; boundaryPrevFlag={BoundaryPrevFlag}; boundaryNextFlag={BoundaryNextFlag}; boundaryTrigger={BoundaryTrigger}; boundarySkip={BoundarySkip}; boundaryStarted={BoundaryStarted}; boundaryLoaded={BoundaryLoaded}; boundaryAnchorId={BoundaryAnchorId}; boundaryUserDelta={BoundaryUserDelta:F1}; boundaryDrift={BoundaryDrift:F2}px boundaryTransientDrift={BoundaryTransientDrift:F2}px; boundaryRestore={RestoreOldOffset:F1}/{RestoreOldHeight:F1}->{RestoreFinalOffset:F1}/{RestoreFinalHeight:F1}; boundaryOffset={BoundaryOffset:F1}/{BoundaryExtent:F1}; privateMemory={PrivateMemoryMb:F2}MB peakPrivateMemory={PeakPrivateMemoryMb:F2}MB memoryBudget={MemoryBudgetMb:F0}MB",
                     scrollToOk,
                     selectionOk,
                     previousOk,
@@ -1612,6 +1612,7 @@ namespace ELOR.Laney.Views {
                     boundaryStress.StableIterations,
                     boundaryStress.TriggerRejectedIterations,
                     boundaryStress.MaxAnchorDriftPx,
+                    boundaryStress.MaxTransientDriftPx,
                     boundaryStress.MaxCompensationErrorPx,
                     boundaryStress.StopReason,
                     boundary.Ready,
@@ -1627,6 +1628,7 @@ namespace ELOR.Laney.Views {
                     boundary.AnchorId,
                     boundary.UserOffsetDelta,
                     boundary.AnchorDriftPx,
+                    boundary.MaxTransientDriftPx,
                     boundary.RestoreOldOffset,
                     boundary.RestoreOldHeight,
                     boundary.RestoreFinalOffset,

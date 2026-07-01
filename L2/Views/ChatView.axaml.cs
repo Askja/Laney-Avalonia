@@ -680,6 +680,7 @@ namespace ELOR.Laney.Views {
                 if (result.PreviousLoaded) stress.LoadedIterations++;
                 if (result.AnchorStable) stress.StableIterations++;
                 if (!Double.IsNaN(result.AnchorDriftPx)) stress.MaxAnchorDriftPx = Math.Max(stress.MaxAnchorDriftPx, Math.Abs(result.AnchorDriftPx));
+                if (!Double.IsNaN(result.MaxTransientDriftPx)) stress.MaxTransientDriftPx = Math.Max(stress.MaxTransientDriftPx, Math.Abs(result.MaxTransientDriftPx));
 
                 if (!result.AnchorStable) {
                     double compensationError = CalculateBoundaryCompensationError(result);
@@ -768,6 +769,7 @@ namespace ELOR.Laney.Views {
             result.AnchorId = MessagesList.LastPreviousRestoreAnchorId;
             result.UserOffsetDelta = MessagesList.LastPreviousLoadUserOffsetDelta;
             result.AnchorDriftPx = MessagesList.LastPreviousRestoreDrift;
+            result.MaxTransientDriftPx = MessagesList.LastPreviousRestoreMaxTransientDrift;
             result.RestoreOldOffset = MessagesList.LastPreviousRestoreOldOffset;
             result.RestoreOldHeight = MessagesList.LastPreviousRestoreOldHeight;
             result.RestoreFinalOffset = MessagesList.LastPreviousRestoreFinalOffset;
@@ -1056,6 +1058,7 @@ namespace ELOR.Laney.Views {
         public int LoadedIterations { get; set; }
         public int StableIterations { get; set; }
         public double MaxAnchorDriftPx { get; set; }
+        public double MaxTransientDriftPx { get; set; }
         public double MaxCompensationErrorPx { get; set; }
         public double InitialPrivateMemoryMb { get; set; }
         public double FinalPrivateMemoryMb { get; set; }
@@ -1068,6 +1071,7 @@ namespace ELOR.Laney.Views {
             && StableIterations == IterationsRequested
             && TriggerRejectedIterations == 0
             && MaxAnchorDriftPx <= ChatView.HistoryBoundaryAnchorTolerance
+            && MaxTransientDriftPx <= ChatView.HistoryBoundaryAnchorTolerance
             && MaxCompensationErrorPx <= 64;
     }
 
@@ -1090,6 +1094,7 @@ namespace ELOR.Laney.Views {
         public int AnchorId { get; set; }
         public double UserOffsetDelta { get; set; }
         public double AnchorDriftPx { get; set; } = Double.NaN;
+        public double MaxTransientDriftPx { get; set; } = Double.NaN;
         public double RestoreOldOffset { get; set; } = Double.NaN;
         public double RestoreOldHeight { get; set; } = Double.NaN;
         public double RestoreFinalOffset { get; set; } = Double.NaN;

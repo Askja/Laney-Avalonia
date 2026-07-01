@@ -90,6 +90,7 @@ namespace ELOR.Laney.Controls {
         public double LastPreviousRestoreFinalOffset { get; private set; } = Double.NaN;
         public double LastPreviousRestoreFinalHeight { get; private set; } = Double.NaN;
         public double LastPreviousLoadUserOffsetDelta { get; private set; } = 0;
+        public double LastPreviousRestoreMaxTransientDrift { get; private set; } = Double.NaN;
         public int LastPreviousRestoreAnchorId { get; private set; } = 0;
         public string LastPreviousTriggerSkipReason { get; private set; } = String.Empty;
         public bool IsHolderReady => _controlHolderId1 != 0 && _controlHolderId1 == _controlHolderId2;
@@ -477,6 +478,7 @@ namespace ELOR.Laney.Controls {
                 LastPreviousRestoreOldHeight = oldHeight;
                 LastPreviousRestoreFinalOffset = Double.NaN;
                 LastPreviousRestoreFinalHeight = Double.NaN;
+                LastPreviousRestoreMaxTransientDrift = Double.NaN;
                 LastPreviousRestoreAnchorId = anchor.Item?.Id ?? 0;
 
                 await holder.LoadPreviousMessagesAsync(token);
@@ -569,14 +571,26 @@ namespace ELOR.Laney.Controls {
                 }
 
                 if (_restoreScrollStableFrames < RestoreRequiredStableFrames) {
-                    if (TryFinishPreviousRestoreByHeightDiff(oldOffset, diff, "height_diff_restored")) return;
-
                     if (Settings.ShowDebugCounters) Debug.WriteLine($"Extent is not stable after previous messages load. Trying in next frame, attempts: {_restoreScrollAttempts}.");
                     RequestNextFrame(() => TryRestoreScroll(anchor, oldHeight, oldOffset));
                     return;
                 }
 
                 if (Settings.ShowDebugCounters) Debug.WriteLine("Anchor container is not reliable after previous messages load. Finishing by height diff.");
+                Control anchorContainer = FindRealizedControlForItem(anchor.Item);
+                if (anchorContainer != null) {
+                    _restoreScrollAttempts = RestorePostAnchorAttempts;
+                    _restoreScrollLastHeight = Double.NaN;
+                    _restoreScrollStableFrames = 0;
+                    StabilizeRestoredAnchor(anchor, oldHeight, oldOffset);
+                    return;
+                }
+
+                if (_restoreScrollAttempts > RestorePostAnchorAttempts) {
+                    RequestNextFrame(() => TryRestoreScroll(anchor, oldHeight, oldOffset));
+                    return;
+                }
+
                 RestoreByHeightDiff(oldOffset, newHeight, diff);
                 return;
             }
@@ -617,7 +631,7 @@ namespace ELOR.Laney.Controls {
 
             double diff = Math.Max(0, newHeight - oldHeight);
             if (!anchorStable && diff > 0) {
-                if (TryFinishPreviousRestoreByHeightDiff(oldOffset, diff, "height_diff_restored")) return;
+                if (FindRealizedControlForItem(anchor.Item) == null && TryFinishPreviousRestoreByHeightDiff(oldOffset, diff, "height_diff_restored")) return;
             }
 
             RequestNextFrame(() => StabilizeRestoredAnchor(anchor, oldHeight, oldOffset));
@@ -741,7 +755,7 @@ namespace ELOR.Laney.Controls {
             for (byte attempt = 0; attempt < 8; attempt++) {
                 snapshot = await Dispatcher.UIThread.InvokeAsync(() => {
                     if (ScrollViewer == null) return default;
-                    return new ScrollSnapshot(CaptureTopAnchor(), ScrollViewer.Extent.Height, ScrollViewer.Offset.Y);
+                    return new ScrollSnapshot(CapturePreviousRestoreAnchor(), ScrollViewer.Extent.Height, ScrollViewer.Offset.Y);
                 }, DispatcherPriority.Render);
 
                 bool stable = !Double.IsNaN(lastHeight)
@@ -815,6 +829,7 @@ namespace ELOR.Laney.Controls {
             if (Math.Abs(delta) > maxDelta) return false;
 
             double maxOffset = Math.Max(0, ScrollViewer.Extent.Height - ScrollViewer.Viewport.Height);
+            double oldOffset = ScrollViewer.Offset.Y;
             double nextOffset = Math.Clamp(ScrollViewer.Offset.Y + delta, 0, maxOffset);
             ScrollViewer.Offset = new Vector(ScrollViewer.Offset.X, nextOffset);
 
@@ -822,7 +837,11 @@ namespace ELOR.Laney.Controls {
             Point? updatedTop = updatedContainer?.TranslatePoint(new Point(0, 0), ScrollViewer);
             if (updatedTop == null) return false;
 
-            return Math.Abs(updatedTop.Value.Y - anchor.Top) <= 3;
+            if (Math.Abs(updatedTop.Value.Y - anchor.Top) <= 3) return true;
+
+            bool offsetApplied = Math.Abs(ScrollViewer.Offset.Y - nextOffset) <= 1 && Math.Abs(nextOffset - oldOffset) > 1;
+            bool layoutStillStale = Math.Abs(updatedTop.Value.Y - currentTop.Value.Y) <= 1;
+            return offsetApplied && layoutStillStale;
         }
 
         private ScrollAnchor CaptureTopAnchorFromRealizedContainers() {
@@ -848,6 +867,34 @@ namespace ELOR.Laney.Controls {
             }
 
             return best;
+        }
+
+        private ScrollAnchor CapturePreviousRestoreAnchor() {
+            if (ScrollViewer == null || ItemsSource is not IEnumerable source) return CaptureTopAnchor();
+
+            double viewportHeight = ScrollViewer.Viewport.Height;
+            if (viewportHeight <= 0) viewportHeight = ScrollViewer.Bounds.Height;
+            if (viewportHeight <= 0) return CaptureTopAnchor();
+
+            double preferredTop = Math.Min(160, Math.Max(48, viewportHeight * 0.18));
+            ScrollAnchor best = default;
+            double bestScore = Double.MaxValue;
+
+            foreach (object value in source) {
+                if (value is not IMessageListItem item) continue;
+                if (!TryGetContainerVerticalBounds(value, out double top, out double bottom)) continue;
+                if (bottom <= 0 || top >= viewportHeight) continue;
+
+                double score = Math.Abs(top - preferredTop);
+                if (top < 24) score += 96;
+                if (bottom > viewportHeight) score += 32;
+                if (score >= bestScore) continue;
+
+                best = new ScrollAnchor(item, top);
+                bestScore = score;
+            }
+
+            return best.IsValid ? best : CaptureTopAnchor();
         }
 
         private T GetVisibleItem<T>(bool last) where T : class {
@@ -1041,8 +1088,9 @@ namespace ELOR.Laney.Controls {
                 RequestNextFrame(UpdatePreviousRestoreDiagnosticsByHeightDiff);
             }
             RefreshLayoutAnchorGuard(preserveRestoredAnchor ? PreviousLayoutAnchorGuardMs : LayoutAnchorGuardMs, guardAnchor);
-            if (preserveRestoredAnchor) SchedulePostLayoutPreviousRestore(_manualScrollGeneration, 6);
-            else SchedulePostLayoutHeightDiffRestore(_manualScrollGeneration, 45);
+            long previousGeneration = _previousLoadGeneration;
+            if (preserveRestoredAnchor) SchedulePostLayoutPreviousRestore(_manualScrollGeneration, previousGeneration, 6);
+            else SchedulePostLayoutHeightDiffRestore(_manualScrollGeneration, previousGeneration, 45);
             SaveScrollPosition(true);
         }
 
@@ -1062,7 +1110,10 @@ namespace ELOR.Laney.Controls {
 
             double viewportHeight = ScrollViewer.Viewport.Height;
             if (viewportHeight <= 0) viewportHeight = ScrollViewer.Bounds.Height;
-            double maxDelta = Math.Max(240, viewportHeight * 0.9);
+            double restoreGrowth = Double.IsNaN(LastPreviousRestoreOldHeight)
+                ? 0
+                : Math.Max(0, ScrollViewer.Extent.Height - LastPreviousRestoreOldHeight);
+            double maxDelta = Math.Max(Math.Max(720, viewportHeight * 2), restoreGrowth + viewportHeight);
 
             SuppressPreviousRestoreManualDetection(120);
             _isRestoringLayoutAnchor = true;
@@ -1080,19 +1131,21 @@ namespace ELOR.Laney.Controls {
             TryRestorePreviousAnchor(_activePreviousRestoreAnchor);
         }
 
-        private void SchedulePostLayoutPreviousRestore(long manualGeneration, byte attempts) {
+        private void SchedulePostLayoutPreviousRestore(long manualGeneration, long previousGeneration, byte attempts) {
             if (!_activePreviousRestoreAnchor.IsValid || attempts == 0 || ScrollViewer == null) return;
 
             RequestNextFrame(() => {
                 if (!_activePreviousRestoreAnchor.IsValid
                     || ScrollViewer == null
-                    || manualGeneration != _manualScrollGeneration) {
+                    || manualGeneration != _manualScrollGeneration
+                    || previousGeneration != _previousLoadGeneration) {
                     return;
                 }
 
                 _isRestoringLayoutAnchor = true;
                 try {
                     TryRestoreAnchor(_activePreviousRestoreAnchor);
+                    TrackPreviousRestoreTransientDrift(_activePreviousRestoreAnchor);
                     _lastScrollOffset = ScrollViewer.Offset.Y;
                 } finally {
                     _isRestoringLayoutAnchor = false;
@@ -1102,11 +1155,11 @@ namespace ELOR.Laney.Controls {
                 SaveScrollPosition(true);
 
                 if (!Double.IsNaN(LastPreviousRestoreDrift) && Math.Abs(LastPreviousRestoreDrift) <= 3) return;
-                SchedulePostLayoutPreviousRestore(manualGeneration, (byte)(attempts - 1));
+                SchedulePostLayoutPreviousRestore(manualGeneration, previousGeneration, (byte)(attempts - 1));
             });
         }
 
-        private void SchedulePostLayoutHeightDiffRestore(long manualGeneration, byte attempts) {
+        private void SchedulePostLayoutHeightDiffRestore(long manualGeneration, long previousGeneration, byte attempts) {
             if (attempts == 0
                 || ScrollViewer == null
                 || Double.IsNaN(LastPreviousRestoreOldOffset)
@@ -1116,7 +1169,8 @@ namespace ELOR.Laney.Controls {
 
             RequestNextFrame(() => {
                 if (ScrollViewer == null
-                    || manualGeneration != _manualScrollGeneration) {
+                    || manualGeneration != _manualScrollGeneration
+                    || previousGeneration != _previousLoadGeneration) {
                     return;
                 }
 
@@ -1124,6 +1178,7 @@ namespace ELOR.Laney.Controls {
                 try {
                     double heightDiff = Math.Max(0, ScrollViewer.Extent.Height - LastPreviousRestoreOldHeight);
                     EnsureApproximateOffset(LastPreviousRestoreOldOffset, heightDiff);
+                    TrackPreviousRestoreTransientDrift(_activePreviousRestoreAnchor);
                     _lastScrollOffset = ScrollViewer.Offset.Y;
                     LastPreviousRestoreFinalOffset = ScrollViewer.Offset.Y;
                     LastPreviousRestoreFinalHeight = ScrollViewer.Extent.Height;
@@ -1134,7 +1189,7 @@ namespace ELOR.Laney.Controls {
                 UpdatePreviousRestoreDiagnosticsByHeightDiff();
                 SaveScrollPosition(true);
                 if (!Double.IsNaN(LastPreviousRestoreDrift) && Math.Abs(LastPreviousRestoreDrift) <= 3) return;
-                SchedulePostLayoutHeightDiffRestore(manualGeneration, (byte)(attempts - 1));
+                SchedulePostLayoutHeightDiffRestore(manualGeneration, previousGeneration, (byte)(attempts - 1));
             });
         }
 
@@ -1382,8 +1437,21 @@ namespace ELOR.Laney.Controls {
             }
 
             LastPreviousRestoreDrift = currentTop.Value - _activePreviousRestoreAnchor.Top;
+            TrackPreviousRestoreTransientDrift(_activePreviousRestoreAnchor, currentTop.Value);
             if (Math.Abs(LastPreviousRestoreDrift) <= 6 && IsPreviousRestoreExhaustedReason()) {
                 LastPreviousTriggerSkipReason = "final_anchor_restored";
+            }
+        }
+
+        private void TrackPreviousRestoreTransientDrift(ScrollAnchor anchor, double? currentTop = null) {
+            if (!anchor.IsValid) return;
+
+            double? top = currentTop ?? GetItemTopInViewport(anchor.Item);
+            if (top == null) return;
+
+            double drift = Math.Abs(top.Value - anchor.Top);
+            if (Double.IsNaN(LastPreviousRestoreMaxTransientDrift) || drift > LastPreviousRestoreMaxTransientDrift) {
+                LastPreviousRestoreMaxTransientDrift = drift;
             }
         }
 
