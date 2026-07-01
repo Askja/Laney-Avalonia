@@ -1336,6 +1336,7 @@ namespace ELOR.Laney.Views {
                 (EmojiPackIds.Vk, "😊"),
                 (EmojiPackIds.Vk, "❤"),
                 (EmojiPackIds.Vk, "🥰"),
+                (EmojiPackIds.TelegramLike, "😊"),
                 (EmojiPackIds.Twemoji, "🥰"),
                 (EmojiPackIds.Noto, "🥰")
             };

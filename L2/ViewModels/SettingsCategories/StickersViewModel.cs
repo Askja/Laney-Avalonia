@@ -33,12 +33,12 @@ namespace ELOR.Laney.ViewModels.SettingsCategories {
 
         public ObservableCollection<TwoStringTuple> EmojiPackOptions { get; } = new ObservableCollection<TwoStringTuple> {
             new TwoStringTuple(EmojiPackIds.Vk, "ВКонтакте"),
-            new TwoStringTuple(EmojiPackIds.TelegramLike, "Telegram/Twemoji"),
+            new TwoStringTuple(EmojiPackIds.TelegramLike, "Telegram-подобный"),
             new TwoStringTuple(EmojiPackIds.Noto, "Google Noto"),
             new TwoStringTuple(EmojiPackIds.Twemoji, "Twemoji"),
             new TwoStringTuple(EmojiPackIds.System, "Системные"),
             new TwoStringTuple(EmojiPackIds.Fallback, "Лёгкий запасной набор"),
-            new TwoStringTuple(EmojiPackIds.Custom, "Кастомный manifest")
+            new TwoStringTuple(EmojiPackIds.Custom, "Свой manifest-файл")
         };
 
         public ObservableCollection<TwoStringTuple> LocalStickerSendModeOptions { get; } = new ObservableCollection<TwoStringTuple> {

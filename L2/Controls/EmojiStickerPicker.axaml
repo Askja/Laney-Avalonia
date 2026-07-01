@@ -12,7 +12,19 @@
              mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="438"
              Loaded="EmojiStickerPicker_Loaded"
              x:Class="ELOR.Laney.Controls.EmojiStickerPicker" x:DataType="vmc:EmojiStickerPickerViewModel">
- 
+  <UserControl.Styles>
+    <Style Selector="Border.EmojiTile">
+      <Setter Property="CornerRadius" Value="8"/>
+      <Setter Property="Background" Value="Transparent"/>
+    </Style>
+    <Style Selector="Border.EmojiTile:pointerover">
+      <Setter Property="Background" Value="{DynamicResource VKBackgroundTertiaryBrush}"/>
+    </Style>
+    <Style Selector="Image.EmojiImage">
+      <Setter Property="Stretch" Value="Uniform"/>
+    </Style>
+  </UserControl.Styles>
+
   <Grid RowDefinitions="* Auto">
     <ScrollViewer x:Name="EmojisTabContent" IsVisible="False">
       <ItemsRepeater x:Name="emojiList" ItemsSource="{Binding SelectedTab.Content, Mode=OneWay}">
@@ -25,14 +37,14 @@
               <TextBlock Classes="Caption1" Foreground="{DynamicResource VKTextSecondaryBrush}" Margin="12" Text="{Binding Key}"/>
               <ItemsRepeater ItemsSource="{Binding}" Margin="12,0">
                 <ItemsRepeater.Layout>
-                  <UniformGridLayout MinItemWidth="28" MinItemHeight="28" MaximumRowsOrColumns="14" ItemsJustification="Start" ItemsStretch="None"/>
+                  <UniformGridLayout MinItemWidth="32" MinItemHeight="32" MaximumRowsOrColumns="12" ItemsJustification="Start" ItemsStretch="None"/>
                 </ItemsRepeater.Layout>
                 <ItemsRepeater.ItemTemplate>
                   <DataTemplate x:DataType="vmc:EmojiPickerEmoji">
-                    <Border Focusable="True" Width="28" Height="28" Background="Transparent" Tapped="EmojiListBoxItem_Tapped">
+                    <Border Classes="EmojiTile" Focusable="True" Width="32" Height="32" Padding="4" Tapped="EmojiListBoxItem_Tapped">
                       <Grid>
                         <TextBlock FontSize="17" VerticalAlignment="Center" TextAlignment="Center" Text="{Binding Text}" FontFamily="{Binding FontFamily}" IsVisible="{Binding IsTextVisible}"/>
-                        <Image Width="21" Height="21" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding HasImage}" controls:ImageLoader.SourceCandidates="{Binding ImageUris}"/>
+                        <Image Classes="EmojiImage" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding HasImage}" controls:ImageLoader.SourceCandidates="{Binding ImageUris}"/>
                       </Grid>
                     </Border>
                   </DataTemplate>

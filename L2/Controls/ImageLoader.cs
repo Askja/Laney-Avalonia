@@ -11,6 +11,7 @@ using Avalonia.VisualTree;
 using ELOR.Laney.Core;
 using Serilog;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -24,6 +25,8 @@ namespace ELOR.Laney.Controls {
         private const double MaxBackgroundDecodePixels = 384;
         private const double MaxBlurBackgroundDecodePixels = 128;
         private const double ActiveViewportCheckIntervalMs = 240;
+        private const int PlaceholderBitmapSize = 24;
+        private static readonly ConcurrentDictionary<uint, Bitmap> loadingPlaceholderImages = new ConcurrentDictionary<uint, Bitmap>();
 
         static ImageLoader() {
             SourceProperty.Changed
@@ -200,6 +203,9 @@ namespace ELOR.Laney.Controls {
                 ?? new SolidColorBrush(Color.Parse("#2A3442"));
 
             switch (control) {
+                case Image image:
+                    image.Source = GetLoadingPlaceholderImage(control);
+                    break;
                 case Shape shape:
                     shape.Fill = brush;
                     break;
@@ -210,6 +216,63 @@ namespace ELOR.Laney.Controls {
                     contentControl.Background = brush;
                     break;
             }
+        }
+
+        private static Bitmap GetLoadingPlaceholderImage(Control control) {
+            Color color = ResolvePlaceholderColor(control);
+            uint key = ToArgb(color);
+            return loadingPlaceholderImages.GetOrAdd(key, _ => CreatePlaceholderBitmap(color));
+        }
+
+        private static Color ResolvePlaceholderColor(Control control) {
+            IBrush brush = GetResourceFromControl<IBrush>(control, "LaneySkeletonBrush")
+                ?? App.GetResource<IBrush>("LaneySkeletonBrush")
+                ?? App.GetResource<IBrush>("VKSkeletonForegroundFromBrush");
+
+            return brush is SolidColorBrush solidBrush
+                ? solidBrush.Color
+                : Color.Parse("#2A3442");
+        }
+
+        private static Bitmap CreatePlaceholderBitmap(Color color) {
+            byte alpha = color.A;
+            byte red = Premultiply(color.R, alpha);
+            byte green = Premultiply(color.G, alpha);
+            byte blue = Premultiply(color.B, alpha);
+            WriteableBitmap bitmap = new WriteableBitmap(
+                new PixelSize(PlaceholderBitmapSize, PlaceholderBitmapSize),
+                new Vector(96, 96),
+                PixelFormats.Bgra8888,
+                AlphaFormat.Premul);
+
+            using ILockedFramebuffer framebuffer = bitmap.Lock();
+            int rowBytes = framebuffer.RowBytes;
+            int bufferLength = rowBytes * PlaceholderBitmapSize;
+            byte[] pixels = new byte[bufferLength];
+            for (int y = 0; y < PlaceholderBitmapSize; y++) {
+                int rowStart = y * rowBytes;
+                for (int x = 0; x < PlaceholderBitmapSize; x++) {
+                    int index = rowStart + (x * 4);
+                    pixels[index] = blue;
+                    pixels[index + 1] = green;
+                    pixels[index + 2] = red;
+                    pixels[index + 3] = alpha;
+                }
+            }
+
+            Marshal.Copy(pixels, 0, framebuffer.Address, pixels.Length);
+            return bitmap;
+        }
+
+        private static byte Premultiply(byte value, byte alpha) {
+            return (byte)((value * alpha) / 255);
+        }
+
+        private static uint ToArgb(Color color) {
+            return ((uint)color.A << 24)
+                | ((uint)color.R << 16)
+                | ((uint)color.G << 8)
+                | color.B;
         }
 
         private static T GetResourceFromControl<T>(Control control, string key) where T : class {
@@ -337,7 +400,7 @@ namespace ELOR.Laney.Controls {
 
                 if (bitmap == null) {
                     await Dispatcher.UIThread.InvokeAsync(() => {
-                        if (IsCurrentCandidates(sender, state, candidates)) sender.Source = null;
+                        if (IsCurrentCandidates(sender, state, candidates)) sender.Source = GetLoadingPlaceholderImage(sender);
                     });
                     return;
                 }
