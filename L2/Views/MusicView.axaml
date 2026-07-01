@@ -121,6 +121,24 @@
             </Button>
           </Grid>
 
+          <Grid ColumnDefinitions="* * Auto" ColumnSpacing="8">
+            <Button Classes="Secondary" MinHeight="34" Padding="10,4" Click="ExportScrobblesButton_Click" IsEnabled="{Binding HasScrobbles}" ToolTip.Tip="Экспортировать scrobble-очередь в Last.fm/AIMP TSV">
+              <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon20DocumentOutline}"/>
+                <TextBlock Text="Экспорт TSV"/>
+              </StackPanel>
+            </Button>
+            <Button Grid.Column="1" Classes="Tertiary" MinHeight="34" Padding="10,4" Click="OpenIntegrationsFolderButton_Click" ToolTip.Tip="Открыть папку integrations">
+              <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon20LinkCircleOutline}"/>
+                <TextBlock Text="Папка"/>
+              </StackPanel>
+            </Button>
+            <Button Grid.Column="2" Classes="Tertiary" MinHeight="34" Padding="10,4" Click="ClearScrobblesButton_Click" IsVisible="{Binding HasScrobbles}" ToolTip.Tip="Очистить локальную scrobble-очередь">
+              <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon20DeleteOutline}"/>
+            </Button>
+          </Grid>
+
           <Grid ColumnDefinitions="* Auto" ColumnSpacing="8">
             <StackPanel>
               <TextBlock Classes="Subhead" FontWeight="SemiBold" Foreground="{DynamicResource VKTextPrimaryBrush}" Text="Графический EQ"/>

@@ -1480,7 +1480,7 @@ namespace ELOR.Laney.Views {
                     double memoryBudgetMb = GetPerfMemoryBudgetMb();
                     bool memoryBudgetOk = CheckPerfMemoryBudget("music-export", "privateMemory", privateMemoryMb, memoryBudgetMb);
                     Log.Information(
-                        "Perf music export QA result: passed={Passed}; memoryBudgetOk={MemoryBudgetOk}; reason={Reason}; fileBytes={FileBytes}; sidecar={Sidecar}; id3Header={Id3Header}; id3Tagged={Id3Tagged}; cover={Cover}; coverBytes={CoverBytes}; privateMemory={PrivateMemoryMb:F2}MB; memoryBudget={MemoryBudgetMb:F0}MB",
+                        "Perf music export QA result: passed={Passed}; memoryBudgetOk={MemoryBudgetOk}; reason={Reason}; fileBytes={FileBytes}; sidecar={Sidecar}; id3Header={Id3Header}; id3Tagged={Id3Tagged}; cover={Cover}; coverBytes={CoverBytes}; scrobbleExport={ScrobbleExport}; scrobbleBytes={ScrobbleBytes}; scrobbles={Scrobbles}; privateMemory={PrivateMemoryMb:F2}MB; memoryBudget={MemoryBudgetMb:F0}MB",
                         report.Passed,
                         memoryBudgetOk,
                         report.Reason,
@@ -1490,8 +1490,14 @@ namespace ELOR.Laney.Views {
                         report.Id3Tagged,
                         report.CoverExists,
                         report.CoverBytes,
+                        report.ScrobbleExportExists,
+                        report.ScrobbleExportBytes,
+                        report.ScrobbleCount,
                         privateMemoryMb,
                         memoryBudgetMb);
+                    if (!report.Passed || !memoryBudgetOk) {
+                        Environment.ExitCode = Math.Max(Environment.ExitCode, 2);
+                    }
                 } finally {
                     viewModel.Dispose();
                 }

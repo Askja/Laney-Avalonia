@@ -72,6 +72,19 @@ namespace ELOR.Laney.Views {
             await ViewModel.ScrobbleCurrentAsync();
         }
 
+        private async void ExportScrobblesButton_Click(object sender, RoutedEventArgs e) {
+            if (ViewModel == null) return;
+            await ViewModel.ExportScrobblesAsync();
+        }
+
+        private void OpenIntegrationsFolderButton_Click(object sender, RoutedEventArgs e) {
+            ViewModel?.OpenIntegrationsFolder();
+        }
+
+        private void ClearScrobblesButton_Click(object sender, RoutedEventArgs e) {
+            ViewModel?.ClearScrobbles();
+        }
+
         private void ClearQueueButton_Click(object sender, RoutedEventArgs e) {
             ViewModel?.ClearQueue();
         }

@@ -103,6 +103,9 @@ namespace ELOR.Laney.ViewModels {
     public sealed class MusicViewModel : CommonViewModel {
         private const int PageSize = 100;
         private const long MaxEmbeddedCoverBytes = 2 * 1024 * 1024;
+        private const string IntegrationsDirectoryName = "integrations";
+        private const string ScrobbleQueueFileName = "music-scrobbles.jsonl";
+        private const string ScrobbleExportFileName = "music-scrobbles-lastfm.tsv";
 
         private readonly VKSession session;
         private bool _initialized;
@@ -117,6 +120,8 @@ namespace ELOR.Laney.ViewModels {
         private bool _suppressCustomEqualizerApply;
         private string _lastDownloadedFilePath;
         private string _lastDownloadedCoverPath;
+        private string _lastScrobbleExportPath;
+        private int _scrobbleCount;
         private bool _lastDownloadTaggedWithId3;
 
         public MusicViewModel(VKSession session) {
@@ -128,6 +133,7 @@ namespace ELOR.Laney.ViewModels {
             AudioPlayerViewModel.InstancesChanged += AudioPlayerViewModel_InstancesChanged;
             EnsureEqualizerPreviewBands();
             EnsureCustomEqualizerBands();
+            RefreshScrobbleState();
             RefreshEqualizerPreview();
         }
 
@@ -215,10 +221,16 @@ namespace ELOR.Laney.ViewModels {
         public string DownloadStatusText { get => _downloadStatusText; private set { _downloadStatusText = value; OnPropertyChanged(); } }
         public string QueueSummary => Queue.Count == 0 ? "Очередь пуста" : $"В очереди: {Queue.Count}";
         public string LibrarySummary => $"{VisibleTracks.Count} из {GetCurrentSourceTracks().Count()} · {(_hasMore ? "можно грузить еще" : "конец списка")}";
-        public string IntegrationStatusText => "VK status работает сразу; Discord/AIMP/Last.fm складываем в локальную очередь scrobble.";
+        public string IntegrationStatusText => _scrobbleCount == 0
+            ? "VK status работает сразу. AIMP/Discord/Last.fm bridge ждут первый scrobble."
+            : $"Scrobble bridge: {_scrobbleCount} записей · Last.fm/AIMP TSV готовится локально.";
         public string LastDownloadedFilePath => _lastDownloadedFilePath;
         public string LastDownloadedCoverPath => _lastDownloadedCoverPath;
+        public string LastScrobbleExportPath => _lastScrobbleExportPath;
+        public string IntegrationsDirectoryPath => GetIntegrationsDirectory();
         public bool LastDownloadTaggedWithId3 => _lastDownloadTaggedWithId3;
+        public int ScrobbleCount => _scrobbleCount;
+        public bool HasScrobbles => _scrobbleCount > 0;
         public bool HasTracks => VisibleTracks.Count > 0;
         public bool HasQueue => Queue.Count > 0;
         public bool CanLoadMore => !IsLoading && _hasMore && CurrentSource?.Item1 == MusicSourceIds.Library;
@@ -385,19 +397,182 @@ namespace ELOR.Laney.ViewModels {
                 return;
             }
 
-            string directory = Path.Combine(App.LocalDataPath, "integrations");
+            await AppendScrobbleAsync(track);
+            StatusText = $"Scrobble: {track.Artist} — {track.Title}";
+        }
+
+        public async Task ExportScrobblesAsync() {
+            List<MusicScrobbleEntry> entries = ReadScrobbleEntries();
+            if (entries.Count == 0) {
+                StatusText = "Scrobble-очередь пустая, экспортировать нечего.";
+                RefreshScrobbleState();
+                return;
+            }
+
+            string directory = GetIntegrationsDirectory();
             Directory.CreateDirectory(directory);
+            string exportPath = Path.Combine(directory, ScrobbleExportFileName);
+            await File.WriteAllTextAsync(exportPath, BuildLastFmCompatibleScrobbleExport(entries));
+            _lastScrobbleExportPath = exportPath;
+            OnPropertyChanged(nameof(LastScrobbleExportPath));
+            StatusText = $"Scrobble export: {entries.Count} записей · {Path.GetFileName(exportPath)}";
+        }
+
+        public void ClearScrobbles() {
+            TryDeleteFile(GetScrobbleQueuePath());
+            TryDeleteFile(Path.Combine(GetIntegrationsDirectory(), ScrobbleExportFileName));
+            _lastScrobbleExportPath = null;
+            RefreshScrobbleState();
+            OnPropertyChanged(nameof(LastScrobbleExportPath));
+            StatusText = "Scrobble-очередь очищена.";
+        }
+
+        public bool OpenIntegrationsFolder() {
+            string directory = GetIntegrationsDirectory();
+            Directory.CreateDirectory(directory);
+            return Launcher.LaunchFolder(directory);
+        }
+
+        private async Task AppendScrobbleAsync(MusicTrackViewModel track) {
+            if (track?.Audio == null) return;
+
+            string directory = GetIntegrationsDirectory();
+            Directory.CreateDirectory(directory);
+            MusicScrobbleEntry entry = new MusicScrobbleEntry {
+                Service = "local",
+                Type = "music.scrobble",
+                Artist = track.Artist,
+                Title = track.Title,
+                Album = String.IsNullOrWhiteSpace(track.Audio.Subtitle) ? track.SourceTitle : track.Audio.Subtitle,
+                OwnerId = track.Audio.OwnerId,
+                Id = track.Audio.Id,
+                Duration = Math.Max(0, track.Audio.Duration),
+                Link = track.Link,
+                At = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+            };
+
             string line = JsonSerializer.Serialize(new {
-                service = "local",
-                type = "music.scrobble",
-                artist = track.Artist,
-                title = track.Title,
-                owner_id = track.Audio.OwnerId,
-                id = track.Audio.Id,
-                at = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+                service = entry.Service,
+                type = entry.Type,
+                artist = entry.Artist,
+                title = entry.Title,
+                album = entry.Album,
+                owner_id = entry.OwnerId,
+                id = entry.Id,
+                duration = entry.Duration,
+                link = entry.Link,
+                at = entry.At
             });
-            await File.AppendAllTextAsync(Path.Combine(directory, "music-scrobbles.jsonl"), line + Environment.NewLine);
-            StatusText = "Скроббл добавлен в локальную очередь.";
+            await File.AppendAllTextAsync(GetScrobbleQueuePath(), line + Environment.NewLine);
+            RefreshScrobbleState();
+        }
+
+        private void RefreshScrobbleState() {
+            _scrobbleCount = CountScrobbleEntries();
+            OnPropertyChanged(nameof(ScrobbleCount));
+            OnPropertyChanged(nameof(HasScrobbles));
+            OnPropertyChanged(nameof(IntegrationStatusText));
+        }
+
+        private int CountScrobbleEntries() {
+            string path = GetScrobbleQueuePath();
+            if (!File.Exists(path)) return 0;
+
+            try {
+                int count = 0;
+                foreach (string line in File.ReadLines(path)) {
+                    if (!String.IsNullOrWhiteSpace(line)) count++;
+                }
+                return count;
+            } catch {
+                return 0;
+            }
+        }
+
+        private List<MusicScrobbleEntry> ReadScrobbleEntries() {
+            string path = GetScrobbleQueuePath();
+            if (!File.Exists(path)) return new List<MusicScrobbleEntry>();
+
+            List<MusicScrobbleEntry> entries = new List<MusicScrobbleEntry>();
+            foreach (string line in File.ReadLines(path)) {
+                MusicScrobbleEntry entry = TryReadScrobbleEntry(line);
+                if (entry != null) entries.Add(entry);
+            }
+            return entries;
+        }
+
+        private static MusicScrobbleEntry TryReadScrobbleEntry(string line) {
+            if (String.IsNullOrWhiteSpace(line)) return null;
+
+            try {
+                using JsonDocument document = JsonDocument.Parse(line);
+                JsonElement root = document.RootElement;
+                string artist = ReadString(root, "artist");
+                string title = ReadString(root, "title");
+                if (String.IsNullOrWhiteSpace(artist) || String.IsNullOrWhiteSpace(title)) return null;
+
+                return new MusicScrobbleEntry {
+                    Service = ReadString(root, "service") ?? "local",
+                    Type = ReadString(root, "type") ?? "music.scrobble",
+                    Artist = artist,
+                    Title = title,
+                    Album = ReadString(root, "album"),
+                    OwnerId = ReadInt64(root, "owner_id"),
+                    Id = (int)ReadInt64(root, "id"),
+                    Duration = (int)ReadInt64(root, "duration"),
+                    Link = ReadString(root, "link"),
+                    At = ReadInt64(root, "at")
+                };
+            } catch {
+                return null;
+            }
+        }
+
+        private static string BuildLastFmCompatibleScrobbleExport(IEnumerable<MusicScrobbleEntry> entries) {
+            StringBuilder builder = new StringBuilder();
+            builder.AppendLine("timestamp\tartist\ttrack\talbum\tduration\tservice\tvk_url");
+            foreach (MusicScrobbleEntry entry in entries.OrderBy(e => e.At)) {
+                builder.Append(entry.At).Append('\t')
+                    .Append(EscapeTsv(entry.Artist)).Append('\t')
+                    .Append(EscapeTsv(entry.Title)).Append('\t')
+                    .Append(EscapeTsv(entry.Album)).Append('\t')
+                    .Append(entry.Duration).Append('\t')
+                    .Append(EscapeTsv(entry.Service)).Append('\t')
+                    .Append(EscapeTsv(entry.Link))
+                    .AppendLine();
+            }
+            return builder.ToString();
+        }
+
+        private static string EscapeTsv(string value) {
+            return (value ?? String.Empty)
+                .Replace('\t', ' ')
+                .Replace('\r', ' ')
+                .Replace('\n', ' ')
+                .Trim();
+        }
+
+        private static string ReadString(JsonElement root, string propertyName) {
+            return root.TryGetProperty(propertyName, out JsonElement value) && value.ValueKind == JsonValueKind.String
+                ? value.GetString()
+                : null;
+        }
+
+        private static long ReadInt64(JsonElement root, string propertyName) {
+            if (!root.TryGetProperty(propertyName, out JsonElement value)) return 0;
+            return value.ValueKind switch {
+                JsonValueKind.Number when value.TryGetInt64(out long result) => result,
+                JsonValueKind.String when Int64.TryParse(value.GetString(), out long result) => result,
+                _ => 0
+            };
+        }
+
+        private static string GetIntegrationsDirectory() {
+            return Path.Combine(App.LocalDataPath, IntegrationsDirectoryName);
+        }
+
+        private static string GetScrobbleQueuePath() {
+            return Path.Combine(GetIntegrationsDirectory(), ScrobbleQueueFileName);
         }
 
         public async Task<MusicExportQaReport> RunExportQaAsync(bool cleanup = false) {
@@ -420,9 +595,12 @@ namespace ELOR.Laney.ViewModels {
             bool isMp3 = filePath != null && Path.GetExtension(filePath).Equals(".mp3", StringComparison.OrdinalIgnoreCase);
             bool id3Header = !isMp3 || await FileStartsWithId3Async(filePath);
             bool coverExists = LastDownloadedCoverPath != null && File.Exists(LastDownloadedCoverPath);
+            await AppendScrobbleAsync(track);
+            await ExportScrobblesAsync();
+            bool scrobbleExportExists = LastScrobbleExportPath != null && File.Exists(LastScrobbleExportPath);
 
             MusicExportQaReport report = new MusicExportQaReport {
-                Passed = fileExists && sidecarExists && id3Header && (!isMp3 || LastDownloadTaggedWithId3),
+                Passed = fileExists && sidecarExists && id3Header && (!isMp3 || LastDownloadTaggedWithId3) && scrobbleExportExists && ScrobbleCount > 0,
                 Reason = DownloadStatusText,
                 FilePath = filePath,
                 FileBytes = fileExists ? new FileInfo(filePath).Length : 0,
@@ -430,10 +608,13 @@ namespace ELOR.Laney.ViewModels {
                 Id3Header = id3Header,
                 Id3Tagged = LastDownloadTaggedWithId3,
                 CoverExists = coverExists,
-                CoverBytes = coverExists ? new FileInfo(LastDownloadedCoverPath).Length : 0
+                CoverBytes = coverExists ? new FileInfo(LastDownloadedCoverPath).Length : 0,
+                ScrobbleExportExists = scrobbleExportExists,
+                ScrobbleExportBytes = scrobbleExportExists ? new FileInfo(LastScrobbleExportPath).Length : 0,
+                ScrobbleCount = ScrobbleCount
             };
 
-            if (cleanup) CleanupExportQaFiles(filePath, sidecarPath, LastDownloadedCoverPath);
+            if (cleanup) CleanupExportQaFiles(filePath, sidecarPath, LastDownloadedCoverPath, LastScrobbleExportPath, GetScrobbleQueuePath());
             return report;
         }
 
@@ -919,6 +1100,19 @@ namespace ELOR.Laney.ViewModels {
         }
     }
 
+    public sealed class MusicScrobbleEntry {
+        public string Service { get; set; }
+        public string Type { get; set; }
+        public string Artist { get; set; }
+        public string Title { get; set; }
+        public string Album { get; set; }
+        public long OwnerId { get; set; }
+        public int Id { get; set; }
+        public int Duration { get; set; }
+        public string Link { get; set; }
+        public long At { get; set; }
+    }
+
     public sealed class MusicExportQaReport {
         public bool Passed { get; set; }
         public string Reason { get; set; }
@@ -929,5 +1123,8 @@ namespace ELOR.Laney.ViewModels {
         public bool Id3Tagged { get; set; }
         public bool CoverExists { get; set; }
         public long CoverBytes { get; set; }
+        public bool ScrobbleExportExists { get; set; }
+        public long ScrobbleExportBytes { get; set; }
+        public int ScrobbleCount { get; set; }
     }
 }
