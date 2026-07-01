@@ -45,6 +45,7 @@ namespace ELOR.Laney.Views {
         private static bool perfSettingsQaScheduled;
         private static bool perfEmojiQaScheduled;
         private static bool perfNewsFeedQaScheduled;
+        private static bool perfMusicExportQaScheduled;
         private const int AccountRailColumnIndex = 0;
         private const int ChatListColumnIndex = 1;
         private const int ChatColumnIndex = 3;
@@ -101,6 +102,7 @@ namespace ELOR.Laney.Views {
             TrySchedulePerfSettingsQa();
             TrySchedulePerfEmojiQa();
             TrySchedulePerfNewsFeedQa();
+            TrySchedulePerfMusicExportQa();
         }
 
         private void AudioPlayerViewModel_InstancesChanged(object sender, EventArgs e) {
@@ -142,6 +144,7 @@ namespace ELOR.Laney.Views {
             TrySchedulePerfSettingsQa();
             TrySchedulePerfEmojiQa();
             TrySchedulePerfNewsFeedQa();
+            TrySchedulePerfMusicExportQa();
 
             if (Settings.FirstRunOnboardingDone || Session == null || App.HasCmdLineValue("perf-open-settings")) return;
 
@@ -1291,6 +1294,7 @@ namespace ELOR.Laney.Views {
                 TrySchedulePerfSettingsQa();
                 TrySchedulePerfEmojiQa();
                 TrySchedulePerfNewsFeedQa();
+                TrySchedulePerfMusicExportQa();
             })();
         }
 
@@ -1418,6 +1422,52 @@ namespace ELOR.Laney.Views {
                     privateMemoryMb);
             } catch (Exception ex) {
                 Log.Error(ex, "Perf news feed QA failed.");
+            }
+        }
+
+        private void TrySchedulePerfMusicExportQa() {
+            if (perfMusicExportQaScheduled) return;
+            if (!App.HasCmdLineValue("perf-music-export-qa")) return;
+
+            perfMusicExportQaScheduled = true;
+            Dispatcher.UIThread.Post(async () => {
+                await Task.Delay(1700);
+                await RunPerfMusicExportQaAsync();
+                if (App.HasCmdLineValue("perf-exit-after-qa")) {
+                    await Task.Delay(500);
+                    Log.Information("Closing after perf music export QA.");
+                    App.Current?.DesktopLifetime?.Shutdown();
+                }
+            }, DispatcherPriority.Background);
+        }
+
+        private async Task RunPerfMusicExportQaAsync() {
+            try {
+                if (!DemoMode.IsEnabled) {
+                    Log.Error("Perf music export QA skipped: demo mode is required.");
+                    return;
+                }
+
+                MusicViewModel viewModel = new MusicViewModel(Session);
+                try {
+                    MusicExportQaReport report = await viewModel.RunExportQaAsync(true);
+                    double privateMemoryMb = Math.Round((double)Process.GetCurrentProcess().PrivateMemorySize64 / 1048576, 2);
+                    Log.Information(
+                        "Perf music export QA result: passed={Passed}; reason={Reason}; fileBytes={FileBytes}; sidecar={Sidecar}; id3Header={Id3Header}; id3Tagged={Id3Tagged}; cover={Cover}; coverBytes={CoverBytes}; privateMemory={PrivateMemoryMb:F2}MB",
+                        report.Passed,
+                        report.Reason,
+                        report.FileBytes,
+                        report.SidecarExists,
+                        report.Id3Header,
+                        report.Id3Tagged,
+                        report.CoverExists,
+                        report.CoverBytes,
+                        privateMemoryMb);
+                } finally {
+                    viewModel.Dispose();
+                }
+            } catch (Exception ex) {
+                Log.Error(ex, "Perf music export QA failed.");
             }
         }
 

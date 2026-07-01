@@ -12,6 +12,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using VKUI.Controls;
@@ -101,6 +102,7 @@ namespace ELOR.Laney.ViewModels {
 
     public sealed class MusicViewModel : CommonViewModel {
         private const int PageSize = 100;
+        private const long MaxEmbeddedCoverBytes = 2 * 1024 * 1024;
 
         private readonly VKSession session;
         private bool _initialized;
@@ -110,9 +112,12 @@ namespace ELOR.Laney.ViewModels {
         private TwoStringTuple _currentSource;
         private TwoStringTuple _currentAudioDspMode;
         private string _statusText = "Готово";
-        private string _downloadStatusText = "Скачанные треки сохраняются локально с sidecar JSON.";
+        private string _downloadStatusText = "Скачивание сохраняет трек, sidecar JSON, ID3 и обложку, если VK отдал cover.";
         private AudioPlayerViewModel _currentPlayer;
         private bool _suppressCustomEqualizerApply;
+        private string _lastDownloadedFilePath;
+        private string _lastDownloadedCoverPath;
+        private bool _lastDownloadTaggedWithId3;
 
         public MusicViewModel(VKSession session) {
             this.session = session;
@@ -211,6 +216,9 @@ namespace ELOR.Laney.ViewModels {
         public string QueueSummary => Queue.Count == 0 ? "Очередь пуста" : $"В очереди: {Queue.Count}";
         public string LibrarySummary => $"{VisibleTracks.Count} из {GetCurrentSourceTracks().Count()} · {(_hasMore ? "можно грузить еще" : "конец списка")}";
         public string IntegrationStatusText => "VK status работает сразу; Discord/AIMP/Last.fm складываем в локальную очередь scrobble.";
+        public string LastDownloadedFilePath => _lastDownloadedFilePath;
+        public string LastDownloadedCoverPath => _lastDownloadedCoverPath;
+        public bool LastDownloadTaggedWithId3 => _lastDownloadTaggedWithId3;
         public bool HasTracks => VisibleTracks.Count > 0;
         public bool HasQueue => Queue.Count > 0;
         public bool CanLoadMore => !IsLoading && _hasMore && CurrentSource?.Item1 == MusicSourceIds.Library;
@@ -305,6 +313,13 @@ namespace ELOR.Laney.ViewModels {
         public async Task DownloadTrackAsync(MusicTrackViewModel track) {
             if (track?.Audio?.Uri == null) return;
 
+            _lastDownloadedFilePath = null;
+            _lastDownloadedCoverPath = null;
+            _lastDownloadTaggedWithId3 = false;
+            OnPropertyChanged(nameof(LastDownloadedFilePath));
+            OnPropertyChanged(nameof(LastDownloadedCoverPath));
+            OnPropertyChanged(nameof(LastDownloadTaggedWithId3));
+
             string directory = Path.Combine(App.LocalDataPath, "music-downloads");
             Directory.CreateDirectory(directory);
             string extension = Path.GetExtension(track.Audio.Uri.LocalPath);
@@ -327,8 +342,19 @@ namespace ELOR.Laney.ViewModels {
                     await response.Content.CopyToAsync(output);
                 }
 
-                await File.WriteAllTextAsync(target + ".json", BuildTrackSidecar(track));
-                DownloadStatusText = $"Скачано: {Path.GetFileName(target)}";
+                string coverPath = await SaveTrackCoverAsync(track, target);
+                bool id3Tagged = await TryWriteId3TagAsync(target, track, coverPath);
+                await File.WriteAllTextAsync(target + ".json", BuildTrackSidecar(track, target, coverPath, id3Tagged));
+
+                _lastDownloadedFilePath = target;
+                _lastDownloadedCoverPath = coverPath;
+                _lastDownloadTaggedWithId3 = id3Tagged;
+                OnPropertyChanged(nameof(LastDownloadedFilePath));
+                OnPropertyChanged(nameof(LastDownloadedCoverPath));
+                OnPropertyChanged(nameof(LastDownloadTaggedWithId3));
+
+                string coverStatus = coverPath == null ? "cover нет" : "cover сохранен";
+                DownloadStatusText = $"Скачано: {Path.GetFileName(target)} · {(id3Tagged ? "ID3 OK" : "ID3 пропущен")} · {coverStatus}";
             } catch (Exception ex) {
                 DownloadStatusText = $"Не скачалось: {ex.Message}";
             }
@@ -374,6 +400,43 @@ namespace ELOR.Laney.ViewModels {
             StatusText = "Скроббл добавлен в локальную очередь.";
         }
 
+        public async Task<MusicExportQaReport> RunExportQaAsync(bool cleanup = false) {
+            await InitializeAsync();
+            MusicTrackViewModel track = VisibleTracks.FirstOrDefault(t => t.IsPlayable)
+                ?? Tracks.FirstOrDefault(t => t.IsPlayable);
+            if (track == null) {
+                return new MusicExportQaReport {
+                    Passed = false,
+                    Reason = "no_playable_track"
+                };
+            }
+
+            await DownloadTrackAsync(track);
+
+            string filePath = LastDownloadedFilePath;
+            string sidecarPath = filePath == null ? null : filePath + ".json";
+            bool fileExists = File.Exists(filePath);
+            bool sidecarExists = File.Exists(sidecarPath);
+            bool isMp3 = filePath != null && Path.GetExtension(filePath).Equals(".mp3", StringComparison.OrdinalIgnoreCase);
+            bool id3Header = !isMp3 || await FileStartsWithId3Async(filePath);
+            bool coverExists = LastDownloadedCoverPath != null && File.Exists(LastDownloadedCoverPath);
+
+            MusicExportQaReport report = new MusicExportQaReport {
+                Passed = fileExists && sidecarExists && id3Header && (!isMp3 || LastDownloadTaggedWithId3),
+                Reason = DownloadStatusText,
+                FilePath = filePath,
+                FileBytes = fileExists ? new FileInfo(filePath).Length : 0,
+                SidecarExists = sidecarExists,
+                Id3Header = id3Header,
+                Id3Tagged = LastDownloadTaggedWithId3,
+                CoverExists = coverExists,
+                CoverBytes = coverExists ? new FileInfo(LastDownloadedCoverPath).Length : 0
+            };
+
+            if (cleanup) CleanupExportQaFiles(filePath, sidecarPath, LastDownloadedCoverPath);
+            return report;
+        }
+
         public void Dispose() {
             AudioPlayerViewModel.InstancesChanged -= AudioPlayerViewModel_InstancesChanged;
             if (_currentPlayer != null) _currentPlayer.PropertyChanged -= CurrentPlayer_PropertyChanged;
@@ -416,8 +479,8 @@ namespace ELOR.Laney.ViewModels {
 
         private void LoadDemoTracks() {
             LoadChatAudioTracks();
-            if (Tracks.Count == 0) {
-                string samplePath = Path.Combine(AppContext.BaseDirectory, "Assets", "Audio", "bb2.mp3");
+            if (!Tracks.Any(t => t.IsPlayable)) {
+                string samplePath = EnsureDemoAudioSamplePath();
                 Tracks.Add(new MusicTrackViewModel(new VkAudio {
                     Id = 1,
                     OwnerId = session?.Id ?? 0,
@@ -612,7 +675,229 @@ namespace ELOR.Laney.ViewModels {
             return value.Trim();
         }
 
-        private static string BuildTrackSidecar(MusicTrackViewModel track) {
+        private static string EnsureDemoAudioSamplePath() {
+            string directory = Path.Combine(App.LocalDataPath, "demo-assets");
+            string target = Path.Combine(directory, "bb2.mp3");
+            if (File.Exists(target)) return target;
+
+            try {
+                Directory.CreateDirectory(directory);
+                using Stream input = AssetsManager.OpenAsset(new Uri("avares://laney/Assets/Audio/bb2.mp3"));
+                using FileStream output = File.Create(target);
+                input.CopyTo(output);
+                return target;
+            } catch {
+                return target;
+            }
+        }
+
+        private static async Task<string> SaveTrackCoverAsync(MusicTrackViewModel track, string audioPath) {
+            Uri coverUri = track?.CoverUri;
+            if (coverUri == null || String.IsNullOrWhiteSpace(audioPath)) return null;
+
+            string coverPath = $"{Path.Combine(Path.GetDirectoryName(audioPath) ?? String.Empty, Path.GetFileNameWithoutExtension(audioPath))}.cover{ResolveCoverExtension(coverUri)}";
+            try {
+                if (coverUri.IsFile) {
+                    FileInfo source = new FileInfo(coverUri.LocalPath);
+                    if (!source.Exists || source.Length > MaxEmbeddedCoverBytes) return null;
+
+                    File.Copy(source.FullName, coverPath, true);
+                    return coverPath;
+                }
+
+                using HttpResponseMessage response = await LNet.GetAsync(coverUri);
+                response.EnsureSuccessStatusCode();
+                if (response.Content.Headers.ContentLength > MaxEmbeddedCoverBytes) return null;
+
+                await using Stream input = await response.Content.ReadAsStreamAsync();
+                await using (FileStream output = File.Create(coverPath)) {
+                    await input.CopyToAsync(output);
+                }
+
+                FileInfo saved = new FileInfo(coverPath);
+                if (!saved.Exists || saved.Length == 0 || saved.Length > MaxEmbeddedCoverBytes) {
+                    TryDeleteFile(coverPath);
+                    return null;
+                }
+
+                return coverPath;
+            } catch {
+                TryDeleteFile(coverPath);
+                return null;
+            }
+        }
+
+        private static async Task<bool> TryWriteId3TagAsync(string audioPath, MusicTrackViewModel track, string coverPath) {
+            if (String.IsNullOrWhiteSpace(audioPath)
+                || !Path.GetExtension(audioPath).Equals(".mp3", StringComparison.OrdinalIgnoreCase)
+                || !File.Exists(audioPath)) {
+                return false;
+            }
+
+            string tempPath = audioPath + ".id3tmp";
+            try {
+                byte[] coverBytes = null;
+                string coverMime = null;
+                if (!String.IsNullOrWhiteSpace(coverPath) && File.Exists(coverPath)) {
+                    FileInfo cover = new FileInfo(coverPath);
+                    if (cover.Length > 0 && cover.Length <= MaxEmbeddedCoverBytes) {
+                        coverBytes = await File.ReadAllBytesAsync(coverPath);
+                        coverMime = ResolveCoverMime(coverPath);
+                    }
+                }
+
+                byte[] tag = BuildId3v23Tag(track, coverBytes, coverMime);
+                if (tag == null || tag.Length == 0) return false;
+
+                await using (FileStream source = File.Open(audioPath, FileMode.Open, FileAccess.Read, FileShare.Read)) {
+                    long skip = TryGetExistingId3TagLength(source);
+                    source.Position = Math.Min(skip, source.Length);
+
+                    await using (FileStream destination = File.Open(tempPath, FileMode.Create, FileAccess.Write, FileShare.None)) {
+                        await destination.WriteAsync(tag);
+                        await source.CopyToAsync(destination);
+                    }
+                }
+
+                File.Move(tempPath, audioPath, true);
+                return true;
+            } catch {
+                TryDeleteFile(tempPath);
+                return false;
+            }
+        }
+
+        private static byte[] BuildId3v23Tag(MusicTrackViewModel track, byte[] coverBytes, string coverMime) {
+            if (track == null) return null;
+
+            using MemoryStream body = new MemoryStream();
+            WriteFrame(body, BuildTextFrame("TIT2", track.Title));
+            WriteFrame(body, BuildTextFrame("TPE1", track.Artist));
+            WriteFrame(body, BuildTextFrame("TALB", String.IsNullOrWhiteSpace(track.Audio?.Subtitle) ? track.SourceTitle : track.Audio.Subtitle));
+            WriteFrame(body, BuildTextFrame("TCON", "VK"));
+            WriteFrame(body, BuildTextFrame("TXXX", $"Laney VK URL: {track.Link}"));
+
+            if (coverBytes != null && coverBytes.Length > 0 && !String.IsNullOrWhiteSpace(coverMime)) {
+                WriteFrame(body, BuildApicFrame(coverBytes, coverMime));
+            }
+
+            byte[] bodyBytes = body.ToArray();
+            using MemoryStream tag = new MemoryStream();
+            tag.Write(Encoding.ASCII.GetBytes("ID3"));
+            tag.WriteByte(3);
+            tag.WriteByte(0);
+            tag.WriteByte(0);
+            tag.Write(EncodeSyncSafeSize(bodyBytes.Length));
+            tag.Write(bodyBytes);
+            return tag.ToArray();
+        }
+
+        private static byte[] BuildTextFrame(string frameId, string value) {
+            if (String.IsNullOrWhiteSpace(value)) return null;
+
+            byte[] text = Encoding.Unicode.GetBytes(value.Trim());
+            byte[] payload = new byte[text.Length + 3];
+            payload[0] = 1;
+            payload[1] = 0xFF;
+            payload[2] = 0xFE;
+            Buffer.BlockCopy(text, 0, payload, 3, text.Length);
+            return BuildFrame(frameId, payload);
+        }
+
+        private static byte[] BuildApicFrame(byte[] coverBytes, string mime) {
+            byte[] mimeBytes = Encoding.ASCII.GetBytes(mime);
+            byte[] payload = new byte[1 + mimeBytes.Length + 1 + 1 + 1 + coverBytes.Length];
+            int offset = 0;
+            payload[offset++] = 0;
+            Buffer.BlockCopy(mimeBytes, 0, payload, offset, mimeBytes.Length);
+            offset += mimeBytes.Length;
+            payload[offset++] = 0;
+            payload[offset++] = 3;
+            payload[offset++] = 0;
+            Buffer.BlockCopy(coverBytes, 0, payload, offset, coverBytes.Length);
+            return BuildFrame("APIC", payload);
+        }
+
+        private static byte[] BuildFrame(string frameId, byte[] payload) {
+            if (String.IsNullOrWhiteSpace(frameId) || frameId.Length != 4 || payload == null || payload.Length == 0) return null;
+
+            byte[] frame = new byte[payload.Length + 10];
+            Buffer.BlockCopy(Encoding.ASCII.GetBytes(frameId), 0, frame, 0, 4);
+            WriteBigEndianInt(frame, 4, payload.Length);
+            frame[8] = 0;
+            frame[9] = 0;
+            Buffer.BlockCopy(payload, 0, frame, 10, payload.Length);
+            return frame;
+        }
+
+        private static void WriteFrame(Stream stream, byte[] frame) {
+            if (stream == null || frame == null || frame.Length == 0) return;
+            stream.Write(frame, 0, frame.Length);
+        }
+
+        private static void WriteBigEndianInt(byte[] buffer, int offset, int value) {
+            buffer[offset] = (byte)((value >> 24) & 0xFF);
+            buffer[offset + 1] = (byte)((value >> 16) & 0xFF);
+            buffer[offset + 2] = (byte)((value >> 8) & 0xFF);
+            buffer[offset + 3] = (byte)(value & 0xFF);
+        }
+
+        private static byte[] EncodeSyncSafeSize(int value) {
+            return new[] {
+                (byte)((value >> 21) & 0x7F),
+                (byte)((value >> 14) & 0x7F),
+                (byte)((value >> 7) & 0x7F),
+                (byte)(value & 0x7F)
+            };
+        }
+
+        private static long TryGetExistingId3TagLength(FileStream stream) {
+            Span<byte> header = stackalloc byte[10];
+            stream.Position = 0;
+            if (stream.Read(header) != header.Length) return 0;
+            if (header[0] != 'I' || header[1] != 'D' || header[2] != '3') return 0;
+
+            int size = (header[6] & 0x7F) << 21
+                | (header[7] & 0x7F) << 14
+                | (header[8] & 0x7F) << 7
+                | (header[9] & 0x7F);
+            return Math.Clamp(10L + size, 0, stream.Length);
+        }
+
+        private static async Task<bool> FileStartsWithId3Async(string path) {
+            if (String.IsNullOrWhiteSpace(path) || !File.Exists(path)) return false;
+
+            byte[] header = new byte[3];
+            await using FileStream stream = File.OpenRead(path);
+            if (await stream.ReadAsync(header, 0, header.Length) != header.Length) return false;
+            return header[0] == 'I' && header[1] == 'D' && header[2] == '3';
+        }
+
+        private static string ResolveCoverExtension(Uri uri) {
+            string extension = Path.GetExtension(uri?.LocalPath ?? String.Empty)?.ToLowerInvariant();
+            return extension is ".jpg" or ".jpeg" or ".png" or ".webp" ? extension : ".jpg";
+        }
+
+        private static string ResolveCoverMime(string path) {
+            return Path.GetExtension(path)?.ToLowerInvariant() switch {
+                ".png" => "image/png",
+                ".webp" => "image/webp",
+                _ => "image/jpeg"
+            };
+        }
+
+        private static void CleanupExportQaFiles(params string[] paths) {
+            foreach (string path in paths) TryDeleteFile(path);
+        }
+
+        private static void TryDeleteFile(string path) {
+            try {
+                if (!String.IsNullOrWhiteSpace(path) && File.Exists(path)) File.Delete(path);
+            } catch {
+            }
+        }
+
+        private static string BuildTrackSidecar(MusicTrackViewModel track, string filePath, string coverPath, bool id3Tagged) {
             return JsonSerializer.Serialize(new {
                 artist = track.Artist,
                 title = track.Title,
@@ -621,6 +906,9 @@ namespace ELOR.Laney.ViewModels {
                 id = track.Audio.Id,
                 source = track.SourceTitle,
                 vk_url = track.Link,
+                file = filePath,
+                cover_file = coverPath,
+                id3_tagged = id3Tagged,
                 downloaded_at = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
             }, new JsonSerializerOptions { WriteIndented = true });
         }
@@ -629,5 +917,17 @@ namespace ELOR.Laney.ViewModels {
             if (unix <= 0) return "давно";
             return DateTimeOffset.FromUnixTimeSeconds(unix).ToLocalTime().ToString("g");
         }
+    }
+
+    public sealed class MusicExportQaReport {
+        public bool Passed { get; set; }
+        public string Reason { get; set; }
+        public string FilePath { get; set; }
+        public long FileBytes { get; set; }
+        public bool SidecarExists { get; set; }
+        public bool Id3Header { get; set; }
+        public bool Id3Tagged { get; set; }
+        public bool CoverExists { get; set; }
+        public long CoverBytes { get; set; }
     }
 }

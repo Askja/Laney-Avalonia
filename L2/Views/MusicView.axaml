@@ -156,6 +156,15 @@
             </ItemsControl>
           </Border>
 
+          <Grid RowDefinitions="Auto Auto Auto" ColumnDefinitions="Auto *" ColumnSpacing="8" RowSpacing="4">
+            <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon20Check}" Width="18" Height="18" VerticalAlignment="Center" Foreground="{DynamicResource LaneyAccentBrush}"/>
+            <TextBlock Grid.Column="1" Classes="Caption1" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="{Binding StatusText}" TextTrimming="CharacterEllipsis"/>
+            <vkui:VKIcon Grid.Row="1" Id="{x:Static vkui:VKIconNames.Icon16UploadOutline}" Width="18" Height="18" VerticalAlignment="Center" Foreground="{DynamicResource LaneyAccentBrush}"/>
+            <TextBlock Grid.Row="1" Grid.Column="1" Classes="Caption1" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="{Binding DownloadStatusText}" TextTrimming="CharacterEllipsis"/>
+            <vkui:VKIcon Grid.Row="2" Id="{x:Static vkui:VKIconNames.Icon20ShareOutline}" Width="18" Height="18" VerticalAlignment="Center" Foreground="{DynamicResource LaneyAccentBrush}"/>
+            <TextBlock Grid.Row="2" Grid.Column="1" Classes="Caption1" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="{Binding IntegrationStatusText}" TextTrimming="CharacterEllipsis"/>
+          </Grid>
+
         </StackPanel>
       </Border>
 
