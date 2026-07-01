@@ -16,6 +16,7 @@ namespace ELOR.Laney.Views.Modals {
     public sealed partial class StoryViewerWindow : DialogWindow {
         private readonly VKSession session;
         private readonly List<Story> stories;
+        private readonly List<StoryViewerThumbnailViewModel> thumbnails;
         private readonly Dictionary<Story, StoryRailItemViewModel> railItems;
         private int currentIndex;
         private Uri currentVideoUri;
@@ -33,9 +34,13 @@ namespace ELOR.Laney.Views.Modals {
             this.session = session;
             this.stories = stories?.Where(s => s != null).ToList() ?? new List<Story>();
             this.railItems = railItems ?? new Dictionary<Story, StoryRailItemViewModel>();
+            thumbnails = this.stories
+                .Select((story, index) => new StoryViewerThumbnailViewModel(story, index, BuildOwnerTitle(story), GetStoryMediaUri(story)))
+                .ToList();
             currentIndex = Math.Clamp(startIndex, 0, Math.Max(0, this.stories.Count - 1));
             Tag = session;
             DataContext = session;
+            StoryThumbsList.ItemsSource = thumbnails;
 
             KeyDown += StoryViewerWindow_KeyDown;
             Opened += (a, b) => RenderCurrentStory();
@@ -109,6 +114,17 @@ namespace ELOR.Laney.Views.Modals {
             RenderCurrentStory();
         }
 
+        private void StoryThumbnailButton_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e) {
+            if ((sender as Control)?.DataContext is StoryViewerThumbnailViewModel item) GoToStory(item.Index);
+        }
+
+        private void StoryThumbsScroll_PointerWheelChanged(object sender, PointerWheelEventArgs e) {
+            if (Math.Abs(e.Delta.Y) < 0.01) return;
+
+            ScrollStoryThumbnails(-e.Delta.Y * 72);
+            e.Handled = true;
+        }
+
         private void RenderCurrentStory() {
             if (stories.Count == 0) {
                 Close();
@@ -147,6 +163,23 @@ namespace ELOR.Laney.Views.Modals {
             NextOverlayButton.IsVisible = canGoNext;
 
             MarkSeenLocally(story);
+            UpdateThumbnailSelection();
+        }
+
+        private void UpdateThumbnailSelection() {
+            for (int i = 0; i < thumbnails.Count; i++) {
+                thumbnails[i].IsSelected = i == currentIndex;
+            }
+
+            double target = Math.Max(0, currentIndex * 64d - Math.Max(0, StoryThumbsScroll.Viewport.Width - 64d) / 2d);
+            double maxOffset = Math.Max(0, StoryThumbsScroll.Extent.Width - StoryThumbsScroll.Viewport.Width);
+            StoryThumbsScroll.Offset = new Avalonia.Vector(Math.Min(target, maxOffset), StoryThumbsScroll.Offset.Y);
+        }
+
+        private void ScrollStoryThumbnails(double delta) {
+            double maxOffset = Math.Max(0, StoryThumbsScroll.Extent.Width - StoryThumbsScroll.Viewport.Width);
+            double nextOffset = Math.Clamp(StoryThumbsScroll.Offset.X + delta, 0, maxOffset);
+            StoryThumbsScroll.Offset = new Avalonia.Vector(nextOffset, StoryThumbsScroll.Offset.Y);
         }
 
         private void MarkSeenLocally(Story story) {
@@ -258,6 +291,46 @@ namespace ELOR.Laney.Views.Modals {
             if (story.IsExpired) return "Срок жизни истории закончился.";
             if (story.CanSee == 0) return "Автор ограничил просмотр этой истории.";
             return "VK не отдал доступный media payload.";
+        }
+    }
+
+    public sealed class StoryViewerThumbnailViewModel : ViewModelBase {
+        private bool _isSelected;
+
+        public StoryViewerThumbnailViewModel(Story story, int index, string title, Uri previewUri) {
+            Story = story;
+            Index = index;
+            Title = String.IsNullOrWhiteSpace(title) ? "История" : title;
+            PreviewUri = previewUri;
+            IsVideo = story?.Type == StoryType.Video;
+            IsUnavailable = story == null || story.IsDeleted || story.IsExpired || story.CanSee == 0;
+            Tooltip = $"{Title} · {BuildStateText(story)}";
+        }
+
+        public Story Story { get; }
+        public int Index { get; }
+        public string Title { get; }
+        public Uri PreviewUri { get; }
+        public bool IsVideo { get; }
+        public bool IsUnavailable { get; }
+        public string Tooltip { get; }
+
+        public bool IsSelected {
+            get { return _isSelected; }
+            set {
+                if (_isSelected == value) return;
+                _isSelected = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private static string BuildStateText(Story story) {
+            if (story == null) return "нет данных";
+            if (story.IsDeleted) return "удалена";
+            if (story.IsExpired) return "истекла";
+            if (story.CanSee == 0) return "закрыта";
+            if (story.Type == StoryType.Video) return "видео";
+            return story.Seen == 1 ? "просмотрена" : "новая";
         }
     }
 }

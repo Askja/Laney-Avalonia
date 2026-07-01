@@ -3,6 +3,7 @@
                   xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
                   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                   xmlns:controls="using:ELOR.Laney.Controls"
+                  xmlns:modals="using:ELOR.Laney.Views.Modals"
                   xmlns:vkw="using:VKUI.Windows"
                   xmlns:vkui="using:VKUI.Controls"
                   mc:Ignorable="d" d:DesignWidth="460" d:DesignHeight="760"
@@ -14,7 +15,48 @@
   <Grid x:Name="Root" RowDefinitions="Auto *">
     <vkui:WindowTitleBar x:Name="TitleBar" CanShowTitle="False" CanMove="True"/>
 
-    <Grid Grid.Row="1" Margin="16,0,16,16" RowDefinitions="Auto * Auto" RowSpacing="12">
+    <Grid Grid.Row="1" Margin="16,0,16,16" RowDefinitions="Auto * Auto Auto" RowSpacing="12">
+      <Grid.Styles>
+        <Style Selector="Button.StoryViewerThumb">
+          <Setter Property="Width" Value="58"/>
+          <Setter Property="MinWidth" Value="58"/>
+          <Setter Property="Height" Value="82"/>
+          <Setter Property="Padding" Value="0"/>
+          <Setter Property="Background" Value="Transparent"/>
+          <Setter Property="BorderThickness" Value="0"/>
+          <Setter Property="CornerRadius" Value="14"/>
+          <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+          <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+        </Style>
+        <Style Selector="Button.StoryViewerThumb /template/ Border#PART_Hover">
+          <Setter Property="Margin" Value="2"/>
+          <Setter Property="CornerRadius" Value="13"/>
+        </Style>
+        <Style Selector="Button.StoryViewerThumb:pointerover /template/ Border#PART_Hover">
+          <Setter Property="Background" Value="{DynamicResource LaneyChatListHoverBrush}"/>
+        </Style>
+        <Style Selector="Button.StoryViewerThumb.selected Border.StoryViewerThumbRing">
+          <Setter Property="BorderBrush" Value="{DynamicResource LaneyAccentBrush}"/>
+        </Style>
+        <Style Selector="Button.StoryViewerThumb /template/ ContentPresenter#PART_Presenter">
+          <Setter Property="Padding" Value="0"/>
+        </Style>
+        <Style Selector="Border.StoryViewerThumbRing">
+          <Setter Property="Width" Value="50"/>
+          <Setter Property="Height" Value="60"/>
+          <Setter Property="CornerRadius" Value="12"/>
+          <Setter Property="BorderThickness" Value="2"/>
+          <Setter Property="BorderBrush" Value="{DynamicResource VKSeparatorAlphaBrush}"/>
+          <Setter Property="Background" Value="#15181F"/>
+        </Style>
+        <Style Selector="Border.StoryViewerThumbImage">
+          <Setter Property="Width" Value="44"/>
+          <Setter Property="Height" Value="54"/>
+          <Setter Property="CornerRadius" Value="10"/>
+          <Setter Property="ClipToBounds" Value="True"/>
+          <Setter Property="Background" Value="#22262F"/>
+        </Style>
+      </Grid.Styles>
       <Grid ColumnDefinitions="Auto * Auto" ColumnSpacing="10" Margin="2,6,2,0">
         <vkui:Avatar x:Name="OwnerAvatar" Width="42" Height="42" Foreground="White"/>
         <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
@@ -87,7 +129,43 @@
         </Grid>
       </Border>
 
-      <Grid Grid.Row="2" ColumnDefinitions="Auto * Auto" ColumnSpacing="10">
+      <ScrollViewer x:Name="StoryThumbsScroll" Grid.Row="2"
+                    HorizontalScrollBarVisibility="Hidden"
+                    VerticalScrollBarVisibility="Disabled"
+                    PointerWheelChanged="StoryThumbsScroll_PointerWheelChanged">
+        <ItemsRepeater x:Name="StoryThumbsList">
+          <ItemsRepeater.Layout>
+            <StackLayout Orientation="Horizontal" Spacing="6"/>
+          </ItemsRepeater.Layout>
+          <ItemsRepeater.ItemTemplate>
+            <DataTemplate x:DataType="modals:StoryViewerThumbnailViewModel">
+              <Button Classes="Tertiary StoryViewerThumb" Classes.selected="{Binding IsSelected}" Click="StoryThumbnailButton_Click" ToolTip.Tip="{Binding Tooltip}">
+                <StackPanel Spacing="4" HorizontalAlignment="Center" VerticalAlignment="Center">
+                  <Grid Width="50" Height="60">
+                    <Border Classes="StoryViewerThumbRing"/>
+                    <Border Classes="StoryViewerThumbImage" Margin="3" controls:ImageLoader.BackgroundSource="{Binding PreviewUri}"/>
+                    <Border Classes="StoryViewerThumbImage" Margin="3" Background="#70000000" IsVisible="{Binding IsUnavailable}"/>
+                    <Rectangle RadiusX="10" RadiusY="10" Margin="3" IsHitTestVisible="False">
+                      <Rectangle.Fill>
+                        <LinearGradientBrush StartPoint="0%,100%" EndPoint="0%,0%">
+                          <GradientStop Color="#90000000" Offset="0"/>
+                          <GradientStop Color="#00000000" Offset="0.65"/>
+                        </LinearGradientBrush>
+                      </Rectangle.Fill>
+                    </Rectangle>
+                    <Border Width="18" Height="18" CornerRadius="9" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="5" Background="#B0000000" BorderBrush="{DynamicResource VKSeparatorAlphaBrush}" BorderThickness="1" IsVisible="{Binding IsVideo}">
+                      <vkui:VKIcon Width="10" Height="10" Id="{x:Static vkui:VKIconNames.Icon24Play}" Margin="1,0,0,0" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White"/>
+                    </Border>
+                  </Grid>
+                  <TextBlock Width="52" Height="14" FontSize="10" LineHeight="10" MaxLines="1" TextAlignment="Center" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="{Binding Title}"/>
+                </StackPanel>
+              </Button>
+            </DataTemplate>
+          </ItemsRepeater.ItemTemplate>
+        </ItemsRepeater>
+      </ScrollViewer>
+
+      <Grid Grid.Row="3" ColumnDefinitions="Auto * Auto" ColumnSpacing="10">
         <Button x:Name="PreviousButton" Classes="Secondary" MinWidth="122" Click="PreviousButton_Click">
           <StackPanel Orientation="Horizontal" Spacing="7">
             <vkui:VKIcon Width="20" Height="20" Id="{x:Static vkui:VKIconNames.Icon24SkipPrevious}"/>
