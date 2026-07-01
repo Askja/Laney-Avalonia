@@ -1016,7 +1016,6 @@ namespace ELOR.Laney.ViewModels {
                 MessagesChunkLoaded?.Invoke(this, false);
                 await ApplyExpiredSelfDestructMessagesAsync();
                 RefreshE2EState();
-                _ = OfflineCacheStore.SaveChatSnapshotAsync(this);
             } finally {
                 IsPreviousMessagesLoading = false;
                 IsLoading = false;
@@ -1044,7 +1043,6 @@ namespace ELOR.Laney.ViewModels {
                 MessagesChunkLoaded?.Invoke(this, true);
                 await ApplyExpiredSelfDestructMessagesAsync();
                 RefreshE2EState();
-                _ = OfflineCacheStore.SaveChatSnapshotAsync(this);
             } finally {
                 IsNextMessagesLoading = false;
                 IsLoading = false;
