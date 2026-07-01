@@ -25,6 +25,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using VKUI.Controls;
 using PeerType = ELOR.VKAPILib.Objects.PeerType;
@@ -42,6 +43,7 @@ namespace ELOR.Laney.Views {
         private bool lastAutoStatusWasIdle;
         private bool isChatListSplitterDragging;
         private static bool perfSettingsQaScheduled;
+        private static bool perfEmojiQaScheduled;
         private const int AccountRailColumnIndex = 0;
         private const int ChatListColumnIndex = 1;
         private const int ChatColumnIndex = 3;
@@ -96,6 +98,7 @@ namespace ELOR.Laney.Views {
             PanicLockTitle.Text = Localizer.Get("panic_lock_title");
             PanicLockUnlockButton.Content = Localizer.Get("panic_lock_unlock");
             TrySchedulePerfSettingsQa();
+            TrySchedulePerfEmojiQa();
         }
 
         private void AudioPlayerViewModel_InstancesChanged(object sender, EventArgs e) {
@@ -135,6 +138,7 @@ namespace ELOR.Laney.Views {
 
         private async void MainWindow_Opened(object? sender, EventArgs e) {
             TrySchedulePerfSettingsQa();
+            TrySchedulePerfEmojiQa();
 
             if (Settings.FirstRunOnboardingDone || Session == null || App.HasCmdLineValue("perf-open-settings")) return;
 
@@ -1274,6 +1278,7 @@ namespace ELOR.Laney.Views {
                 TryOpenPerfNewsFeed();
                 TryOpenPerfSettings();
                 TrySchedulePerfSettingsQa();
+                TrySchedulePerfEmojiQa();
             })();
         }
 
@@ -1292,6 +1297,74 @@ namespace ELOR.Laney.Views {
                     App.Current?.DesktopLifetime?.Shutdown();
                 }
             }, DispatcherPriority.Background);
+        }
+
+        private void TrySchedulePerfEmojiQa() {
+            if (perfEmojiQaScheduled) return;
+            if (!App.HasCmdLineValue("perf-emoji-qa")) return;
+
+            perfEmojiQaScheduled = true;
+            Dispatcher.UIThread.Post(async () => {
+                await Task.Delay(1600);
+                await RunPerfEmojiQaAsync();
+                if (App.HasCmdLineValue("perf-exit-after-qa")) {
+                    await Task.Delay(500);
+                    Log.Information("Closing after perf emoji QA.");
+                    App.Current?.DesktopLifetime?.Shutdown();
+                }
+            }, DispatcherPriority.Background);
+        }
+
+        private async Task RunPerfEmojiQaAsync() {
+            List<(string Pack, string Emoji)> samples = new List<(string Pack, string Emoji)> {
+                (EmojiPackIds.Vk, "😊"),
+                (EmojiPackIds.Vk, "❤"),
+                (EmojiPackIds.Vk, "🥰"),
+                (EmojiPackIds.Twemoji, "🥰"),
+                (EmojiPackIds.Noto, "🥰")
+            };
+
+            int loaded = 0;
+            int failed = 0;
+            List<string> details = new List<string>();
+
+            foreach ((string pack, string emoji) in samples) {
+                IReadOnlyList<Uri> candidates = EmojiAssetResolver.ResolveImageUris(emoji, pack);
+                bool sampleLoaded = false;
+                int candidateIndex = -1;
+                for (int i = 0; i < candidates.Count; i++) {
+                    Uri candidate = candidates[i];
+                    var bitmap = await BitmapManager.GetBitmapAsync(candidate, 24, 24, CancellationToken.None, BitmapCacheKind.Emoji, false);
+                    if (bitmap == null) continue;
+
+                    sampleLoaded = true;
+                    candidateIndex = i;
+                    details.Add($"{pack}:{emoji}=#{candidateIndex + 1}/{candidates.Count}:{candidate.Host}:{bitmap.PixelSize.Width}x{bitmap.PixelSize.Height}");
+                    break;
+                }
+
+                if (sampleLoaded) {
+                    loaded++;
+                } else {
+                    failed++;
+                    details.Add($"{pack}:{emoji}=fail/{candidates.Count}");
+                }
+            }
+
+            BitmapCacheSnapshot snapshot = BitmapManager.GetCacheSnapshot();
+            double privateMemoryMb = Math.Round((double)Process.GetCurrentProcess().PrivateMemorySize64 / 1048576, 2);
+            bool passed = failed == 0 && snapshot.EmojiCount <= samples.Count && snapshot.SizeBytes <= 2 * 1024 * 1024;
+
+            Log.Information(
+                "Perf emoji QA result: passed={Passed}; loaded={Loaded}/{Total}; failed={Failed}; emojiCache={EmojiCache}; cacheBytes={CacheBytes}; privateMemory={PrivateMemoryMb:F2}MB; details={Details}",
+                passed,
+                loaded,
+                samples.Count,
+                failed,
+                snapshot.EmojiCount,
+                snapshot.SizeBytes,
+                privateMemoryMb,
+                String.Join("; ", details));
         }
 
         private void TryOpenPerfDemoChat() {

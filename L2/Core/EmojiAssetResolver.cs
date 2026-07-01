@@ -7,6 +7,8 @@ namespace ELOR.Laney.Core {
     public static class EmojiAssetResolver {
         private const int VariationSelector16 = 0xFE0F;
         private const int ZeroWidthJoiner = 0x200D;
+        private const string VkEmojiCdnBase = "https://vk.com/images/emoji/";
+        private const string VkRuEmojiCdnBase = "https://vk.ru/images/emoji/";
         private const string TwemojiCdnBase = "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/";
         private const string NotoEmojiCdnBase = "https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji@main/png/128/";
 
@@ -35,11 +37,19 @@ namespace ELOR.Laney.Core {
             List<Uri> candidates = new List<Uri>(4);
             switch (pack) {
                 case EmojiPackIds.Vk:
-                    Uri vkUri = BuildVkPngUri(emoji);
-                    if (ShouldPreferVkEmoji(emoji)) AddCandidate(candidates, vkUri);
+                    Uri vkComUri = BuildVkPngUri(emoji, VkEmojiCdnBase);
+                    Uri vkRuUri = BuildVkPngUri(emoji, VkRuEmojiCdnBase);
+                    bool preferVkEmoji = ShouldPreferVkEmoji(emoji);
+                    if (preferVkEmoji) {
+                        AddCandidate(candidates, vkComUri);
+                        AddCandidate(candidates, vkRuUri);
+                    }
                     AddCandidate(candidates, BuildTwemojiPngUri(emoji));
                     AddCandidate(candidates, BuildNotoPngUri(emoji));
-                    if (!ShouldPreferVkEmoji(emoji)) AddCandidate(candidates, vkUri);
+                    if (!preferVkEmoji) {
+                        AddCandidate(candidates, vkComUri);
+                        AddCandidate(candidates, vkRuUri);
+                    }
                     break;
                 case EmojiPackIds.TelegramLike:
                 case EmojiPackIds.Twemoji:
@@ -64,11 +74,11 @@ namespace ELOR.Laney.Core {
                 || pack == EmojiPackIds.Custom;
         }
 
-        private static Uri BuildVkPngUri(string emoji) {
+        private static Uri BuildVkPngUri(string emoji, string cdnBase) {
             string code = BuildVkCodepointName(emoji);
             return String.IsNullOrEmpty(code)
                 ? null
-                : new Uri($"https://vk.ru/images/emoji/{code}.png");
+                : new Uri($"{cdnBase}{code}.png");
         }
 
         private static Uri BuildNotoPngUri(string emoji) {
