@@ -61,6 +61,9 @@
       <Rectangle x:Name="SplitViewSeparator" Grid.Column="1" Width="1" VerticalAlignment="Stretch" Fill="{DynamicResource LaneyGlassBorderBrush}" IsVisible="{Binding IsSplitViewOpen}"/>
       <views:ChatView x:Name="SecondaryChatView" Grid.Column="2" IsVisible="{Binding DataContext, Mode=OneWay, ElementName=SecondaryChatView, Converter={x:Static ObjectConverters.IsNotNull}}" DataContext="{Binding SecondaryOpenedChat}"/>
     </Grid>
+    <Border x:Name="WorkspaceContainer" Grid.Column="3" Grid.Row="1" Grid.RowSpan="2" IsVisible="False" Background="{DynamicResource LaneySurfaceRootBrush}">
+      <ContentControl x:Name="WorkspaceContent"/>
+    </Border>
 
     <Border x:Name="RAMInfoOverlay" IsVisible="False" Classes="Debug" Grid.Row="1" Grid.ColumnSpan="4" Padding="4" IsHitTestVisible="False"
             HorizontalAlignment="Right" VerticalAlignment="Top" Background="#7f000000" TextElement.Foreground="White">

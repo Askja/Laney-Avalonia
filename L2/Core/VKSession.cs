@@ -1083,6 +1083,7 @@ namespace ELOR.Laney.Core {
             CloseAllSMVWindows();
 
             ChatViewModel chat = GetOrCreateDisplayedChat(peerId, messageId);
+            Window?.CloseRightWorkspace();
             CurrentOpenedChat = chat;
             CurrentOpenedChatChanged?.Invoke(this, chat.PeerId);
             chat.OnDisplayed(messageId);
@@ -1099,6 +1100,7 @@ namespace ELOR.Laney.Core {
             CloseAllSMVWindows();
 
             ChatViewModel chat = GetOrCreateDisplayedChat(peerId, messageId);
+            Window?.CloseRightWorkspace();
             SecondaryOpenedChat = chat;
             chat.OnDisplayed(messageId);
             Window.SwitchToSide(true);

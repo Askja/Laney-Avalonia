@@ -136,17 +136,6 @@
               </ComboBox>
             </vkui:Cell.After>
           </vkui:Cell>
-          <vkui:Cell Header="Прозрачность пузырей" Subtitle="Фон сообщений поверх картинки чата.">
-            <vkui:Cell.After>
-              <ComboBox Classes="Alternate" ItemsSource="{Binding MessageBubbleOpacityOptions}" SelectedItem="{Binding CurrentMessageBubbleOpacity, Mode=TwoWay}">
-                <ComboBox.ItemTemplate>
-                  <DataTemplate x:DataType="mdl:TwoStringTuple">
-                    <TextBlock Text="{Binding Item2}"/>
-                  </DataTemplate>
-                </ComboBox.ItemTemplate>
-              </ComboBox>
-            </vkui:Cell.After>
-          </vkui:Cell>
           <vkui:Cell Header="Авто-цвет пузырей" Subtitle="Подбирать цвет исходящих под фон чата, если цвет не задан вручную.">
             <vkui:Cell.After>
               <ToggleSwitch IsChecked="{Binding MessageBubbleAutoColor, Mode=TwoWay}"/>

@@ -41,6 +41,7 @@ namespace ELOR.Laney.Views {
         private DispatcherTimer memoryPressureTimer;
         private BackgroundSearchIndexer backgroundSearchIndexer;
         private BackgroundHistoryStatisticsIndexer backgroundHistoryStatisticsIndexer;
+        private Control currentWorkspaceView;
         private bool lastAutoStatusWasIdle;
         private bool isChatListSplitterDragging;
         private static bool perfSettingsQaScheduled;
@@ -210,6 +211,12 @@ namespace ELOR.Laney.Views {
             }
 
             if (MatchesShortcut(e, Settings.KeymapBack) && !IsTextInputFocused()) {
+                if (IsWorkspaceOpen) {
+                    CloseRightWorkspace();
+                    e.Handled = true;
+                    return;
+                }
+
                 if (Session.CurrentOpenedChat != null) {
                     Session.GoToChat(0);
                     e.Handled = true;
@@ -296,11 +303,13 @@ namespace ELOR.Laney.Views {
                 new CommandPaletteAction(VKIconNames.Icon28SearchOutline, "Глобальный поиск", "Искать по чатам и сообщениям", "search find global чат сообщение", async () => {
                     if (!DemoMode.IsEnabled) await LeftNav.NavigationRouter.NavigateToAsync(new SearchView());
                 }),
-                new CommandPaletteAction(VKIconNames.Icon28ArticleOutline, "Новости VK", "Лента постов с фильтрами и локальным вырезанием промо", "news feed новости лента vk реклама фильтр", async () => {
-                    await LeftNav.NavigationRouter.NavigateToAsync(new NewsFeedView());
+                new CommandPaletteAction(VKIconNames.Icon28ArticleOutline, "Новости VK", "Лента постов с фильтрами и локальным вырезанием промо", "news feed новости лента vk реклама фильтр", () => {
+                    OpenNewsFeedWorkspace();
+                    return Task.CompletedTask;
                 }),
-                new CommandPaletteAction(VKIconNames.Icon28MusicOutline, "Музыка VK", "Треки, очередь, EQ, скачивание, VK status и локальный scrobble", "music audio vk музыка аудио трек очередь эквалайзер скачать status scrobble", async () => {
-                    await LeftNav.NavigationRouter.NavigateToAsync(new MusicView());
+                new CommandPaletteAction(VKIconNames.Icon28MusicOutline, "Музыка VK", "Треки, очередь, EQ, скачивание, VK status и локальный scrobble", "music audio vk музыка аудио трек очередь эквалайзер скачать status scrobble", () => {
+                    OpenMusicWorkspace();
+                    return Task.CompletedTask;
                 }),
                 new CommandPaletteAction(VKIconNames.Icon28SearchOutline, "Поиск в текущем чате", "Открыть поиск внутри выбранного диалога", "search current chat найти здесь", () => {
                     ChatView.OpenSearchInChat();
@@ -1880,18 +1889,18 @@ namespace ELOR.Laney.Views {
         private void TryOpenPerfNewsFeed() {
             if (!DemoMode.IsEnabled || !App.HasCmdLineValue("perf-open-newsfeed")) return;
 
-            Dispatcher.UIThread.Post(async () => {
+            Dispatcher.UIThread.Post(() => {
                 Log.Information("Opening news feed for perf/demo smoke.");
-                await LeftNav.NavigationRouter.NavigateToAsync(new NewsFeedView());
+                OpenNewsFeedWorkspace();
             }, DispatcherPriority.Background);
         }
 
         private void TryOpenPerfMusic() {
             if (!DemoMode.IsEnabled || !App.HasCmdLineValue("perf-open-music")) return;
 
-            Dispatcher.UIThread.Post(async () => {
+            Dispatcher.UIThread.Post(() => {
                 Log.Information("Opening music for perf/demo smoke.");
-                await LeftNav.NavigationRouter.NavigateToAsync(new MusicView());
+                OpenMusicWorkspace();
             }, DispatcherPriority.Background);
         }
 
@@ -2165,6 +2174,7 @@ namespace ELOR.Laney.Views {
 
         private void CheckAdaptivity(double width) {
             isWide = width >= 720;
+            bool workspaceOpen = IsWorkspaceOpen;
 
             if (!isWide) {
                 AccountRail.IsVisible = false;
@@ -2172,20 +2182,26 @@ namespace ELOR.Laney.Views {
                 Grid.SetColumnSpan(LeftNav, 4);
                 Grid.SetColumn(ChatViewContainer, 0);
                 Grid.SetColumnSpan(ChatViewContainer, 4);
+                Grid.SetColumn(WorkspaceContainer, 0);
+                Grid.SetColumnSpan(WorkspaceContainer, 4);
                 Separator.IsVisible = false;
 
                 LeftNav.IsVisible = !isRightSideDisplaying;
-                ChatViewContainer.IsVisible = isRightSideDisplaying;
+                ChatViewContainer.IsVisible = isRightSideDisplaying && !workspaceOpen;
+                WorkspaceContainer.IsVisible = isRightSideDisplaying && workspaceOpen;
             } else {
                 ApplyAccountRailVisibility();
                 Grid.SetColumn(LeftNav, ChatListColumnIndex);
                 Grid.SetColumnSpan(LeftNav, 1);
                 Grid.SetColumn(ChatViewContainer, ChatColumnIndex);
                 Grid.SetColumnSpan(ChatViewContainer, 1);
+                Grid.SetColumn(WorkspaceContainer, ChatColumnIndex);
+                Grid.SetColumnSpan(WorkspaceContainer, 1);
                 Separator.IsVisible = true;
 
                 LeftNav.IsVisible = true;
-                ChatViewContainer.IsVisible = true;
+                ChatViewContainer.IsVisible = !workspaceOpen;
+                WorkspaceContainer.IsVisible = workspaceOpen;
             }
 
             ChatView.ChangeBackButtonVisibility(!isWide);
@@ -2195,6 +2211,51 @@ namespace ELOR.Laney.Views {
         public void SwitchToSide(bool toRight) {
             isRightSideDisplaying = toRight;
             CheckAdaptivity(Bounds.Width);
+        }
+
+        public void OpenNewsFeedWorkspace() {
+            OpenRightWorkspace(new NewsFeedView());
+        }
+
+        public void OpenMusicWorkspace() {
+            OpenRightWorkspace(new MusicView());
+        }
+
+        public void CloseRightWorkspace() {
+            if (!IsWorkspaceOpen) return;
+
+            DetachWorkspaceEvents(currentWorkspaceView);
+            WorkspaceContent.Content = null;
+            currentWorkspaceView = null;
+            WorkspaceContainer.IsVisible = false;
+            CheckAdaptivity(Bounds.Width);
+        }
+
+        private bool IsWorkspaceOpen => WorkspaceContent?.Content != null;
+
+        private void OpenRightWorkspace(Control view) {
+            if (view == null) return;
+
+            CloseRightWorkspace();
+            currentWorkspaceView = view;
+            AttachWorkspaceEvents(view);
+            WorkspaceContent.Content = view;
+            isRightSideDisplaying = true;
+            CheckAdaptivity(Bounds.Width);
+        }
+
+        private void AttachWorkspaceEvents(Control view) {
+            if (view is NewsFeedView newsFeedView) newsFeedView.BackRequested += WorkspaceBackRequested;
+            if (view is MusicView musicView) musicView.BackRequested += WorkspaceBackRequested;
+        }
+
+        private void DetachWorkspaceEvents(Control view) {
+            if (view is NewsFeedView newsFeedView) newsFeedView.BackRequested -= WorkspaceBackRequested;
+            if (view is MusicView musicView) musicView.BackRequested -= WorkspaceBackRequested;
+        }
+
+        private void WorkspaceBackRequested(object sender, EventArgs e) {
+            CloseRightWorkspace();
         }
 
         private void ChatView_BackButtonClick(object? sender, EventArgs e) {

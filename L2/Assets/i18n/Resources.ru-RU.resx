@@ -1155,7 +1155,7 @@
   <data name="cm_antispam_disable" xml:space="preserve"><value>Выключить анти-спам</value></data>
   <data name="cm_antispam_subtitle" xml:space="preserve"><value>Локально скрывать повторы и link+spam-keyword</value></data>
   <data name="cm_theme_profile" xml:space="preserve"><value>Оформление в профиле</value></data>
-  <data name="cm_theme_profile_subtitle" xml:space="preserve"><value>Фон, картинка, плотность, шрифт и bubble style</value></data>
+  <data name="cm_theme_profile_subtitle" xml:space="preserve"><value>Фон, плотность, шрифт и bubble style</value></data>
   <data name="cm_attachments_gallery" xml:space="preserve"><value>Галерея вложений</value></data>
   <data name="cm_attachments_gallery_subtitle" xml:space="preserve"><value>Локально по загруженной истории, с фильтром по типам</value></data>
   <data name="cm_download_attachments" xml:space="preserve"><value>Скачать вложения</value></data>

@@ -41,11 +41,11 @@ namespace ELOR.Laney.Views {
             };
             NewsFeedButton.Click += async (a, b) => {
                 if (DemoMode.IsEnabled) return;
-                await NavigationRouter.NavigateToAsync(new NewsFeedView());
+                await OpenNewsFeedPageAsync();
             };
             MusicButton.Click += async (a, b) => {
                 if (DemoMode.IsEnabled) return;
-                await NavigationRouter.NavigateToAsync(new MusicView());
+                await OpenMusicPageAsync();
             };
 
             ChatsList.Loaded += ChatsList_Loaded;
@@ -84,6 +84,24 @@ namespace ELOR.Laney.Views {
 
             ChatsList.ItemTemplate = Resources[key] as DataTemplate;
             if (refreshItems) RebindChatsListItemsSource();
+        }
+
+        private async Task OpenNewsFeedPageAsync() {
+            if (TopLevel.GetTopLevel(this) is MainWindow mainWindow) {
+                mainWindow.OpenNewsFeedWorkspace();
+                return;
+            }
+
+            await NavigationRouter.NavigateToAsync(new NewsFeedView());
+        }
+
+        private async Task OpenMusicPageAsync() {
+            if (TopLevel.GetTopLevel(this) is MainWindow mainWindow) {
+                mainWindow.OpenMusicWorkspace();
+                return;
+            }
+
+            await NavigationRouter.NavigateToAsync(new MusicView());
         }
 
         private void RebindChatsListItemsSource() {

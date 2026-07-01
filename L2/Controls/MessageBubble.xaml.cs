@@ -211,7 +211,6 @@ namespace ELOR.Laney.Controls {
                 || key == Settings.MESSAGE_BUBBLE_WIDTH
                 || key == Settings.MESSAGE_BUBBLE_DENSITY
                 || key == Settings.MESSAGE_BUBBLE_STYLE
-                || key == Settings.MESSAGE_BUBBLE_OPACITY
                 || key == Settings.MESSAGE_BUBBLE_AUTO_COLOR
                 || key == Settings.EMOJI_PACK
                 || key == Settings.EMOJI_CUSTOM_PACK_PATH
@@ -304,6 +303,7 @@ namespace ELOR.Laney.Controls {
             } else {
                 bbc.Add(IsOutgoing ? BACKGROUND_OUTGOING : BACKGROUND_INCOMING);
             }
+            ApplyBubbleStyle(uiType, singleImage);
             UpdateBubbleHighlightClasses();
 
             // Other classes
@@ -466,6 +466,39 @@ namespace ELOR.Laney.Controls {
                 || (uiType == MessageUIType.Graffiti && !hasReply);
         }
 
+        private void ApplyBubbleStyle(MessageUIType uiType, bool singleImage) {
+            if (BubbleBackground == null || Message == null) return;
+
+            if (singleImage) {
+                BubbleBackground.CornerRadius = new CornerRadius(0);
+                BubbleBackground.BorderThickness = new Thickness(0);
+                BubbleBackground.BorderBrush = Brushes.Transparent;
+                BubbleBackground.Opacity = 1;
+                return;
+            }
+
+            if (uiType == MessageUIType.Gift) {
+                BubbleBackground.CornerRadius = new CornerRadius(18);
+                BubbleBackground.BorderThickness = new Thickness(0);
+                BubbleBackground.BorderBrush = Brushes.Transparent;
+                BubbleBackground.Opacity = 1;
+                return;
+            }
+
+            string style = AppearanceManager.GetMessageBubbleStyle(Message.PeerId);
+            CornerRadius radius = AppearanceManager.GetMessageBubbleCornerRadius(Message.PeerId);
+            if (style == BubbleStyleIds.Telegram) {
+                radius = IsOutgoing ? new CornerRadius(16, 16, 5, 16) : new CornerRadius(16, 16, 16, 5);
+            } else if (style == BubbleStyleIds.Flat) {
+                radius = new CornerRadius(3);
+            }
+
+            BubbleBackground.CornerRadius = radius;
+            BubbleBackground.BorderThickness = AppearanceManager.GetMessageBubbleBorderThickness(Message.PeerId);
+            BubbleBackground.BorderBrush = AppearanceManager.GetMessageBubbleBorderBrush(Message.PeerId);
+            BubbleBackground.Opacity = 1;
+        }
+
         private async Task GetFullMessageAndShowForwardedAsync(long peerId, int cmid) {
             try {
                 var session = Message.OwnerSession;
@@ -565,7 +598,20 @@ namespace ELOR.Laney.Controls {
             classes.RemoveAll([BACKGROUND_MENTIONED_ME, BACKGROUND_FAVORITE_MENTION, BACKGROUND_KEYWORD]);
 
             string highlightClass = GetBubbleHighlightClass();
-            if (!String.IsNullOrEmpty(highlightClass)) classes.Add(highlightClass);
+            if (String.IsNullOrEmpty(highlightClass)) {
+                MessageUIType uiType = Settings.StreamerMode ? MessageUIType.Standart : Message.UIType;
+                bool hasReply = !Settings.StreamerMode && Message.ReplyMessage != null;
+                ApplyBubbleStyle(uiType, IsSingleImageLayout(uiType, hasReply));
+                return;
+            }
+
+            classes.Add(highlightClass);
+            BubbleBackground.BorderThickness = new Thickness(1.5);
+            BubbleBackground.BorderBrush = highlightClass switch {
+                BACKGROUND_FAVORITE_MENTION => new SolidColorBrush(Color.Parse("#A78BFA")),
+                BACKGROUND_KEYWORD => new SolidColorBrush(Color.Parse("#F59E0B")),
+                _ => App.GetResource<IBrush>("VKAccentBrush") ?? new SolidColorBrush(Color.Parse("#3390EC"))
+            };
         }
 
         private string GetBubbleHighlightClass() {

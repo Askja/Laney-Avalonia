@@ -119,7 +119,6 @@
   
   <Grid x:Name="Root" RowDefinitions="Auto Auto * Auto" DragDrop.AllowDrop="True" Background="{DynamicResource LaneySurfaceRootBrush}">
     <Border x:Name="ChatBackgroundColor" Grid.Row="2" IsHitTestVisible="False" Background="{DynamicResource LaneyChatBackgroundBrush}"/>
-    <Border x:Name="ChatBackgroundImage" Grid.Row="2" IsHitTestVisible="False"/>
     <Border x:Name="ChatBackgroundDim" Grid.Row="2" IsHitTestVisible="False" Background="#000000" Opacity="0"/>
     <Border x:Name="ChatBackgroundBrightness" Grid.Row="2" IsHitTestVisible="False" Background="#FFFFFF" Opacity="0"/>
 

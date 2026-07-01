@@ -110,7 +110,6 @@ namespace ELOR.Laney.ViewModels.SettingsCategories {
         public AppFontFamilyOption CurrentAppFontFamily { get { return GetAppFontFamily(); } set { ChangeAppFontFamily(value); OnPropertyChanged(); } }
         public AppIconVariantOption CurrentAppIconVariant { get { return GetAppIconVariant(); } set { ChangeAppIconVariant(value); OnPropertyChanged(); } }
         public bool ShowAccountRail { get { return Settings.ShowAccountRail; } set { Settings.ShowAccountRail = value; MarkCustomProfile(); OnPropertyChanged(); } }
-        public string ChatBackgroundImageSummary { get { return String.IsNullOrWhiteSpace(Settings.ChatBackgroundImage) ? "Не задана" : Settings.ChatBackgroundImage; } }
         public TwoStringTuple CurrentChatListDensity { get { return GetChatListDensity(); } set { ChangeChatListDensity(value); OnPropertyChanged(); } }
         public TwoStringTuple CurrentChatListLayout { get { return GetChatListLayout(); } set { ChangeChatListLayout(value); OnPropertyChanged(); } }
         public TwoStringTuple CurrentChatListAvatarShape { get { return GetChatListAvatarShape(); } set { ChangeChatListAvatarShape(value); OnPropertyChanged(); } }
@@ -220,12 +219,6 @@ namespace ELOR.Laney.ViewModels.SettingsCategories {
             foreach (AppIconVariantOption option in AppIconVariantCards) {
                 option.IsSelected = option.Id == current;
             }
-        }
-
-        public void SetChatBackgroundImage(string image) {
-            Settings.ChatBackgroundImage = image;
-            MarkCustomProfile();
-            OnPropertyChanged(nameof(ChatBackgroundImageSummary));
         }
 
         private TwoStringTuple GetChatListDensity() {

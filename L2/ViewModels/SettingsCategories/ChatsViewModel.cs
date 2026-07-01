@@ -64,12 +64,6 @@ namespace ELOR.Laney.ViewModels.SettingsCategories {
             new TwoStringTuple(BubbleStyleIds.Outline, "Контур"),
             new TwoStringTuple(BubbleStyleIds.Flat, "Плоский")
         };
-        public ObservableCollection<TwoStringTuple> MessageBubbleOpacityOptions { get; } = new ObservableCollection<TwoStringTuple> {
-            new TwoStringTuple("100", "100%"),
-            new TwoStringTuple("92", "92%"),
-            new TwoStringTuple("84", "84%"),
-            new TwoStringTuple("76", "76%")
-        };
         public ObservableCollection<TwoStringTuple> MessageCheckmarkStyleOptions { get; } = new ObservableCollection<TwoStringTuple> {
             new TwoStringTuple(MessageCheckmarkStyleIds.Vk, "VK"),
             new TwoStringTuple(MessageCheckmarkStyleIds.Compact, "Компактные"),
@@ -95,7 +89,6 @@ namespace ELOR.Laney.ViewModels.SettingsCategories {
         public TwoStringTuple CurrentMessageBubbleWidth { get { return GetMessageBubbleWidth(); } set { ChangeMessageBubbleWidth(value); OnPropertyChanged(); } }
         public TwoStringTuple CurrentMessageBubbleDensity { get { return GetMessageBubbleDensity(); } set { ChangeMessageBubbleDensity(value); OnPropertyChanged(); } }
         public TwoStringTuple CurrentMessageBubbleStyle { get { return GetMessageBubbleStyle(); } set { ChangeMessageBubbleStyle(value); OnPropertyChanged(); } }
-        public TwoStringTuple CurrentMessageBubbleOpacity { get { return GetMessageBubbleOpacity(); } set { ChangeMessageBubbleOpacity(value); OnPropertyChanged(); } }
         public TwoStringTuple CurrentMessageCheckmarkStyle { get { return GetMessageCheckmarkStyle(); } set { ChangeMessageCheckmarkStyle(value); OnPropertyChanged(); } }
         public TwoStringTuple CurrentChatOpenBehavior { get { return GetChatOpenBehavior(); } set { ChangeChatOpenBehavior(value); OnPropertyChanged(); } }
         public bool MessageBubbleAutoColor { get { return Settings.MessageBubbleAutoColor; } set { Settings.MessageBubbleAutoColor = value; MarkCustomProfile(); OnPropertyChanged(); } }
@@ -244,19 +237,6 @@ namespace ELOR.Laney.ViewModels.SettingsCategories {
             Settings.MessageBubbleStyle = value.Item1;
             MarkCustomProfile();
             OnPropertyChanged(nameof(CurrentMessageBubbleStyle));
-        }
-
-        private TwoStringTuple GetMessageBubbleOpacity() {
-            string opacity = Settings.MessageBubbleOpacity.ToString();
-            return MessageBubbleOpacityOptions.Where(o => o.Item1 == opacity).FirstOrDefault() ?? MessageBubbleOpacityOptions[0];
-        }
-
-        private void ChangeMessageBubbleOpacity(TwoStringTuple value) {
-            if (value == null) return;
-            if (!int.TryParse(value.Item1, out int opacity)) return;
-            Settings.MessageBubbleOpacity = opacity;
-            MarkCustomProfile();
-            OnPropertyChanged(nameof(CurrentMessageBubbleOpacity));
         }
 
         private TwoStringTuple GetMessageCheckmarkStyle() {

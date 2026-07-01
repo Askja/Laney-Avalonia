@@ -167,7 +167,7 @@
                        controls:ImageLoader.Image="{Binding Message.DisplaySenderAvatar, RelativeSource={RelativeSource TemplatedParent}}"/>
           </Button>
           <Grid x:Name="BubbleRoot" RowDefinitions="* Auto Auto" Grid.Column="1" MinHeight="36" MinWidth="48" MaxWidth="{DynamicResource LaneyMessageBubbleMaxWidth}" HorizontalAlignment="Left" ClipToBounds="True">
-            <Border x:Name="BubbleBackground" Grid.RowSpan="3" Opacity="{DynamicResource LaneyMessageBubbleBackgroundOpacity}" CornerRadius="{DynamicResource LaneyMessageBubbleCornerRadius}"/>
+            <Border x:Name="BubbleBackground" Grid.RowSpan="3" CornerRadius="{DynamicResource LaneyMessageBubbleCornerRadius}"/>
             <StackPanel x:Name="MessageContent" ClipToBounds="True">
               <TextBlock x:Name="SenderName" Classes="Caption1" Margin="12,7,12,0" FontWeight="Medium" Foreground="{DynamicResource VKImTextNameBrush}" Text="{Binding Message.DisplaySenderName, RelativeSource={RelativeSource TemplatedParent}}"/>
               <Button x:Name="ReplyMessageButton" Classes="Tertiary" Margin="12,6,12,4" Padding="0" CornerRadius="0" IsVisible="{Binding Message.ReplyMessage, RelativeSource={RelativeSource TemplatedParent}, Converter={x:Static ObjectConverters.IsNotNull}}">

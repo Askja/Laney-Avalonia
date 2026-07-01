@@ -253,7 +253,6 @@
                 <TextBlock Classes="Caption1" Margin="0,0,0,6" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="Применяется только в Laney и не меняет настройки VK."/>
                 <Border Margin="-12,0,0,8" Height="154" CornerRadius="14" ClipToBounds="True" Background="{Binding LocalAppearancePreviewBackground}">
                   <Grid>
-                    <Border controls:ImageLoader.BackgroundSource="{Binding LocalBackgroundImageUri}" controls:ImageLoader.BackgroundBlurRadius="{Binding LocalAppearancePreviewBlurRadius}" Opacity="{Binding LocalAppearancePreviewImageOpacity}"/>
                     <Border Background="#000000" Opacity="{Binding LocalAppearancePreviewDimOpacity}"/>
                     <Border Background="#FFFFFF" Opacity="{Binding LocalAppearancePreviewBrightnessOpacity}"/>
                     <StackPanel VerticalAlignment="Bottom" Margin="14" Spacing="8">
@@ -271,20 +270,7 @@
                     <ComboBox Classes="Alternate" Width="190" MaxDropDownHeight="260" ItemsSource="{Binding PeerChatBackgroundOptions}" SelectedItem="{Binding CurrentPeerChatBackground, Mode=TwoWay}" ItemTemplate="{StaticResource AppearanceOptionTextTemplate}"/>
                   </vkui:Cell.After>
                 </vkui:Cell>
-                <vkui:Cell Margin="-12,0,0,0" Header="Картинка фона" Subtitle="Локальный путь или URL. VK не трогаем.">
-                  <vkui:Cell.After>
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                      <TextBox Width="220" Text="{Binding LocalBackgroundImage, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" PlaceholderText="URL или путь"/>
-                      <Button Classes="Secondary" Width="36" Height="36" Padding="0" ToolTip.Tip="Выбрать файл" Click="SelectLocalBackgroundImage_Click">
-                        <vkui:VKIcon Width="20" Height="20" Id="{x:Static vkui:VKIconNames.Icon20PictureOutline}"/>
-                      </Button>
-                      <Button Classes="Tertiary" Width="36" Height="36" Padding="0" ToolTip.Tip="Очистить" Click="ClearLocalBackgroundImage_Click">
-                        <vkui:VKIcon Width="20" Height="20" Id="{x:Static vkui:VKIconNames.Icon20DeleteOutline}"/>
-                      </Button>
-                    </StackPanel>
-                  </vkui:Cell.After>
-                </vkui:Cell>
-                <vkui:Cell Margin="-12,0,0,0" Header="Затемнение" Subtitle="Темная подложка поверх картинки.">
+                <vkui:Cell Margin="-12,0,0,0" Header="Затемнение" Subtitle="Темная коррекция поверх фона.">
                   <vkui:Cell.After>
                     <ComboBox Classes="Alternate" Width="190" ItemsSource="{Binding PeerBackgroundDimOptions}" SelectedItem="{Binding CurrentPeerBackgroundDim, Mode=TwoWay}">
                       <ComboBox.ItemTemplate>
@@ -295,18 +281,7 @@
                     </ComboBox>
                   </vkui:Cell.After>
                 </vkui:Cell>
-                <vkui:Cell Margin="-12,0,0,0" Header="Размытие" Subtitle="Размытие фоновой картинки после уменьшения.">
-                  <vkui:Cell.After>
-                    <ComboBox Classes="Alternate" Width="190" ItemsSource="{Binding PeerBackgroundBlurOptions}" SelectedItem="{Binding CurrentPeerBackgroundBlur, Mode=TwoWay}">
-                      <ComboBox.ItemTemplate>
-                        <DataTemplate x:DataType="mdl:TwoStringTuple">
-                          <TextBlock Text="{Binding Item2}"/>
-                        </DataTemplate>
-                      </ComboBox.ItemTemplate>
-                    </ComboBox>
-                  </vkui:Cell.After>
-                </vkui:Cell>
-                <vkui:Cell Margin="-12,0,0,0" Header="Яркость" Subtitle="Белая/темная коррекция поверх картинки.">
+                <vkui:Cell Margin="-12,0,0,0" Header="Яркость" Subtitle="Белая коррекция поверх фона.">
                   <vkui:Cell.After>
                     <ComboBox Classes="Alternate" Width="190" ItemsSource="{Binding PeerBackgroundBrightnessOptions}" SelectedItem="{Binding CurrentPeerBackgroundBrightness, Mode=TwoWay}">
                       <ComboBox.ItemTemplate>

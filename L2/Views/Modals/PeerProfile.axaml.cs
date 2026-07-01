@@ -168,19 +168,6 @@ namespace ELOR.Laney.Views.Modals {
             }
         }
 
-        private async void SelectLocalBackgroundImage_Click(object sender, RoutedEventArgs e) {
-            if (ViewModel == null) return;
-
-            string path = await PickLocalImagePathAsync("Выбрать картинку фона");
-            if (String.IsNullOrWhiteSpace(path)) return;
-            ViewModel.LocalBackgroundImage = path;
-        }
-
-        private void ClearLocalBackgroundImage_Click(object sender, RoutedEventArgs e) {
-            if (ViewModel == null) return;
-            ViewModel.LocalBackgroundImage = String.Empty;
-        }
-
         private async void SelectLocalAvatar_Click(object sender, RoutedEventArgs e) {
             if (ViewModel == null) return;
 

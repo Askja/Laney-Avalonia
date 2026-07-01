@@ -112,13 +112,11 @@ namespace ELOR.Laney.Views {
                     break;
                 case Settings.THEME:
                 case Settings.CHAT_BACKGROUND:
-                case Settings.CHAT_BACKGROUND_IMAGE:
                 case Settings.APP_FONT_FAMILY:
                 case Settings.MESSAGE_FONT_SIZE:
                 case Settings.MESSAGE_BUBBLE_WIDTH:
                 case Settings.MESSAGE_BUBBLE_DENSITY:
                 case Settings.MESSAGE_BUBBLE_STYLE:
-                case Settings.MESSAGE_BUBBLE_OPACITY:
                 case Settings.MESSAGE_BUBBLE_AUTO_COLOR:
                     ApplyChatAppearance();
                     break;
@@ -222,9 +220,7 @@ namespace ELOR.Laney.Views {
 
         private bool IsCurrentChatAppearanceKey(string key) {
             return key == $"{Settings.PEER_LOCAL_THEME_PREFIX}{Chat.PeerId}"
-                || key == $"{Settings.PEER_LOCAL_BACKGROUND_IMAGE_PREFIX}{Chat.PeerId}"
                 || key == $"{Settings.PEER_LOCAL_BACKGROUND_DIM_PREFIX}{Chat.PeerId}"
-                || key == $"{Settings.PEER_LOCAL_BACKGROUND_BLUR_PREFIX}{Chat.PeerId}"
                 || key == $"{Settings.PEER_LOCAL_BACKGROUND_BRIGHTNESS_PREFIX}{Chat.PeerId}"
                 || key == $"{Settings.PEER_LOCAL_ACCENT_PREFIX}{Chat.PeerId}"
                 || key == $"{Settings.PEER_LOCAL_DENSITY_PREFIX}{Chat.PeerId}"
@@ -242,13 +238,6 @@ namespace ELOR.Laney.Views {
             Root.Resources[AppearanceManager.ChatBackgroundResourceKey] = chatBackground;
             ChatBackgroundColor.Background = chatBackground;
             MessagesList.Background = Avalonia.Media.Brushes.Transparent;
-            Uri backgroundImageUri = AppearanceManager.GetChatBackgroundImageUri(peerId);
-            bool hasBackgroundImage = backgroundImageUri != null;
-            ChatBackgroundImage.IsVisible = hasBackgroundImage;
-            int backgroundBlur = hasBackgroundImage ? Math.Min(AppearanceManager.GetChatBackgroundBlurRadius(peerId), Settings.LowMemoryMode ? 0 : 6) : 0;
-            ImageLoader.SetBackgroundBlurRadius(ChatBackgroundImage, backgroundBlur);
-            ImageLoader.SetBackgroundSource(ChatBackgroundImage, backgroundImageUri);
-            ChatBackgroundImage.Opacity = hasBackgroundImage ? AppearanceManager.GetChatBackgroundImageOpacity(peerId) : 0;
 
             double dimOpacity = AppearanceManager.GetChatBackgroundDimOpacity(peerId);
             ChatBackgroundDim.Opacity = dimOpacity;
@@ -266,7 +255,6 @@ namespace ELOR.Laney.Views {
             Root.Resources[AppearanceManager.MessageBubbleCornerRadiusResourceKey] = AppearanceManager.GetMessageBubbleCornerRadius(peerId);
             Root.Resources[AppearanceManager.MessageBubbleBorderThicknessResourceKey] = AppearanceManager.GetMessageBubbleBorderThickness(peerId);
             Root.Resources[AppearanceManager.MessageBubbleBorderBrushResourceKey] = AppearanceManager.GetMessageBubbleBorderBrush(peerId);
-            Root.Resources[AppearanceManager.MessageBubbleBackgroundOpacityResourceKey] = AppearanceManager.GetMessageBubbleBackgroundOpacity();
             Avalonia.Media.IBrush outgoingBubbleBrush = AppearanceManager.GetOutgoingBubbleBrush(Chat, isDarkPalette);
             Root.Resources[AppearanceManager.MessageBubbleOutgoingBrushResourceKey] = outgoingBubbleBrush;
             Root.Resources["MessageBubbleOutgoingTextPrimaryBrush"] = AppearanceManager.GetReadableTextBrush(outgoingBubbleBrush);

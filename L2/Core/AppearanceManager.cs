@@ -55,7 +55,6 @@ namespace ELOR.Laney.Core {
         public const string MessageBubbleCornerRadiusResourceKey = "LaneyMessageBubbleCornerRadius";
         public const string MessageBubbleBorderThicknessResourceKey = "LaneyMessageBubbleBorderThickness";
         public const string MessageBubbleBorderBrushResourceKey = "LaneyMessageBubbleBorderBrush";
-        public const string MessageBubbleBackgroundOpacityResourceKey = "LaneyMessageBubbleBackgroundOpacity";
         public const string MessageBubbleOutgoingBrushResourceKey = "MessageBubbleDefaultOutgoingBrush";
         public const string ChatListItemHeight2RowResourceKey = "LaneyChatListItemHeight2Row";
         public const string ChatListItemHeight3RowResourceKey = "LaneyChatListItemHeight3Row";
@@ -206,7 +205,6 @@ namespace ELOR.Laney.Core {
             Application.Current.Resources[MessageBubbleCornerRadiusResourceKey] = GetMessageBubbleCornerRadius(0);
             Application.Current.Resources[MessageBubbleBorderThicknessResourceKey] = GetMessageBubbleBorderThickness(0);
             Application.Current.Resources[MessageBubbleBorderBrushResourceKey] = GetMessageBubbleBorderBrush(0);
-            Application.Current.Resources[MessageBubbleBackgroundOpacityResourceKey] = GetMessageBubbleBackgroundOpacity();
             ApplyChatListResources();
         }
 
@@ -317,16 +315,20 @@ namespace ELOR.Laney.Core {
         public static CornerRadius GetMessageBubbleCornerRadius(long peerId) {
             string style = GetEffectiveBubbleStyle(peerId);
             return style switch {
-                BubbleStyleIds.Telegram => new CornerRadius(16),
-                BubbleStyleIds.Minimal => new CornerRadius(8),
-                BubbleStyleIds.Outline => new CornerRadius(14),
-                BubbleStyleIds.Flat => new CornerRadius(4),
+                BubbleStyleIds.Telegram => new CornerRadius(12),
+                BubbleStyleIds.Minimal => new CornerRadius(7),
+                BubbleStyleIds.Outline => new CornerRadius(16),
+                BubbleStyleIds.Flat => new CornerRadius(3),
                 _ => new CornerRadius(18)
             };
         }
 
         public static Thickness GetMessageBubbleBorderThickness(long peerId) {
-            return GetEffectiveBubbleStyle(peerId) == BubbleStyleIds.Outline ? new Thickness(1) : new Thickness(0.75);
+            return GetEffectiveBubbleStyle(peerId) switch {
+                BubbleStyleIds.Outline => new Thickness(1.25),
+                BubbleStyleIds.Flat => new Thickness(0),
+                _ => new Thickness(0.75)
+            };
         }
 
         public static IBrush GetMessageBubbleBorderBrush(long peerId) {
@@ -337,6 +339,10 @@ namespace ELOR.Laney.Core {
             return new SolidColorBrush(Color.Parse(IsDarkTheme() ? "#42FFFFFF" : "#66B7C5D6"));
         }
 
+        public static string GetMessageBubbleStyle(long peerId) {
+            return GetEffectiveBubbleStyle(peerId);
+        }
+
         public static double GetMessageBubbleMaxWidth() {
             return Settings.MessageBubbleWidth switch {
                 BubbleWidthIds.Narrow => 448,
@@ -344,10 +350,6 @@ namespace ELOR.Laney.Core {
                 BubbleWidthIds.Full => 984,
                 _ => 576
             };
-        }
-
-        public static double GetMessageBubbleBackgroundOpacity() {
-            return Settings.MessageBubbleOpacity / 100d;
         }
 
         public static IBrush GetOutgoingBubbleBrush(long peerId) {
@@ -405,30 +407,13 @@ namespace ELOR.Laney.Core {
             return new SolidColorBrush(color, IsDarkTheme() ? 0.98 : 0.96);
         }
 
-        public static Uri GetChatBackgroundImageUri(long peerId) {
-            return Settings.GetPeerLocalBackgroundImageUri(peerId) ?? Settings.ChatBackgroundImageUri;
-        }
-
-        public static double GetChatBackgroundImageOpacity(long peerId) {
-            return GetChatBackgroundImageUri(peerId) == null ? 0 : 1;
-        }
-
         public static double GetChatBackgroundDimOpacity(long peerId) {
-            if (GetChatBackgroundImageUri(peerId) == null) return 0;
-
             int dim = Settings.GetPeerLocalBackgroundDim(peerId);
             int negativeBrightness = Math.Max(0, -Settings.GetPeerLocalBackgroundBrightness(peerId));
-            if (dim == 0 && negativeBrightness == 0 && IsDarkTheme()) return 0.28;
             return Math.Clamp(dim + negativeBrightness, 0, 90) / 100d;
         }
 
-        public static int GetChatBackgroundBlurRadius(long peerId) {
-            if (GetChatBackgroundImageUri(peerId) == null) return 0;
-            return Settings.GetPeerLocalBackgroundBlur(peerId);
-        }
-
         public static double GetChatBackgroundBrightnessOpacity(long peerId) {
-            if (GetChatBackgroundImageUri(peerId) == null) return 0;
             return Math.Max(0, Settings.GetPeerLocalBackgroundBrightness(peerId)) / 100d;
         }
 

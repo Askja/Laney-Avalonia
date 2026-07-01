@@ -1158,7 +1158,7 @@
   <data name="cm_antispam_disable" xml:space="preserve"><value>Disable anti-spam</value></data>
   <data name="cm_antispam_subtitle" xml:space="preserve"><value>Hide repeats and link+spam-keyword locally</value></data>
   <data name="cm_theme_profile" xml:space="preserve"><value>Appearance in profile</value></data>
-  <data name="cm_theme_profile_subtitle" xml:space="preserve"><value>Background, image, density, font, and bubble style</value></data>
+  <data name="cm_theme_profile_subtitle" xml:space="preserve"><value>Background, density, font, and bubble style</value></data>
   <data name="cm_attachments_gallery" xml:space="preserve"><value>Attachments gallery</value></data>
   <data name="cm_attachments_gallery_subtitle" xml:space="preserve"><value>Local loaded history with type filters</value></data>
   <data name="cm_download_attachments" xml:space="preserve"><value>Download attachments</value></data>

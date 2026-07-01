@@ -1155,7 +1155,7 @@
   <data name="cm_antispam_disable" xml:space="preserve"><value>Вимкнути антиспам</value></data>
   <data name="cm_antispam_subtitle" xml:space="preserve"><value>Локально ховати повтори та link+spam-keyword</value></data>
   <data name="cm_theme_profile" xml:space="preserve"><value>Оформлення у профілі</value></data>
-  <data name="cm_theme_profile_subtitle" xml:space="preserve"><value>Фон, зображення, щільність, шрифт і bubble style</value></data>
+  <data name="cm_theme_profile_subtitle" xml:space="preserve"><value>Фон, щільність, шрифт і bubble style</value></data>
   <data name="cm_attachments_gallery" xml:space="preserve"><value>Галерея вкладень</value></data>
   <data name="cm_attachments_gallery_subtitle" xml:space="preserve"><value>Локально за завантаженою історією, з фільтром за типами</value></data>
   <data name="cm_download_attachments" xml:space="preserve"><value>Завантажити вкладення</value></data>

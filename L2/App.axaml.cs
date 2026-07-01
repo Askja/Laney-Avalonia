@@ -205,7 +205,6 @@ namespace ELOR.Laney {
                 case Settings.ACCENT_COLOR:
                 case Settings.APP_FONT_FAMILY:
                 case Settings.CHAT_BACKGROUND:
-                case Settings.CHAT_BACKGROUND_IMAGE:
                 case Settings.CHAT_LIST_DENSITY:
                 case Settings.CHAT_LIST_AVATAR_SIZE:
                 case Settings.CHAT_LIST_AVATAR_SHAPE:
@@ -215,7 +214,6 @@ namespace ELOR.Laney {
                 case Settings.MESSAGE_BUBBLE_WIDTH:
                 case Settings.MESSAGE_BUBBLE_DENSITY:
                 case Settings.MESSAGE_BUBBLE_STYLE:
-                case Settings.MESSAGE_BUBBLE_OPACITY:
                 case Settings.MESSAGE_BUBBLE_AUTO_COLOR:
                     AppearanceManager.ApplyAppearanceSettings();
                     break;

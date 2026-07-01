@@ -31,9 +31,6 @@ namespace ELOR.Laney.Diagnostics {
         }
 
         private static List<SettingsAppearanceMatrixCase> BuildCases() {
-            const string demoBackground = "avares://laney/Assets/Logo/anime_ai.png";
-            const string demoPeerBackground = "avares://laney/Assets/Logo/anime_akane.png";
-
             return new List<SettingsAppearanceMatrixCase> {
                 new SettingsAppearanceMatrixCase("light_classic_vk") {
                     Theme = 1,
@@ -50,7 +47,6 @@ namespace ELOR.Laney.Diagnostics {
                     BubbleWidth = BubbleWidthIds.Medium,
                     BubbleDensity = BubbleDensityIds.Normal,
                     BubbleStyle = BubbleStyleIds.Vk,
-                    BubbleOpacity = 100,
                     BubbleAutoColor = false,
                     CheckmarkStyle = MessageCheckmarkStyleIds.Vk,
                     ChatOpenBehavior = ChatOpenBehaviorIds.Bottom,
@@ -75,7 +71,6 @@ namespace ELOR.Laney.Diagnostics {
                     BubbleWidth = BubbleWidthIds.Narrow,
                     BubbleDensity = BubbleDensityIds.Compact,
                     BubbleStyle = BubbleStyleIds.Telegram,
-                    BubbleOpacity = 82,
                     BubbleAutoColor = true,
                     CheckmarkStyle = MessageCheckmarkStyleIds.Compact,
                     ChatOpenBehavior = ChatOpenBehaviorIds.FirstUnread,
@@ -85,12 +80,11 @@ namespace ELOR.Laney.Diagnostics {
                     PeerBubbleStyle = BubbleStyleIds.Telegram,
                     PeerBubbleColor = "mint"
                 },
-                new SettingsAppearanceMatrixCase("light_media_air_image") {
+                new SettingsAppearanceMatrixCase("light_media_air") {
                     Theme = 1,
                     Accent = "emerald",
                     AppFont = "Arial",
                     ChatBackground = "paper",
-                    GlobalBackgroundImage = demoBackground,
                     ChatListDensity = ChatListDensityIds.Large,
                     ChatListLayout = ChatListLayoutIds.MediaRich,
                     ChatListAvatarSize = AvatarSizeIds.Large,
@@ -101,7 +95,6 @@ namespace ELOR.Laney.Diagnostics {
                     BubbleWidth = BubbleWidthIds.Wide,
                     BubbleDensity = BubbleDensityIds.Air,
                     BubbleStyle = BubbleStyleIds.Minimal,
-                    BubbleOpacity = 94,
                     BubbleAutoColor = true,
                     CheckmarkStyle = MessageCheckmarkStyleIds.Minimal,
                     ChatOpenBehavior = ChatOpenBehaviorIds.Bottom,
@@ -111,7 +104,7 @@ namespace ELOR.Laney.Diagnostics {
                     PeerBubbleStyle = BubbleStyleIds.Minimal,
                     PeerBubbleColor = "amber"
                 },
-                new SettingsAppearanceMatrixCase("dark_split_outline_peer_image") {
+                new SettingsAppearanceMatrixCase("dark_split_outline_peer") {
                     Theme = 2,
                     Accent = "violet",
                     AppFont = "Segoe UI",
@@ -126,14 +119,11 @@ namespace ELOR.Laney.Diagnostics {
                     BubbleWidth = BubbleWidthIds.Full,
                     BubbleDensity = BubbleDensityIds.Normal,
                     BubbleStyle = BubbleStyleIds.Outline,
-                    BubbleOpacity = 72,
                     BubbleAutoColor = false,
                     CheckmarkStyle = MessageCheckmarkStyleIds.Hidden,
                     ChatOpenBehavior = ChatOpenBehaviorIds.FirstUnread,
                     PeerTheme = "rose",
-                    PeerBackgroundImage = demoPeerBackground,
                     PeerBackgroundDim = 35,
-                    PeerBackgroundBlur = 8,
                     PeerBackgroundBrightness = -20,
                     PeerDensity = AppearanceManager.DefaultChatDensityId,
                     PeerFont = AppearanceManager.DefaultChatFontId,
@@ -155,7 +145,6 @@ namespace ELOR.Laney.Diagnostics {
                     BubbleWidth = BubbleWidthIds.Narrow,
                     BubbleDensity = BubbleDensityIds.LegacyRelaxed,
                     BubbleStyle = BubbleStyleIds.LegacySharp,
-                    BubbleOpacity = 40,
                     BubbleAutoColor = false,
                     CheckmarkStyle = MessageCheckmarkStyleIds.Vk,
                     ChatOpenBehavior = ChatOpenBehaviorIds.Bottom,
@@ -180,7 +169,6 @@ namespace ELOR.Laney.Diagnostics {
                     BubbleWidth = BubbleWidthIds.Full,
                     BubbleDensity = BubbleDensityIds.Air,
                     BubbleStyle = BubbleStyleIds.Flat,
-                    BubbleOpacity = 88,
                     BubbleAutoColor = true,
                     CheckmarkStyle = MessageCheckmarkStyleIds.Compact,
                     ChatOpenBehavior = ChatOpenBehaviorIds.FirstUnread,
@@ -198,7 +186,6 @@ namespace ELOR.Laney.Diagnostics {
             Settings.AccentColor = item.Accent;
             Settings.AppFontFamily = item.AppFont;
             Settings.ChatBackground = item.ChatBackground;
-            Settings.ChatBackgroundImage = item.GlobalBackgroundImage;
             Settings.ChatListDensity = item.ChatListDensity;
             Settings.ChatListLayout = item.ChatListLayout;
             Settings.ChatListAvatarSize = item.ChatListAvatarSize;
@@ -209,15 +196,12 @@ namespace ELOR.Laney.Diagnostics {
             Settings.MessageBubbleWidth = item.BubbleWidth;
             Settings.MessageBubbleDensity = item.BubbleDensity;
             Settings.MessageBubbleStyle = item.BubbleStyle;
-            Settings.MessageBubbleOpacity = item.BubbleOpacity;
             Settings.MessageBubbleAutoColor = item.BubbleAutoColor;
             Settings.MessageCheckmarkStyle = item.CheckmarkStyle;
             Settings.ChatOpenBehavior = item.ChatOpenBehavior;
 
             Settings.SetPeerLocalTheme(peerId, item.PeerTheme);
-            Settings.SetPeerLocalBackgroundImage(peerId, item.PeerBackgroundImage);
             Settings.SetPeerLocalBackgroundDim(peerId, item.PeerBackgroundDim);
-            Settings.SetPeerLocalBackgroundBlur(peerId, item.PeerBackgroundBlur);
             Settings.SetPeerLocalBackgroundBrightness(peerId, item.PeerBackgroundBrightness);
             Settings.SetPeerLocalDensity(peerId, item.PeerDensity);
             Settings.SetPeerLocalFont(peerId, item.PeerFont);
@@ -237,16 +221,13 @@ namespace ELOR.Laney.Diagnostics {
             ValidateFiniteRange(item.Name, "MessageTextLineHeight", AppearanceManager.GetMessageTextLineHeight(peerId), 12, 40, report);
             ValidateFiniteRange(item.Name, "MessageAvatarSize", AppearanceManager.GetMessageAvatarSize(), 20, 64, report);
             ValidateFiniteRange(item.Name, "MessageBubbleMaxWidth", AppearanceManager.GetMessageBubbleMaxWidth(), 320, 1200, report);
-            ValidateFiniteRange(item.Name, "MessageBubbleBackgroundOpacity", AppearanceManager.GetMessageBubbleBackgroundOpacity(), 0.4, 1.0, report);
             ValidateFiniteRange(item.Name, "ChatListItemHeight2Row", AppearanceManager.GetChatListItemHeight(false), 44, 96, report);
             ValidateFiniteRange(item.Name, "ChatListItemHeight3Row", AppearanceManager.GetChatListItemHeight(true), 52, 108, report);
             ValidateFiniteRange(item.Name, "ChatListAvatarSize", AppearanceManager.GetChatListAvatarSize(), 28, 64, report);
             ValidateFiniteRange(item.Name, "ChatListTitleFontSize", AppearanceManager.GetChatListTitleFontSize(), 11, 22, report);
             ValidateFiniteRange(item.Name, "ChatListSubtitleFontSize", AppearanceManager.GetChatListSubtitleFontSize(), 11, 22, report);
             ValidateFiniteRange(item.Name, "ChatListTimeFontSize", AppearanceManager.GetChatListTimeFontSize(), 10, 20, report);
-            ValidateFiniteRange(item.Name, "ChatBackgroundImageOpacity", AppearanceManager.GetChatBackgroundImageOpacity(peerId), 0, 1, report);
             ValidateFiniteRange(item.Name, "ChatBackgroundDimOpacity", AppearanceManager.GetChatBackgroundDimOpacity(peerId), 0, 1, report);
-            ValidateFiniteRange(item.Name, "ChatBackgroundBlurRadius", AppearanceManager.GetChatBackgroundBlurRadius(peerId), 0, 16, report);
             ValidateFiniteRange(item.Name, "ChatBackgroundBrightnessOpacity", AppearanceManager.GetChatBackgroundBrightnessOpacity(peerId), 0, 1, report);
 
             ValidateThickness(item.Name, "MessageOuterMargin", AppearanceManager.GetMessageOuterMargin(peerId), report);
@@ -262,12 +243,6 @@ namespace ELOR.Laney.Diagnostics {
             ValidateBrush(item.Name, "OutgoingBubbleBrush", AppearanceManager.GetOutgoingBubbleBrush(peerId), report);
             ValidateBrush(item.Name, "MessageBubbleBorderBrush", AppearanceManager.GetMessageBubbleBorderBrush(peerId), report);
 
-            Uri expectedImage = !String.IsNullOrWhiteSpace(item.PeerBackgroundImage)
-                ? Settings.GetPeerLocalBackgroundImageUri(peerId)
-                : Settings.ChatBackgroundImageUri;
-            Uri actualImage = AppearanceManager.GetChatBackgroundImageUri(peerId);
-            if (expectedImage != null && actualImage == null) report.AddFailure(item.Name, "ChatBackgroundImageUri", "image_uri_missing");
-
             ValidateResource<FontFamily>(item.Name, AppearanceManager.AppFontFamilyResourceKey, report);
             ValidateResource<IBrush>(item.Name, AppearanceManager.ChatBackgroundResourceKey, report);
             ValidateResource<double>(item.Name, AppearanceManager.MessageTextFontSizeResourceKey, report);
@@ -277,7 +252,6 @@ namespace ELOR.Laney.Diagnostics {
             ValidateResource<CornerRadius>(item.Name, AppearanceManager.MessageBubbleCornerRadiusResourceKey, report);
             ValidateResource<Thickness>(item.Name, AppearanceManager.MessageBubbleBorderThicknessResourceKey, report);
             ValidateResource<IBrush>(item.Name, AppearanceManager.MessageBubbleBorderBrushResourceKey, report);
-            ValidateResource<double>(item.Name, AppearanceManager.MessageBubbleBackgroundOpacityResourceKey, report);
             ValidateResource<double>(item.Name, AppearanceManager.ChatListItemHeight2RowResourceKey, report);
             ValidateResource<double>(item.Name, AppearanceManager.ChatListItemHeight3RowResourceKey, report);
             ValidateResource<double>(item.Name, AppearanceManager.ChatListAvatarSizeResourceKey, report);
@@ -374,7 +348,6 @@ namespace ELOR.Laney.Diagnostics {
         public string Accent { get; set; }
         public string AppFont { get; set; }
         public string ChatBackground { get; set; }
-        public string GlobalBackgroundImage { get; set; }
         public string ChatListDensity { get; set; }
         public string ChatListLayout { get; set; }
         public string ChatListAvatarSize { get; set; }
@@ -385,14 +358,11 @@ namespace ELOR.Laney.Diagnostics {
         public string BubbleWidth { get; set; }
         public string BubbleDensity { get; set; }
         public string BubbleStyle { get; set; }
-        public int BubbleOpacity { get; set; }
         public bool BubbleAutoColor { get; set; }
         public string CheckmarkStyle { get; set; }
         public string ChatOpenBehavior { get; set; }
         public string PeerTheme { get; set; }
-        public string PeerBackgroundImage { get; set; }
         public int PeerBackgroundDim { get; set; }
-        public int PeerBackgroundBlur { get; set; }
         public int PeerBackgroundBrightness { get; set; }
         public string PeerDensity { get; set; }
         public string PeerFont { get; set; }
@@ -401,8 +371,6 @@ namespace ELOR.Laney.Diagnostics {
 
         public SettingsAppearanceMatrixCase(string name) {
             Name = name;
-            GlobalBackgroundImage = String.Empty;
-            PeerBackgroundImage = String.Empty;
         }
     }
 
@@ -411,7 +379,6 @@ namespace ELOR.Laney.Diagnostics {
         private string Accent { get; set; }
         private string AppFont { get; set; }
         private string ChatBackground { get; set; }
-        private string GlobalBackgroundImage { get; set; }
         private string ChatListDensity { get; set; }
         private string ChatListLayout { get; set; }
         private string ChatListAvatarSize { get; set; }
@@ -422,14 +389,11 @@ namespace ELOR.Laney.Diagnostics {
         private string BubbleWidth { get; set; }
         private string BubbleDensity { get; set; }
         private string BubbleStyle { get; set; }
-        private int BubbleOpacity { get; set; }
         private bool BubbleAutoColor { get; set; }
         private string CheckmarkStyle { get; set; }
         private string ChatOpenBehavior { get; set; }
         private string PeerTheme { get; set; }
-        private string PeerBackgroundImage { get; set; }
         private int PeerBackgroundDim { get; set; }
-        private int PeerBackgroundBlur { get; set; }
         private int PeerBackgroundBrightness { get; set; }
         private string PeerDensity { get; set; }
         private string PeerFont { get; set; }
@@ -442,7 +406,6 @@ namespace ELOR.Laney.Diagnostics {
                 Accent = Settings.AccentColor,
                 AppFont = Settings.AppFontFamily,
                 ChatBackground = Settings.ChatBackground,
-                GlobalBackgroundImage = Settings.ChatBackgroundImage,
                 ChatListDensity = Settings.ChatListDensity,
                 ChatListLayout = Settings.ChatListLayout,
                 ChatListAvatarSize = Settings.ChatListAvatarSize,
@@ -453,14 +416,11 @@ namespace ELOR.Laney.Diagnostics {
                 BubbleWidth = Settings.MessageBubbleWidth,
                 BubbleDensity = Settings.MessageBubbleDensity,
                 BubbleStyle = Settings.MessageBubbleStyle,
-                BubbleOpacity = Settings.MessageBubbleOpacity,
                 BubbleAutoColor = Settings.MessageBubbleAutoColor,
                 CheckmarkStyle = Settings.MessageCheckmarkStyle,
                 ChatOpenBehavior = Settings.ChatOpenBehavior,
                 PeerTheme = Settings.GetPeerLocalTheme(peerId),
-                PeerBackgroundImage = Settings.GetPeerLocalBackgroundImage(peerId),
                 PeerBackgroundDim = Settings.GetPeerLocalBackgroundDim(peerId),
-                PeerBackgroundBlur = Settings.GetPeerLocalBackgroundBlur(peerId),
                 PeerBackgroundBrightness = Settings.GetPeerLocalBackgroundBrightness(peerId),
                 PeerDensity = Settings.GetPeerLocalDensity(peerId),
                 PeerFont = Settings.GetPeerLocalFont(peerId),
@@ -474,7 +434,6 @@ namespace ELOR.Laney.Diagnostics {
             Settings.AccentColor = Accent;
             Settings.AppFontFamily = AppFont;
             Settings.ChatBackground = ChatBackground;
-            Settings.ChatBackgroundImage = GlobalBackgroundImage;
             Settings.ChatListDensity = ChatListDensity;
             Settings.ChatListLayout = ChatListLayout;
             Settings.ChatListAvatarSize = ChatListAvatarSize;
@@ -485,14 +444,11 @@ namespace ELOR.Laney.Diagnostics {
             Settings.MessageBubbleWidth = BubbleWidth;
             Settings.MessageBubbleDensity = BubbleDensity;
             Settings.MessageBubbleStyle = BubbleStyle;
-            Settings.MessageBubbleOpacity = BubbleOpacity;
             Settings.MessageBubbleAutoColor = BubbleAutoColor;
             Settings.MessageCheckmarkStyle = CheckmarkStyle;
             Settings.ChatOpenBehavior = ChatOpenBehavior;
             Settings.SetPeerLocalTheme(peerId, PeerTheme);
-            Settings.SetPeerLocalBackgroundImage(peerId, PeerBackgroundImage);
             Settings.SetPeerLocalBackgroundDim(peerId, PeerBackgroundDim);
-            Settings.SetPeerLocalBackgroundBlur(peerId, PeerBackgroundBlur);
             Settings.SetPeerLocalBackgroundBrightness(peerId, PeerBackgroundBrightness);
             Settings.SetPeerLocalDensity(peerId, PeerDensity);
             Settings.SetPeerLocalFont(peerId, PeerFont);

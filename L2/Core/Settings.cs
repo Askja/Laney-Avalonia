@@ -596,7 +596,6 @@ namespace ELOR.Laney.Core {
         public const string APP_FONT_FAMILY = "app_font_family";
         public const string APP_ICON_VARIANT = "app_icon_variant";
         public const string CHAT_BACKGROUND = "chat_background";
-        public const string CHAT_BACKGROUND_IMAGE = "chat_background_image";
         public const string CHAT_ITEM_MORE_ROWS = "chat_item_more_rows";
         public const string CHAT_LIST_WIDTH = "chat_list_width";
         public const string CHAT_LIST_DENSITY = "chat_list_density";
@@ -609,7 +608,6 @@ namespace ELOR.Laney.Core {
         public const string MESSAGE_BUBBLE_WIDTH = "message_bubble_width";
         public const string MESSAGE_BUBBLE_DENSITY = "message_bubble_density";
         public const string MESSAGE_BUBBLE_STYLE = "message_bubble_style";
-        public const string MESSAGE_BUBBLE_OPACITY = "message_bubble_opacity";
         public const string MESSAGE_BUBBLE_AUTO_COLOR = "message_bubble_auto_color";
         public const string MESSAGE_CHECKMARK_STYLE = "message_checkmark_style";
         public const string CHAT_OPEN_BEHAVIOR = "chat_open_behavior";
@@ -717,9 +715,7 @@ namespace ELOR.Laney.Core {
         public const string PEER_LOCAL_AVATAR_PREFIX = "peer_local_avatar_";
         public const string PEER_LOCAL_TAGS_PREFIX = "peer_local_tags_";
         public const string PEER_LOCAL_THEME_PREFIX = "peer_local_theme_";
-        public const string PEER_LOCAL_BACKGROUND_IMAGE_PREFIX = "peer_local_background_image_";
         public const string PEER_LOCAL_BACKGROUND_DIM_PREFIX = "peer_local_background_dim_";
-        public const string PEER_LOCAL_BACKGROUND_BLUR_PREFIX = "peer_local_background_blur_";
         public const string PEER_LOCAL_BACKGROUND_BRIGHTNESS_PREFIX = "peer_local_background_brightness_";
         public const string PEER_LOCAL_ACCENT_PREFIX = "peer_local_accent_";
         public const string PEER_LOCAL_DENSITY_PREFIX = "peer_local_density_";
@@ -789,7 +785,6 @@ namespace ELOR.Laney.Core {
             APP_FONT_FAMILY,
             APP_ICON_VARIANT,
             CHAT_BACKGROUND,
-            CHAT_BACKGROUND_IMAGE,
             CHAT_ITEM_MORE_ROWS,
             CHAT_LIST_WIDTH,
             CHAT_LIST_DENSITY,
@@ -802,7 +797,6 @@ namespace ELOR.Laney.Core {
             MESSAGE_BUBBLE_WIDTH,
             MESSAGE_BUBBLE_DENSITY,
             MESSAGE_BUBBLE_STYLE,
-            MESSAGE_BUBBLE_OPACITY,
             MESSAGE_BUBBLE_AUTO_COLOR,
             MESSAGE_CHECKMARK_STYLE,
             CHAT_OPEN_BEHAVIOR,
@@ -902,9 +896,7 @@ namespace ELOR.Laney.Core {
             PEER_LOCAL_AVATAR_PREFIX,
             PEER_LOCAL_TAGS_PREFIX,
             PEER_LOCAL_THEME_PREFIX,
-            PEER_LOCAL_BACKGROUND_IMAGE_PREFIX,
             PEER_LOCAL_BACKGROUND_DIM_PREFIX,
-            PEER_LOCAL_BACKGROUND_BLUR_PREFIX,
             PEER_LOCAL_BACKGROUND_BRIGHTNESS_PREFIX,
             PEER_LOCAL_ACCENT_PREFIX,
             PEER_LOCAL_DENSITY_PREFIX,
@@ -1157,15 +1149,6 @@ namespace ELOR.Laney.Core {
             set => Set(CHAT_BACKGROUND, String.IsNullOrWhiteSpace(value) ? AppearanceManager.DefaultChatBackgroundId : value);
         }
 
-        public static string ChatBackgroundImage {
-            get => Get(CHAT_BACKGROUND_IMAGE, String.Empty);
-            set => Set(CHAT_BACKGROUND_IMAGE, NormalizePathOrUri(value));
-        }
-
-        public static Uri ChatBackgroundImageUri {
-            get => GetImageUri(ChatBackgroundImage);
-        }
-
         public static bool ChatItemMoreRows {
             get => Get(CHAT_ITEM_MORE_ROWS, false);
             set => Set(CHAT_ITEM_MORE_ROWS, value);
@@ -1224,11 +1207,6 @@ namespace ELOR.Laney.Core {
         public static string MessageBubbleStyle {
             get => NormalizeBubbleStyle(Get(MESSAGE_BUBBLE_STYLE, BubbleStyleIds.Vk));
             set => Set(MESSAGE_BUBBLE_STYLE, NormalizeBubbleStyle(value));
-        }
-
-        public static int MessageBubbleOpacity {
-            get => NormalizePercent(Get(MESSAGE_BUBBLE_OPACITY, 100), 40, 100);
-            set => Set(MESSAGE_BUBBLE_OPACITY, NormalizePercent(value, 40, 100));
         }
 
         public static bool MessageBubbleAutoColor {
@@ -2377,19 +2355,6 @@ namespace ELOR.Laney.Core {
                 : theme.Trim());
         }
 
-        public static string GetPeerLocalBackgroundImage(long peerId) {
-            return Get($"{PEER_LOCAL_BACKGROUND_IMAGE_PREFIX}{peerId}", String.Empty);
-        }
-
-        public static Uri GetPeerLocalBackgroundImageUri(long peerId) {
-            return GetImageUri(GetPeerLocalBackgroundImage(peerId));
-        }
-
-        public static void SetPeerLocalBackgroundImage(long peerId, string image) {
-            string key = $"{PEER_LOCAL_BACKGROUND_IMAGE_PREFIX}{peerId}";
-            Set(key, String.IsNullOrWhiteSpace(image) ? null : image.Trim());
-        }
-
         public static int GetPeerLocalBackgroundDim(long peerId) {
             return NormalizePercent(Get($"{PEER_LOCAL_BACKGROUND_DIM_PREFIX}{peerId}", 0), 0, 80);
         }
@@ -2397,16 +2362,6 @@ namespace ELOR.Laney.Core {
         public static void SetPeerLocalBackgroundDim(long peerId, int dim) {
             string key = $"{PEER_LOCAL_BACKGROUND_DIM_PREFIX}{peerId}";
             int normalized = NormalizePercent(dim, 0, 80);
-            Set(key, normalized == 0 ? null : normalized);
-        }
-
-        public static int GetPeerLocalBackgroundBlur(long peerId) {
-            return Math.Clamp(Get($"{PEER_LOCAL_BACKGROUND_BLUR_PREFIX}{peerId}", 0), 0, 16);
-        }
-
-        public static void SetPeerLocalBackgroundBlur(long peerId, int blur) {
-            string key = $"{PEER_LOCAL_BACKGROUND_BLUR_PREFIX}{peerId}";
-            int normalized = Math.Clamp(blur, 0, 16);
             Set(key, normalized == 0 ? null : normalized);
         }
 
@@ -2813,20 +2768,6 @@ namespace ELOR.Laney.Core {
 
             string normalized = fontFamily.Trim();
             return normalized.Length > 96 ? normalized[..96] : normalized;
-        }
-
-        private static string NormalizePathOrUri(string value) {
-            if (String.IsNullOrWhiteSpace(value)) return null;
-
-            string normalized = Environment.ExpandEnvironmentVariables(value.Trim().Trim('"'));
-            return normalized.Length > 1024 ? normalized[..1024] : normalized;
-        }
-
-        private static Uri GetImageUri(string value) {
-            if (String.IsNullOrWhiteSpace(value)) return null;
-            if (Uri.TryCreate(value, UriKind.Absolute, out Uri uri)) return uri;
-            if (Path.IsPathFullyQualified(value)) return new Uri(value);
-            return null;
         }
 
         private static string NormalizeProxyUri(string value) {

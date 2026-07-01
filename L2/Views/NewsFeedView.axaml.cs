@@ -8,10 +8,20 @@ namespace ELOR.Laney.Views {
     public partial class NewsFeedView : VKUI.Controls.Page {
         private bool incrementalLoadingRegistered;
         private NewsFeedViewModel ViewModel { get { return DataContext as NewsFeedViewModel; } }
+        public event System.EventHandler BackRequested;
 
         public NewsFeedView() {
             InitializeComponent();
-            BackButton.Click += async (a, b) => await NavigationRouter.BackAsync();
+            BackButton.Click += BackButton_Click;
+        }
+
+        private async void BackButton_Click(object sender, RoutedEventArgs e) {
+            if (BackRequested != null) {
+                BackRequested.Invoke(this, System.EventArgs.Empty);
+                return;
+            }
+
+            if (NavigationRouter != null) await NavigationRouter.BackAsync();
         }
 
         private async void NewsFeedView_Loaded(object sender, RoutedEventArgs e) {

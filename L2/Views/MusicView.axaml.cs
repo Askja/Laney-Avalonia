@@ -10,11 +10,21 @@ namespace ELOR.Laney.Views {
     public partial class MusicView : VKUI.Controls.Page {
         private bool incrementalLoadingRegistered;
         private MusicViewModel ViewModel => DataContext as MusicViewModel;
+        public event System.EventHandler BackRequested;
 
         public MusicView() {
             InitializeComponent();
-            BackButton.Click += async (a, b) => await NavigationRouter.BackAsync();
+            BackButton.Click += BackButton_Click;
             Unloaded += MusicView_Unloaded;
+        }
+
+        private async void BackButton_Click(object sender, RoutedEventArgs e) {
+            if (BackRequested != null) {
+                BackRequested.Invoke(this, System.EventArgs.Empty);
+                return;
+            }
+
+            if (NavigationRouter != null) await NavigationRouter.BackAsync();
         }
 
         private async void MusicView_Loaded(object sender, RoutedEventArgs e) {

@@ -193,24 +193,6 @@
               </StackPanel>
             </vkui:Cell.After>
           </vkui:Cell>
-          <vkui:Cell Header="Картинка чатов" Subtitle="{Binding ChatBackgroundImageSummary}">
-            <vkui:Cell.Before>
-              <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon20PictureOutline}"/>
-            </vkui:Cell.Before>
-            <vkui:Cell.After>
-              <StackPanel Orientation="Horizontal" Spacing="8">
-                <Button Classes="Secondary" Click="SelectChatBackgroundImage_Click">
-                  <StackPanel Orientation="Horizontal" Spacing="6">
-                    <vkui:VKIcon Width="20" Height="20" Id="{x:Static vkui:VKIconNames.Icon20PictureOutline}"/>
-                    <TextBlock Text="Выбрать"/>
-                  </StackPanel>
-                </Button>
-                <Button Classes="Tertiary" Click="ClearChatBackgroundImage_Click">
-                  <vkui:VKIcon Width="20" Height="20" Id="{x:Static vkui:VKIconNames.Icon20DeleteOutline}"/>
-                </Button>
-              </StackPanel>
-            </vkui:Cell.After>
-          </vkui:Cell>
         </StackPanel>
       </Border>
     </StackPanel>

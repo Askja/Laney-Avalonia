@@ -2,45 +2,13 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
-using Avalonia.Platform.Storage;
 using ELOR.Laney.ViewModels.SettingsCategories;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace ELOR.Laney.Views.SettingsCategories {
     public partial class Appearance : UserControl {
         public Appearance() {
             InitializeComponent();
-        }
-
-        private async void SelectChatBackgroundImage_Click(object sender, RoutedEventArgs e) {
-            TopLevel topLevel = TopLevel.GetTopLevel(this);
-            if (topLevel?.StorageProvider?.CanOpen != true) return;
-
-            IReadOnlyList<IStorageFile> files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions {
-                Title = "Выбрать картинку для чатов",
-                AllowMultiple = false,
-                FileTypeFilter = [
-                    new FilePickerFileType("Картинки") {
-                        Patterns = ["*.png", "*.jpg", "*.jpeg", "*.webp", "*.bmp"]
-                    },
-                    FilePickerFileTypes.All
-                ]
-            });
-
-            IStorageFile file = files?.FirstOrDefault();
-            if (file == null) return;
-
-            if (DataContext is AppearanceViewModel viewModel) {
-                viewModel.SetChatBackgroundImage(file.Path.LocalPath);
-            }
-        }
-
-        private void ClearChatBackgroundImage_Click(object sender, RoutedEventArgs e) {
-            if (DataContext is AppearanceViewModel viewModel) {
-                viewModel.SetChatBackgroundImage(null);
-            }
         }
 
         private void AppFontFamily_Click(object sender, RoutedEventArgs e) {

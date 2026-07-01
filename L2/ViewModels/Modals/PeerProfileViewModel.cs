@@ -142,7 +142,6 @@ namespace ELOR.Laney.ViewModels.Modals {
         private string _localAlias;
         private string _localAvatar;
         private string _localTags;
-        private string _localBackgroundImage;
         private string _localAppearanceTheme;
         private string _localAppearanceAccent;
         private string _localAppearanceDensity;
@@ -151,7 +150,6 @@ namespace ELOR.Laney.ViewModels.Modals {
         private string _localAppearanceBubbleColor;
         private string _localEmojiPack;
         private int _localAppearanceDim;
-        private int _localAppearanceBlur;
         private int _localAppearanceBrightness;
         private string _mutedSendersText;
         private string _quietTextRules;
@@ -212,7 +210,6 @@ namespace ELOR.Laney.ViewModels.Modals {
         public string LocalAlias { get { return _localAlias; } set { SaveLocalAlias(value); } }
         public string LocalAvatar { get { return _localAvatar; } set { SaveLocalAvatar(value); } }
         public string LocalTags { get { return _localTags; } set { SaveLocalTags(value); } }
-        public string LocalBackgroundImage { get { return _localBackgroundImage; } set { SaveLocalBackgroundImage(value); } }
         public string ProfileFirstNameDraft { get { return _profileFirstNameDraft; } set { _profileFirstNameDraft = value; OnPropertyChanged(); } }
         public string ProfileLastNameDraft { get { return _profileLastNameDraft; } set { _profileLastNameDraft = value; OnPropertyChanged(); } }
         public string ProfileStatusDraft { get { return _profileStatusDraft; } set { _profileStatusDraft = value; OnPropertyChanged(); } }
@@ -255,13 +252,6 @@ namespace ELOR.Laney.ViewModels.Modals {
             new TwoStringTuple("45", "45%"),
             new TwoStringTuple("60", "60%")
         };
-        public ObservableCollection<TwoStringTuple> PeerBackgroundBlurOptions { get; } = new ObservableCollection<TwoStringTuple> {
-            new TwoStringTuple("0", "Нет"),
-            new TwoStringTuple("4", "Легкий"),
-            new TwoStringTuple("8", "Средний"),
-            new TwoStringTuple("12", "Сильный"),
-            new TwoStringTuple("16", "Максимум")
-        };
         public ObservableCollection<TwoStringTuple> PeerBackgroundBrightnessOptions { get; } = new ObservableCollection<TwoStringTuple> {
             new TwoStringTuple("-20", "-20%"),
             new TwoStringTuple("0", "0%"),
@@ -276,15 +266,11 @@ namespace ELOR.Laney.ViewModels.Modals {
         public AppearanceOption CurrentPeerBubbleColor { get { return GetAppearanceOption(PeerBubbleColorOptions, _localAppearanceBubbleColor); } set { SaveAppearanceOption(value, ref _localAppearanceBubbleColor, nameof(CurrentPeerBubbleColor)); } }
         public TwoStringTuple CurrentPeerEmojiPack { get { return GetTupleOption(PeerEmojiPackOptions, _localEmojiPack); } set { SavePeerEmojiPack(value); } }
         public TwoStringTuple CurrentPeerBackgroundDim { get { return GetTupleOption(PeerBackgroundDimOptions, _localAppearanceDim.ToString()); } set { SavePeerBackgroundDim(value); } }
-        public TwoStringTuple CurrentPeerBackgroundBlur { get { return GetTupleOption(PeerBackgroundBlurOptions, _localAppearanceBlur.ToString()); } set { SavePeerBackgroundBlur(value); } }
         public TwoStringTuple CurrentPeerBackgroundBrightness { get { return GetTupleOption(PeerBackgroundBrightnessOptions, _localAppearanceBrightness.ToString()); } set { SavePeerBackgroundBrightness(value); } }
-        public Uri LocalBackgroundImageUri { get { return BuildLocalBackgroundImageUri(_localBackgroundImage); } }
         public IBrush LocalAppearancePreviewBackground { get { return GetLocalAppearancePreviewBackground(); } }
         public IBrush LocalAppearancePreviewOutgoing { get { return GetLocalAppearancePreviewOutgoing(); } }
-        public double LocalAppearancePreviewImageOpacity { get { return LocalBackgroundImageUri == null ? 0 : 1; } }
-        public double LocalAppearancePreviewDimOpacity { get { return LocalBackgroundImageUri == null ? 0 : Math.Clamp(_localAppearanceDim + Math.Max(0, -_localAppearanceBrightness), 0, 90) / 100d; } }
-        public double LocalAppearancePreviewBrightnessOpacity { get { return LocalBackgroundImageUri == null ? 0 : Math.Max(0, _localAppearanceBrightness) / 100d; } }
-        public int LocalAppearancePreviewBlurRadius { get { return LocalBackgroundImageUri == null ? 0 : _localAppearanceBlur; } }
+        public double LocalAppearancePreviewDimOpacity { get { return Math.Clamp(_localAppearanceDim + Math.Max(0, -_localAppearanceBrightness), 0, 90) / 100d; } }
+        public double LocalAppearancePreviewBrightnessOpacity { get { return Math.Max(0, _localAppearanceBrightness) / 100d; } }
         public bool HasLocalAppearanceDraftChanges { get { return HasLocalAppearanceChanges(); } }
         public bool IsE2ESectionVisible { get { return Id != 0 && CanUseE2EActions; } }
         public bool CanUseE2EActions { get { return GetE2EChat() != null; } }
@@ -543,14 +529,6 @@ namespace ELOR.Laney.ViewModels.Modals {
             RefreshLocalFolderStateForOpenedChat();
         }
 
-        private void SaveLocalBackgroundImage(string value) {
-            value ??= String.Empty;
-            if (_localBackgroundImage == value) return;
-
-            _localBackgroundImage = value.Trim();
-            NotifyLocalAppearanceDraftChanged(nameof(LocalBackgroundImage));
-        }
-
         private void SavePeerBackgroundDim(TwoStringTuple value) {
             if (value == null) return;
             if (!int.TryParse(value.Item1, out int dim)) return;
@@ -559,16 +537,6 @@ namespace ELOR.Laney.ViewModels.Modals {
 
             _localAppearanceDim = dim;
             NotifyLocalAppearanceDraftChanged(nameof(CurrentPeerBackgroundDim));
-        }
-
-        private void SavePeerBackgroundBlur(TwoStringTuple value) {
-            if (value == null) return;
-            if (!int.TryParse(value.Item1, out int blur)) return;
-            blur = Math.Clamp(blur, 0, 16);
-            if (_localAppearanceBlur == blur) return;
-
-            _localAppearanceBlur = blur;
-            NotifyLocalAppearanceDraftChanged(nameof(CurrentPeerBackgroundBlur));
         }
 
         private void SavePeerBackgroundBrightness(TwoStringTuple value) {
@@ -642,13 +610,10 @@ namespace ELOR.Laney.ViewModels.Modals {
         }
 
         private void RefreshLocalAppearancePreview() {
-            OnPropertyChanged(nameof(LocalBackgroundImageUri));
             OnPropertyChanged(nameof(LocalAppearancePreviewBackground));
             OnPropertyChanged(nameof(LocalAppearancePreviewOutgoing));
-            OnPropertyChanged(nameof(LocalAppearancePreviewImageOpacity));
             OnPropertyChanged(nameof(LocalAppearancePreviewDimOpacity));
             OnPropertyChanged(nameof(LocalAppearancePreviewBrightnessOpacity));
-            OnPropertyChanged(nameof(LocalAppearancePreviewBlurRadius));
             OnPropertyChanged(nameof(HasLocalAppearanceDraftChanges));
         }
 
@@ -659,9 +624,7 @@ namespace ELOR.Laney.ViewModels.Modals {
 
         private void LoadLocalAppearanceDraftFromSettings(bool notify) {
             _localAppearanceTheme = NormalizeAppearanceDraft(Settings.GetPeerLocalTheme(Id));
-            _localBackgroundImage = Settings.GetPeerLocalBackgroundImage(Id);
             _localAppearanceDim = Settings.GetPeerLocalBackgroundDim(Id);
-            _localAppearanceBlur = Settings.GetPeerLocalBackgroundBlur(Id);
             _localAppearanceBrightness = Settings.GetPeerLocalBackgroundBrightness(Id);
             _localAppearanceAccent = NormalizeAppearanceDraft(Settings.GetPeerLocalAccent(Id));
             _localAppearanceDensity = NormalizeAppearanceDraft(Settings.GetPeerLocalDensity(Id));
@@ -672,9 +635,7 @@ namespace ELOR.Laney.ViewModels.Modals {
 
             if (!notify) return;
             OnPropertyChanged(nameof(CurrentPeerChatBackground));
-            OnPropertyChanged(nameof(LocalBackgroundImage));
             OnPropertyChanged(nameof(CurrentPeerBackgroundDim));
-            OnPropertyChanged(nameof(CurrentPeerBackgroundBlur));
             OnPropertyChanged(nameof(CurrentPeerBackgroundBrightness));
             OnPropertyChanged(nameof(CurrentPeerAccent));
             OnPropertyChanged(nameof(CurrentPeerChatDensity));
@@ -687,9 +648,7 @@ namespace ELOR.Laney.ViewModels.Modals {
 
         private void ApplyLocalAppearanceDraft() {
             Settings.SetPeerLocalTheme(Id, _localAppearanceTheme);
-            Settings.SetPeerLocalBackgroundImage(Id, _localBackgroundImage);
             Settings.SetPeerLocalBackgroundDim(Id, _localAppearanceDim);
-            Settings.SetPeerLocalBackgroundBlur(Id, _localAppearanceBlur);
             Settings.SetPeerLocalBackgroundBrightness(Id, _localAppearanceBrightness);
             Settings.SetPeerLocalAccent(Id, _localAppearanceAccent);
             Settings.SetPeerLocalDensity(Id, _localAppearanceDensity);
@@ -703,9 +662,7 @@ namespace ELOR.Laney.ViewModels.Modals {
 
         private bool HasLocalAppearanceChanges() {
             return NormalizeStorageValue(_localAppearanceTheme) != NormalizeStorageValue(Settings.GetPeerLocalTheme(Id))
-                || NormalizeStorageValue(_localBackgroundImage) != NormalizeStorageValue(Settings.GetPeerLocalBackgroundImage(Id))
                 || _localAppearanceDim != Settings.GetPeerLocalBackgroundDim(Id)
-                || _localAppearanceBlur != Settings.GetPeerLocalBackgroundBlur(Id)
                 || _localAppearanceBrightness != Settings.GetPeerLocalBackgroundBrightness(Id)
                 || NormalizeStorageValue(_localAppearanceAccent) != NormalizeStorageValue(Settings.GetPeerLocalAccent(Id))
                 || NormalizeStorageValue(_localAppearanceDensity) != NormalizeStorageValue(Settings.GetPeerLocalDensity(Id))
@@ -722,14 +679,6 @@ namespace ELOR.Laney.ViewModels.Modals {
         private static string NormalizeStorageValue(string value) {
             if (String.IsNullOrWhiteSpace(value) || value == AppearanceManager.InheritChatBackgroundId) return String.Empty;
             return value.Trim();
-        }
-
-        private static Uri BuildLocalBackgroundImageUri(string value) {
-            if (String.IsNullOrWhiteSpace(value)) return null;
-            value = value.Trim();
-            if (Uri.TryCreate(value, UriKind.Absolute, out Uri uri)) return uri;
-            if (System.IO.Path.IsPathFullyQualified(value)) return new Uri(value);
-            return null;
         }
 
         private IBrush GetLocalAppearancePreviewBackground() {

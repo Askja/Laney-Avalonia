@@ -159,7 +159,6 @@ namespace ELOR.Laney.ViewModels.SettingsCategories {
                     settings.Add(Settings.MESSAGE_BUBBLE_WIDTH, BubbleWidthIds.Narrow);
                     settings.Add(Settings.MESSAGE_BUBBLE_DENSITY, BubbleDensityIds.Compact);
                     settings.Add(Settings.MESSAGE_BUBBLE_STYLE, BubbleStyleIds.Minimal);
-                    settings.Add(Settings.MESSAGE_BUBBLE_OPACITY, 100);
                     settings.Add(Settings.MESSAGE_BUBBLE_AUTO_COLOR, false);
                     break;
                 case InterfaceProfileIds.Balanced:
@@ -184,7 +183,6 @@ namespace ELOR.Laney.ViewModels.SettingsCategories {
                     settings.Add(Settings.MESSAGE_BUBBLE_WIDTH, BubbleWidthIds.Medium);
                     settings.Add(Settings.MESSAGE_BUBBLE_DENSITY, BubbleDensityIds.Normal);
                     settings.Add(Settings.MESSAGE_BUBBLE_STYLE, BubbleStyleIds.Vk);
-                    settings.Add(Settings.MESSAGE_BUBBLE_OPACITY, 100);
                     settings.Add(Settings.MESSAGE_BUBBLE_AUTO_COLOR, true);
                     break;
                 case InterfaceProfileIds.Touch:
@@ -209,7 +207,6 @@ namespace ELOR.Laney.ViewModels.SettingsCategories {
                     settings.Add(Settings.MESSAGE_BUBBLE_WIDTH, BubbleWidthIds.Wide);
                     settings.Add(Settings.MESSAGE_BUBBLE_DENSITY, BubbleDensityIds.Air);
                     settings.Add(Settings.MESSAGE_BUBBLE_STYLE, BubbleStyleIds.Telegram);
-                    settings.Add(Settings.MESSAGE_BUBBLE_OPACITY, 92);
                     settings.Add(Settings.MESSAGE_BUBBLE_AUTO_COLOR, true);
                     break;
                 case InterfaceProfileIds.Work:
@@ -236,7 +233,6 @@ namespace ELOR.Laney.ViewModels.SettingsCategories {
                     settings.Add(Settings.MESSAGE_BUBBLE_WIDTH, BubbleWidthIds.Narrow);
                     settings.Add(Settings.MESSAGE_BUBBLE_DENSITY, BubbleDensityIds.Compact);
                     settings.Add(Settings.MESSAGE_BUBBLE_STYLE, BubbleStyleIds.Minimal);
-                    settings.Add(Settings.MESSAGE_BUBBLE_OPACITY, 100);
                     settings.Add(Settings.MESSAGE_BUBBLE_AUTO_COLOR, false);
                     break;
                 case InterfaceProfileIds.Night:
@@ -262,7 +258,6 @@ namespace ELOR.Laney.ViewModels.SettingsCategories {
                     settings.Add(Settings.MESSAGE_BUBBLE_WIDTH, BubbleWidthIds.Medium);
                     settings.Add(Settings.MESSAGE_BUBBLE_DENSITY, BubbleDensityIds.Normal);
                     settings.Add(Settings.MESSAGE_BUBBLE_STYLE, BubbleStyleIds.Telegram);
-                    settings.Add(Settings.MESSAGE_BUBBLE_OPACITY, 92);
                     settings.Add(Settings.MESSAGE_BUBBLE_AUTO_COLOR, true);
                     break;
                 case InterfaceProfileIds.LowRam:
@@ -294,7 +289,6 @@ namespace ELOR.Laney.ViewModels.SettingsCategories {
                     settings.Add(Settings.MESSAGE_BUBBLE_WIDTH, BubbleWidthIds.Narrow);
                     settings.Add(Settings.MESSAGE_BUBBLE_DENSITY, BubbleDensityIds.Compact);
                     settings.Add(Settings.MESSAGE_BUBBLE_STYLE, BubbleStyleIds.Flat);
-                    settings.Add(Settings.MESSAGE_BUBBLE_OPACITY, 100);
                     settings.Add(Settings.MESSAGE_BUBBLE_AUTO_COLOR, false);
                     break;
                 case InterfaceProfileIds.Streamer:
@@ -320,7 +314,6 @@ namespace ELOR.Laney.ViewModels.SettingsCategories {
                     settings.Add(Settings.MESSAGE_BUBBLE_WIDTH, BubbleWidthIds.Wide);
                     settings.Add(Settings.MESSAGE_BUBBLE_DENSITY, BubbleDensityIds.Air);
                     settings.Add(Settings.MESSAGE_BUBBLE_STYLE, BubbleStyleIds.Outline);
-                    settings.Add(Settings.MESSAGE_BUBBLE_OPACITY, 100);
                     settings.Add(Settings.MESSAGE_BUBBLE_AUTO_COLOR, false);
                     break;
                 default:
@@ -339,7 +332,6 @@ namespace ELOR.Laney.ViewModels.SettingsCategories {
                     settings.Add(Settings.MESSAGE_BUBBLE_WIDTH, BubbleWidthIds.Medium);
                     settings.Add(Settings.MESSAGE_BUBBLE_DENSITY, BubbleDensityIds.Normal);
                     settings.Add(Settings.MESSAGE_BUBBLE_STYLE, BubbleStyleIds.Vk);
-                    settings.Add(Settings.MESSAGE_BUBBLE_OPACITY, 100);
                     settings.Add(Settings.MESSAGE_BUBBLE_AUTO_COLOR, false);
                     break;
             }
