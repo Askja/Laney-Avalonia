@@ -36,6 +36,7 @@ namespace ELOR.Laney.ViewModels.SettingsCategories {
             new TwoStringTuple(EmojiPackIds.TelegramLike, "Telegram-подобный"),
             new TwoStringTuple(EmojiPackIds.Noto, "Google Noto"),
             new TwoStringTuple(EmojiPackIds.Twemoji, "Twemoji"),
+            new TwoStringTuple(EmojiPackIds.OpenMoji, "OpenMoji"),
             new TwoStringTuple(EmojiPackIds.System, "Системные"),
             new TwoStringTuple(EmojiPackIds.Fallback, "Лёгкий запасной набор"),
             new TwoStringTuple(EmojiPackIds.Custom, "Свой manifest-файл")

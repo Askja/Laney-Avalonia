@@ -11,6 +11,7 @@ namespace ELOR.Laney.Core {
         private const string VkRuEmojiCdnBase = "https://vk.ru/images/emoji/";
         private const string TwemojiCdnBase = "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/";
         private const string NotoEmojiCdnBase = "https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji@main/png/128/";
+        private const string OpenMojiCdnBase = "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.1.0/color/618x618/";
 
         public static Uri ResolvePickerImageUri(string emoji, long peerId = 0) {
             string pack = peerId != 0 ? Settings.ResolvePeerEmojiPack(peerId) : Settings.EmojiPack;
@@ -60,6 +61,11 @@ namespace ELOR.Laney.Core {
                     AddCandidate(candidates, BuildNotoPngUri(emoji));
                     AddCandidate(candidates, BuildTwemojiPngUri(emoji));
                     break;
+                case EmojiPackIds.OpenMoji:
+                    AddCandidate(candidates, BuildOpenMojiPngUri(emoji));
+                    AddCandidate(candidates, BuildNotoPngUri(emoji));
+                    AddCandidate(candidates, BuildTwemojiPngUri(emoji));
+                    break;
             }
 
             return candidates;
@@ -71,6 +77,7 @@ namespace ELOR.Laney.Core {
                 || pack == EmojiPackIds.TelegramLike
                 || pack == EmojiPackIds.Noto
                 || pack == EmojiPackIds.Twemoji
+                || pack == EmojiPackIds.OpenMoji
                 || pack == EmojiPackIds.Custom;
         }
 
@@ -93,6 +100,13 @@ namespace ELOR.Laney.Core {
             return String.IsNullOrEmpty(code)
                 ? null
                 : new Uri($"{TwemojiCdnBase}{code}.png");
+        }
+
+        private static Uri BuildOpenMojiPngUri(string emoji) {
+            string code = BuildCodepointName(emoji, "-", stripVariationSelectors: true).ToUpperInvariant();
+            return String.IsNullOrEmpty(code)
+                ? null
+                : new Uri($"{OpenMojiCdnBase}{code}.png");
         }
 
         private static void AddCandidate(List<Uri> candidates, Uri uri) {

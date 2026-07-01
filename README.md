@@ -155,7 +155,8 @@ Laney умеет отображать и обрабатывать:
 - избранное;
 - теги;
 - поиск;
-- Telegram-like emoji pack;
+- emoji-паки: ВКонтакте, Telegram-like на open-source backend, Google Noto, Twemoji, OpenMoji, системный и свой manifest-файл;
+- real-image emoji в picker и коротких сообщениях с fallback-цепочкой, чтобы один битый CDN не превращал панель в пустоту;
 - отправка пользовательских стикеров как граффити;
 - отправка как изображения;
 - отправка как файла.
@@ -456,6 +457,7 @@ Laney использует публичные и доступные сценар
 
 - [Elorucov](https://github.com/Elorucov) - автор оригинального Laney и upstream-репозитория.
 - [Askja](https://github.com/Askja) - развитие форка, новые функции клиента, UI/UX-доработки, производительность, локальные возможности и упаковка результата.
+- [Twemoji](https://github.com/twitter/twemoji), [Noto Emoji](https://github.com/googlefonts/noto-emoji) и [OpenMoji](https://github.com/hfg-gmuend/openmoji) - bitmap emoji-источники для picker и коротких сообщений.
 - Участники и пользователи Laney - багрепорты, идеи, тестирование и терпение, без которого любой desktop-клиент превращается в музей компромиссов.
 
 ## Лицензия

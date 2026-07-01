@@ -181,7 +181,8 @@ namespace ELOR.Laney.Controls {
             return pack == EmojiPackIds.Vk
                 || pack == EmojiPackIds.TelegramLike
                 || pack == EmojiPackIds.Noto
-                || pack == EmojiPackIds.Twemoji;
+                || pack == EmojiPackIds.Twemoji
+                || pack == EmojiPackIds.OpenMoji;
         }
 
         private static bool TryMatchEmoji(string text, int index, string pack, long peerId, out string emoji, out Uri imageUri) {

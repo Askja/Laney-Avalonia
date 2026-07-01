@@ -91,6 +91,7 @@ namespace ELOR.Laney.Core {
                 EmojiPackIds.TelegramLike => BuildTelegramLikePack(),
                 EmojiPackIds.Noto => BuildTelegramLikePack(),
                 EmojiPackIds.Twemoji => BuildTelegramLikePack(),
+                EmojiPackIds.OpenMoji => BuildTelegramLikePack(),
                 EmojiPackIds.Fallback => BuildFallbackPack(),
                 EmojiPackIds.Custom => BuildCustomPack(normalizedPath) ?? BuildSystemPack(),
                 _ => BuildSystemPack()

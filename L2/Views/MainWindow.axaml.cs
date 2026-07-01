@@ -1342,7 +1342,9 @@ namespace ELOR.Laney.Views {
                 (EmojiPackIds.Vk, "🥰"),
                 (EmojiPackIds.TelegramLike, "😊"),
                 (EmojiPackIds.Twemoji, "🥰"),
-                (EmojiPackIds.Noto, "🥰")
+                (EmojiPackIds.Noto, "🥰"),
+                (EmojiPackIds.OpenMoji, "🥰"),
+                (EmojiPackIds.OpenMoji, "👩‍💻")
             };
 
             int loaded = 0;
@@ -1377,6 +1379,16 @@ namespace ELOR.Laney.Views {
             double memoryBudgetMb = GetPerfMemoryBudgetMb();
             bool memoryBudgetOk = CheckPerfMemoryBudget("emoji", "privateMemory", privateMemoryMb, memoryBudgetMb);
             bool passed = failed == 0 && snapshot.EmojiCount <= samples.Count && snapshot.SizeBytes <= 2 * 1024 * 1024;
+            if (!passed) {
+                Environment.ExitCode = Math.Max(Environment.ExitCode, 2);
+                Log.Error(
+                    "Perf emoji QA failed gate: loaded={Loaded}/{Total}; failed={Failed}; emojiCache={EmojiCache}; cacheBytes={CacheBytes}",
+                    loaded,
+                    samples.Count,
+                    failed,
+                    snapshot.EmojiCount,
+                    snapshot.SizeBytes);
+            }
 
             Log.Information(
                 "Perf emoji QA result: passed={Passed}; memoryBudgetOk={MemoryBudgetOk}; loaded={Loaded}/{Total}; failed={Failed}; emojiCache={EmojiCache}; cacheBytes={CacheBytes}; privateMemory={PrivateMemoryMb:F2}MB; memoryBudget={MemoryBudgetMb:F0}MB; details={Details}",

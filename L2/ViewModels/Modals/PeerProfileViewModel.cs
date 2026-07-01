@@ -244,6 +244,7 @@ namespace ELOR.Laney.ViewModels.Modals {
             new TwoStringTuple(EmojiPackIds.TelegramLike, "Telegram-подобный"),
             new TwoStringTuple(EmojiPackIds.Noto, "Google Noto"),
             new TwoStringTuple(EmojiPackIds.Twemoji, "Twemoji"),
+            new TwoStringTuple(EmojiPackIds.OpenMoji, "OpenMoji"),
             new TwoStringTuple(EmojiPackIds.Fallback, "Запасной набор"),
             new TwoStringTuple(EmojiPackIds.Custom, "Свой manifest-файл")
         };
