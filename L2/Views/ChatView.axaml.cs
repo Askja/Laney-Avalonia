@@ -31,6 +31,7 @@ namespace ELOR.Laney.Views {
         const double AutoScrollReleaseTolerance = 64;
         const double AutoScrollDirectionTolerance = 0.5;
         internal const double HistoryBoundaryAnchorTolerance = 16;
+        const double PerfMemorySampleIntervalMs = 250;
 
         ScrollViewer MessagesListScrollViewer;
         DispatcherTimer markReadTimer;
@@ -565,8 +566,12 @@ namespace ELOR.Laney.Views {
             double direction = -1;
             int samples = 0;
             double peakPrivateMemoryMb = GetPrivateMemoryMb();
+            long nextMemorySampleTicks = Stopwatch.GetTimestamp();
 
             while (stopwatch.Elapsed < duration) {
+                await WaitForNextAnimationFrameAsync();
+                if (stopwatch.Elapsed >= duration) break;
+
                 double loopMaxOffset = Math.Max(0, MessagesListScrollViewer.Extent.Height - MessagesListScrollViewer.Viewport.Height);
                 double step = Math.Max(10, MessagesListScrollViewer.Viewport.Height / 60d);
                 double nextOffset = MessagesListScrollViewer.Offset.Y + step * direction;
@@ -577,8 +582,11 @@ namespace ELOR.Laney.Views {
 
                 MessagesListScrollViewer.Offset = new Vector(MessagesListScrollViewer.Offset.X, nextOffset);
                 samples++;
-                peakPrivateMemoryMb = Math.Max(peakPrivateMemoryMb, GetPrivateMemoryMb());
-                await Task.Delay(16);
+                long nowTicks = Stopwatch.GetTimestamp();
+                if (nowTicks >= nextMemorySampleTicks) {
+                    peakPrivateMemoryMb = Math.Max(peakPrivateMemoryMb, GetPrivateMemoryMb());
+                    nextMemorySampleTicks = nowTicks + (long)(Stopwatch.Frequency * PerfMemorySampleIntervalMs / 1000.0);
+                }
             }
 
             await Task.Delay(120);
@@ -639,6 +647,15 @@ namespace ELOR.Laney.Views {
 
             if (!wasRunning && !DebugOverlay.IsVisible) StopFrameMonitor();
             return result;
+        }
+
+        private Task WaitForNextAnimationFrameAsync() {
+            TopLevel topLevel = TopLevel.GetTopLevel(this);
+            if (topLevel == null) return Task.Delay(16);
+
+            TaskCompletionSource<bool> tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            topLevel.RequestAnimationFrame((_) => tcs.TrySetResult(true));
+            return tcs.Task;
         }
 
         public async Task<ChatHistoryBoundaryStressQaResult> RunHistoryBoundaryStressQaAsync(int iterations, TimeSpan timeout) {

@@ -186,7 +186,7 @@
     <controls:MessagesListBox x:Name="MessagesList" Classes="MessagesList" Grid.Row="2" VerticalAlignment="Bottom" Background="Transparent" SelectionMode="Multiple,Toggle" Selection="{Binding SelectedMessages, Mode=TwoWay}" ItemsSource="{Binding DisplayedMessages, Mode=OneWay}">
       <controls:MessagesListBox.ItemsPanel>
         <ItemsPanelTemplate>
-          <VirtualizingStackPanel/>
+          <VirtualizingStackPanel CacheLength="0.5"/>
         </ItemsPanelTemplate>
       </controls:MessagesListBox.ItemsPanel>
       <controls:MessagesListBox.Styles>
