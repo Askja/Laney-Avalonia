@@ -624,11 +624,14 @@ namespace ELOR.Laney.Views {
 
                 await Task.Delay(450);
                 double finalMaxOffset = GetMaxScrollOffset();
-                result.ScrollAwayFromBottomTarget = targetAwayFromBottom;
+                double finalTargetAwayFromBottom = Math.Max(0, finalMaxOffset - awayDistance);
+                result.ScrollAwayFromBottomTarget = finalTargetAwayFromBottom;
                 result.ScrollAwayFromBottomFinal = MessagesListScrollViewer.Offset.Y;
                 result.ScrollAwayFromBottomMax = finalMaxOffset;
                 result.ScrollAwayFromBottomDistance = Math.Max(0, finalMaxOffset - result.ScrollAwayFromBottomFinal);
-                result.CanScrollAwayFromBottom = result.ScrollAwayFromBottomDistance >= Math.Min(64, awayDistance * 0.5);
+                result.ScrollAwayFromBottomError = Math.Abs(result.ScrollAwayFromBottomFinal - finalTargetAwayFromBottom);
+                result.CanScrollAwayFromBottom = result.ScrollAwayFromBottomDistance >= Math.Min(64, awayDistance * 0.5)
+                    && result.ScrollAwayFromBottomError <= 48;
                 MessagesListScrollViewer.Offset = new Vector(MessagesListScrollViewer.Offset.X, Math.Min(boundedOriginalOffset, GetMaxScrollOffset()));
             } else {
                 result.CanScrollAwayFromBottom = true;
@@ -1025,6 +1028,7 @@ namespace ELOR.Laney.Views {
         public double ScrollAwayFromBottomFinal { get; set; }
         public double ScrollAwayFromBottomMax { get; set; }
         public double ScrollAwayFromBottomDistance { get; set; }
+        public double ScrollAwayFromBottomError { get; set; }
     }
 
     public sealed class ChatHistoryBoundaryStressQaResult {

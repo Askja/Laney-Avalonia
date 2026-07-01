@@ -1451,7 +1451,7 @@ namespace ELOR.Laney.Views {
                 double memoryBudgetMb = GetPerfMemoryBudgetMb();
                 bool memoryBudgetOk = result.PeakPrivateMemoryMb <= memoryBudgetMb;
                 Log.Information(
-                    "Perf scroll QA result: fpsOk={FpsOk}; memoryBudgetOk={MemoryBudgetOk}; canLeaveBottom={CanLeaveBottom}; leaveBottom={LeaveBottomFinal:F1}/{LeaveBottomTarget:F1}; leaveBottomMax={LeaveBottomMax:F1}; leaveBottomDistance={LeaveBottomDistance:F1}; avgFps={AverageFps:F1}; avgFrame={AverageFrameMs:F2}ms; lastFrame={LastFrameMs:F2}ms; maxFrame={MaxFrameMs:F2}ms; jank={JankFrames}; visibleControls={VisibleControls}; samples={Samples}; privateMemory={PrivateMemoryMb:F2}MB; peakPrivateMemory={PeakPrivateMemoryMb:F2}MB; memoryBudget={MemoryBudgetMb:F0}MB",
+                    "Perf scroll QA result: fpsOk={FpsOk}; memoryBudgetOk={MemoryBudgetOk}; canLeaveBottom={CanLeaveBottom}; leaveBottom={LeaveBottomFinal:F1}/{LeaveBottomTarget:F1}; leaveBottomMax={LeaveBottomMax:F1}; leaveBottomDistance={LeaveBottomDistance:F1}; leaveBottomError={LeaveBottomError:F1}; avgFps={AverageFps:F1}; avgFrame={AverageFrameMs:F2}ms; lastFrame={LastFrameMs:F2}ms; maxFrame={MaxFrameMs:F2}ms; jank={JankFrames}; visibleControls={VisibleControls}; samples={Samples}; privateMemory={PrivateMemoryMb:F2}MB; peakPrivateMemory={PeakPrivateMemoryMb:F2}MB; memoryBudget={MemoryBudgetMb:F0}MB",
                     fpsOk,
                     memoryBudgetOk,
                     result.CanScrollAwayFromBottom,
@@ -1459,6 +1459,7 @@ namespace ELOR.Laney.Views {
                     result.ScrollAwayFromBottomTarget,
                     result.ScrollAwayFromBottomMax,
                     result.ScrollAwayFromBottomDistance,
+                    result.ScrollAwayFromBottomError,
                     result.AverageFps,
                     result.AverageFrameMs,
                     result.LastFrameMs,
