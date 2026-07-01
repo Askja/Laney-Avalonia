@@ -12,6 +12,7 @@ using ELOR.Laney.Controls.Attachments;
 using ELOR.Laney.Core;
 using ELOR.Laney.Core.Network;
 using ELOR.Laney.Core.Localization;
+using ELOR.Laney.Diagnostics;
 using ELOR.Laney.Extensions;
 using ELOR.Laney.Helpers;
 using ELOR.Laney.ViewModels;
@@ -1300,13 +1301,16 @@ namespace ELOR.Laney.Views {
 
         private void TrySchedulePerfSettingsQa() {
             if (perfSettingsQaScheduled) return;
-            if (!App.HasCmdLineValue("perf-settings-audit") && !App.HasCmdLineValue("perf-settings-mutation-smoke")) return;
+            if (!App.HasCmdLineValue("perf-settings-audit")
+                && !App.HasCmdLineValue("perf-settings-mutation-smoke")
+                && !App.HasCmdLineValue("perf-settings-matrix-smoke")) return;
 
             perfSettingsQaScheduled = true;
             Dispatcher.UIThread.Post(async () => {
                 await Task.Delay(1200);
                 TryRunPerfSettingsAudit();
                 TryRunPerfSettingsMutationSmoke();
+                TryRunPerfSettingsMatrixSmoke();
                 if (App.HasCmdLineValue("perf-exit-after-qa")) {
                     await Task.Delay(14000);
                     Log.Information("Closing after perf settings QA.");
@@ -1721,6 +1725,33 @@ namespace ELOR.Laney.Views {
                     }
                 } catch (Exception ex) {
                     Log.Error(ex, "Settings mutation smoke failed.");
+                }
+            }, DispatcherPriority.Background);
+        }
+
+        private void TryRunPerfSettingsMatrixSmoke() {
+            if (!App.HasCmdLineValue("perf-settings-matrix-smoke")) return;
+
+            Dispatcher.UIThread.Post(() => {
+                try {
+                    SettingsViewModel settings = new SettingsViewModel();
+                    if (Session != null) settings.SetAccountId(Session.Id);
+                    long peerId = Session?.CurrentOpenedChat?.PeerId ?? 2000000102;
+                    SettingsAppearanceMatrixSmokeReport report = settings.RunAppearanceMatrixSmoke(peerId);
+                    Log.Information(
+                        "Settings appearance matrix smoke result: passed={Passed}; cases={Cases}/{Total}; valueChecks={ValueChecks}; resourceChecks={ResourceChecks}; failed={Failed}",
+                        report.Passed,
+                        report.CasesChecked,
+                        report.CasesTotal,
+                        report.ValueChecks,
+                        report.ResourceChecks,
+                        report.FailedChecks);
+
+                    foreach (SettingsAppearanceMatrixSmokeIssue issue in report.Issues.Take(80)) {
+                        Log.Warning("Settings appearance matrix smoke issue: case={Case}; field={Field}; reason={Reason}", issue.CaseName, issue.Field, issue.Reason);
+                    }
+                } catch (Exception ex) {
+                    Log.Error(ex, "Settings appearance matrix smoke failed.");
                 }
             }, DispatcherPriority.Background);
         }

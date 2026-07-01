@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.LogicalTree;
 using ELOR.Laney.Core;
+using ELOR.Laney.Diagnostics;
 using ELOR.Laney.Core.Localization;
 using ELOR.Laney.DataModels;
 using ELOR.Laney.ViewModels.SettingsCategories;
@@ -107,6 +108,10 @@ namespace ELOR.Laney.ViewModels {
             }
 
             return report;
+        }
+
+        public SettingsAppearanceMatrixSmokeReport RunAppearanceMatrixSmoke(long peerId = 0) {
+            return SettingsAppearanceMatrixSmoke.Run(peerId);
         }
 
         private void AuditCategory(SettingsCategory category, SettingsAuditReport report) {
