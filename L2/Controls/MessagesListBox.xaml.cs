@@ -569,6 +569,8 @@ namespace ELOR.Laney.Controls {
                 }
 
                 if (_restoreScrollStableFrames < RestoreRequiredStableFrames) {
+                    if (TryFinishPreviousRestoreByHeightDiff(oldOffset, diff, "height_diff_restored")) return;
+
                     if (Settings.ShowDebugCounters) Debug.WriteLine($"Extent is not stable after previous messages load. Trying in next frame, attempts: {_restoreScrollAttempts}.");
                     RequestNextFrame(() => TryRestoreScroll(anchor, oldHeight, oldOffset));
                     return;
@@ -601,11 +603,10 @@ namespace ELOR.Laney.Controls {
 
             _canChangeScroll = false;
             double newHeight = Scroll.Extent.Height;
-            bool heightStable = !Double.IsNaN(_restoreScrollLastHeight) && Math.Abs(newHeight - _restoreScrollLastHeight) <= 1;
             _restoreScrollLastHeight = newHeight;
 
             bool anchorStable = TryRestorePreviousAnchor(anchor);
-            _restoreScrollStableFrames = heightStable && anchorStable
+            _restoreScrollStableFrames = anchorStable
                 ? (byte)Math.Min(_restoreScrollStableFrames + 1, RestoreRequiredStableFrames)
                 : (byte)0;
 
@@ -615,8 +616,23 @@ namespace ELOR.Laney.Controls {
             }
 
             double diff = Math.Max(0, newHeight - oldHeight);
-            if (!anchorStable && diff > 0) EnsurePreviousRestoreApproximateOffset(oldOffset, diff);
+            if (!anchorStable && diff > 0) {
+                if (TryFinishPreviousRestoreByHeightDiff(oldOffset, diff, "height_diff_restored")) return;
+            }
+
             RequestNextFrame(() => StabilizeRestoredAnchor(anchor, oldHeight, oldOffset));
+        }
+
+        private bool TryFinishPreviousRestoreByHeightDiff(double oldOffset, double heightDiff, string reason) {
+            if (heightDiff <= 0) return false;
+
+            EnsurePreviousRestoreApproximateOffset(oldOffset, heightDiff);
+            UpdatePreviousRestoreDiagnosticsByHeightDiff();
+            if (Double.IsNaN(LastPreviousRestoreDrift) || Math.Abs(LastPreviousRestoreDrift) > 3) return false;
+
+            LastPreviousTriggerSkipReason = reason;
+            FinishPreviousMessagesLoadRestore(false);
+            return true;
         }
 
         private void TriggerLoadNextMessages() {
