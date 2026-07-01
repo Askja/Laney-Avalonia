@@ -270,9 +270,9 @@
       </Style>
       <Style Selector="Button.StoryRailItem">
         <Setter Property="Padding" Value="0"/>
-        <Setter Property="Width" Value="84"/>
-        <Setter Property="MinWidth" Value="84"/>
-        <Setter Property="Height" Value="124"/>
+        <Setter Property="Width" Value="88"/>
+        <Setter Property="MinWidth" Value="88"/>
+        <Setter Property="Height" Value="116"/>
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="CornerRadius" Value="18"/>
@@ -280,23 +280,23 @@
         <Setter Property="VerticalContentAlignment" Value="Stretch"/>
       </Style>
       <Style Selector="Button.StoryRailRefresh">
-        <Setter Property="Width" Value="72"/>
-        <Setter Property="MinWidth" Value="72"/>
+        <Setter Property="Width" Value="82"/>
+        <Setter Property="MinWidth" Value="82"/>
       </Style>
       <Style Selector="Button.StoryRailItem /template/ Border#PART_Hover">
-        <Setter Property="Margin" Value="3"/>
-        <Setter Property="CornerRadius" Value="17"/>
+        <Setter Property="Margin" Value="2"/>
+        <Setter Property="CornerRadius" Value="18"/>
       </Style>
       <Style Selector="Button.StoryRailItem:pointerover /template/ Border#PART_Hover">
-        <Setter Property="Background" Value="{DynamicResource LaneyChatListHoverBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource LaneyGlassRaisedBrush}"/>
       </Style>
       <Style Selector="Button.StoryRailItem /template/ ContentPresenter#PART_Presenter">
         <Setter Property="Padding" Value="0"/>
       </Style>
       <Style Selector="Button.StoryCarouselButton">
         <Setter Property="Width" Value="26"/>
-        <Setter Property="Height" Value="62"/>
-        <Setter Property="MinHeight" Value="62"/>
+        <Setter Property="Height" Value="68"/>
+        <Setter Property="MinHeight" Value="68"/>
         <Setter Property="Padding" Value="0"/>
         <Setter Property="CornerRadius" Value="13"/>
         <Setter Property="Background" Value="{DynamicResource LaneyGlassRaisedBrush}"/>
@@ -305,26 +305,27 @@
       </Style>
       <Style Selector="Border.StoryCardSurface">
         <Setter Property="CornerRadius" Value="16"/>
-        <Setter Property="Padding" Value="3"/>
+        <Setter Property="Padding" Value="5"/>
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderBrush" Value="Transparent"/>
         <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="ClipToBounds" Value="True"/>
       </Style>
       <Style Selector="Button.StoryRailItem:pointerover Border.StoryCardSurface">
         <Setter Property="Background" Value="{DynamicResource LaneyGlassRaisedBrush}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource LaneyGlassBorderBrush}"/>
       </Style>
       <Style Selector="Border.StoryThumb">
-        <Setter Property="Width" Value="68"/>
-        <Setter Property="Height" Value="80"/>
-        <Setter Property="CornerRadius" Value="13"/>
+        <Setter Property="Width" Value="70"/>
+        <Setter Property="Height" Value="70"/>
+        <Setter Property="CornerRadius" Value="12"/>
         <Setter Property="ClipToBounds" Value="True"/>
         <Setter Property="Background" Value="{DynamicResource LaneyMutedSurfaceBrush}"/>
       </Style>
       <Style Selector="Border.StoryRing">
-        <Setter Property="Width" Value="74"/>
-        <Setter Property="Height" Value="86"/>
-        <Setter Property="CornerRadius" Value="16"/>
+        <Setter Property="Width" Value="76"/>
+        <Setter Property="Height" Value="76"/>
+        <Setter Property="CornerRadius" Value="15"/>
         <Setter Property="BorderThickness" Value="2"/>
       </Style>
     </Grid.Styles>
@@ -358,18 +359,18 @@
 
     <Grid x:Name="ChatsListRoot" Grid.Row="1" RowDefinitions="Auto *" Background="{DynamicResource LaneyGlassPanelBrush}">
       <Border x:Name="StoriesRail" IsVisible="{Binding ImViewModel.HasStoriesRail}" BorderBrush="{DynamicResource LaneyGlassBorderBrush}" BorderThickness="0,0,0,1" Background="{DynamicResource LaneyGlassPanelBrush}">
-        <Grid MinHeight="134" ColumnDefinitions="Auto *" Margin="8,6,8,8" ClipToBounds="False">
+        <Grid MinHeight="126" ColumnDefinitions="Auto *" Margin="8,6,8,8" ClipToBounds="False">
           <Button Classes="Tertiary StoryRailItem StoryRailRefresh" Margin="0,0,6,0" VerticalAlignment="Center" Click="StoriesRefreshButton_Click" ToolTip.Tip="Обновить истории">
             <Border Classes="StoryCardSurface">
-              <StackPanel Spacing="5" HorizontalAlignment="Center" VerticalAlignment="Center">
-                <Grid Width="60" Height="76" HorizontalAlignment="Center">
-                  <Border Width="60" Height="76" CornerRadius="15" BorderThickness="1" BorderBrush="{DynamicResource LaneyGlassBorderBrush}" Background="{DynamicResource LaneyGlassRaisedBrush}"/>
+              <StackPanel Spacing="6" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <Grid Width="70" Height="70" HorizontalAlignment="Center">
+                  <Border Width="70" Height="70" CornerRadius="15" BorderThickness="1" BorderBrush="{DynamicResource LaneyGlassBorderBrush}" Background="{DynamicResource LaneyGlassRaisedBrush}"/>
                   <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon20StoryOutline}" Width="28" Height="28" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource LaneyAccentBrush}"/>
-                  <Border Width="24" Height="24" CornerRadius="12" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,2,2" Background="{DynamicResource VKAccentBrush}" BorderBrush="{DynamicResource LaneyGlassPanelBrush}" BorderThickness="2">
+                  <Border Width="23" Height="23" CornerRadius="12" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,3,3" Background="{DynamicResource VKAccentBrush}" BorderBrush="{DynamicResource LaneyGlassPanelBrush}" BorderThickness="2">
                     <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon20RecentOutline}" Width="13" Height="13" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource VKButtonPrimaryForegroundBrush}"/>
                   </Border>
                 </Grid>
-                <TextBlock Width="62" Height="22" Text="Истории" MaxLines="2" TextTrimming="CharacterEllipsis" TextAlignment="Center" FontSize="11" LineHeight="11" Foreground="{DynamicResource VKTextPrimaryBrush}"/>
+                <TextBlock Width="72" Height="16" Text="Истории" MaxLines="1" TextTrimming="CharacterEllipsis" TextAlignment="Center" FontSize="11" LineHeight="14" Foreground="{DynamicResource VKTextPrimaryBrush}"/>
               </StackPanel>
             </Border>
           </Button>
@@ -379,8 +380,8 @@
               <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon16ChevronLeft}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Button>
 
-            <ScrollViewer Grid.Column="1" x:Name="StoriesScroll" IsVisible="{Binding ImViewModel.HasStories}" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled" PointerWheelChanged="StoriesScroll_PointerWheelChanged">
-              <ItemsRepeater ItemsSource="{Binding ImViewModel.Stories}" Margin="6,0" VerticalAlignment="Center">
+            <ScrollViewer Grid.Column="1" x:Name="StoriesScroll" IsVisible="{Binding ImViewModel.HasStories}" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled" PointerWheelChanged="StoriesScroll_PointerWheelChanged" ClipToBounds="True">
+              <ItemsRepeater ItemsSource="{Binding ImViewModel.Stories}" Margin="7,0" VerticalAlignment="Center">
                 <ItemsRepeater.Layout>
                   <StackLayout Orientation="Horizontal" Spacing="6"/>
                 </ItemsRepeater.Layout>
@@ -388,13 +389,13 @@
                   <DataTemplate x:DataType="vm:StoryRailItemViewModel">
                     <Button Classes="Tertiary StoryRailItem" Click="StoryRailItem_Click" ToolTip.Tip="{Binding StateText}">
                       <Border Classes="StoryCardSurface">
-                        <StackPanel Spacing="5" HorizontalAlignment="Center" VerticalAlignment="Center">
-                          <Grid Width="74" Height="86" HorizontalAlignment="Center">
+                        <StackPanel Spacing="6" HorizontalAlignment="Center" VerticalAlignment="Center">
+                          <Grid Width="76" Height="76" HorizontalAlignment="Center">
                             <Border Classes="StoryRing" BorderBrush="{DynamicResource LaneyAccentBrush}" IsVisible="{Binding !IsSeen}"/>
                             <Border Classes="StoryRing" BorderBrush="{DynamicResource LaneyGlassBorderBrush}" IsVisible="{Binding IsSeen}"/>
                             <Border Classes="StoryThumb" Margin="3" controls:ImageLoader.BackgroundSource="{Binding PreviewUri}"/>
                             <Border Classes="StoryThumb" Margin="3" Background="#66000000" IsVisible="{Binding IsUnavailable}"/>
-                            <Rectangle RadiusX="13" RadiusY="13" Margin="3" IsHitTestVisible="False">
+                            <Rectangle RadiusX="12" RadiusY="12" Margin="3" IsHitTestVisible="False">
                               <Rectangle.Fill>
                                 <LinearGradientBrush StartPoint="0%,100%" EndPoint="0%,0%">
                                   <GradientStop Color="#90000000" Offset="0"/>
@@ -402,14 +403,14 @@
                                 </LinearGradientBrush>
                               </Rectangle.Fill>
                             </Rectangle>
-                            <Border Width="24" Height="24" CornerRadius="12" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="5" Background="{DynamicResource LaneyGlassPanelBrush}" BorderBrush="{DynamicResource LaneyGlassBorderBrush}" BorderThickness="2">
+                            <Border Width="23" Height="23" CornerRadius="12" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="6" Background="{DynamicResource LaneyGlassPanelBrush}" BorderBrush="{DynamicResource LaneyGlassBorderBrush}" BorderThickness="2">
                               <vkui:Avatar Width="18" Height="18" HorizontalAlignment="Center" VerticalAlignment="Center" Initials="{Binding Initials}" Background="{Binding OwnerId, Converter={StaticResource agc}}" Foreground="White" controls:ImageLoader.Image="{Binding AvatarUri}"/>
                             </Border>
-                            <Border Width="22" Height="22" CornerRadius="11" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="5" Background="#B0000000" BorderBrush="{DynamicResource LaneyGlassBorderBrush}" BorderThickness="1" IsVisible="{Binding IsVideo}">
+                            <Border Width="21" Height="21" CornerRadius="11" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="6" Background="#B0000000" BorderBrush="{DynamicResource LaneyGlassBorderBrush}" BorderThickness="1" IsVisible="{Binding IsVideo}">
                               <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon24Play}" Width="12" Height="12" Margin="1,0,0,0" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White"/>
                             </Border>
                           </Grid>
-                          <TextBlock Width="74" Height="22" Text="{Binding Title}" MaxLines="2" TextTrimming="CharacterEllipsis" TextAlignment="Center" FontSize="11" LineHeight="11" Foreground="{DynamicResource VKTextPrimaryBrush}"/>
+                          <TextBlock Width="76" Height="16" Text="{Binding Title}" MaxLines="1" TextTrimming="CharacterEllipsis" TextAlignment="Center" FontSize="11" LineHeight="14" Foreground="{DynamicResource VKTextPrimaryBrush}"/>
                         </StackPanel>
                       </Border>
                     </Button>
@@ -436,22 +437,22 @@
               </Grid>
             </Border>
 
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" Margin="6,0" VerticalAlignment="Center" IsVisible="{Binding ImViewModel.IsStoriesSkeletonVisible}">
-              <StackPanel Width="84" Spacing="5">
-                <Border Classes="Skeleton" Width="74" Height="86" CornerRadius="16" HorizontalAlignment="Center"/>
-                <Border Classes="Skeleton" Width="54" Height="10" CornerRadius="5" HorizontalAlignment="Center"/>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" Margin="7,0" VerticalAlignment="Center" IsVisible="{Binding ImViewModel.IsStoriesSkeletonVisible}">
+              <StackPanel Width="88" Spacing="6">
+                <Border Classes="Skeleton" Width="76" Height="76" CornerRadius="15" HorizontalAlignment="Center"/>
+                <Border Classes="Skeleton" Width="58" Height="10" CornerRadius="5" HorizontalAlignment="Center"/>
               </StackPanel>
-              <StackPanel Width="84" Spacing="5">
-                <Border Classes="Skeleton" Width="74" Height="86" CornerRadius="16" HorizontalAlignment="Center"/>
-                <Border Classes="Skeleton" Width="62" Height="10" CornerRadius="5" HorizontalAlignment="Center"/>
-              </StackPanel>
-              <StackPanel Width="84" Spacing="5">
-                <Border Classes="Skeleton" Width="74" Height="86" CornerRadius="16" HorizontalAlignment="Center"/>
-                <Border Classes="Skeleton" Width="48" Height="10" CornerRadius="5" HorizontalAlignment="Center"/>
-              </StackPanel>
-              <StackPanel Width="84" Spacing="5">
-                <Border Classes="Skeleton" Width="74" Height="86" CornerRadius="16" HorizontalAlignment="Center"/>
+              <StackPanel Width="88" Spacing="6">
+                <Border Classes="Skeleton" Width="76" Height="76" CornerRadius="15" HorizontalAlignment="Center"/>
                 <Border Classes="Skeleton" Width="66" Height="10" CornerRadius="5" HorizontalAlignment="Center"/>
+              </StackPanel>
+              <StackPanel Width="88" Spacing="6">
+                <Border Classes="Skeleton" Width="76" Height="76" CornerRadius="15" HorizontalAlignment="Center"/>
+                <Border Classes="Skeleton" Width="52" Height="10" CornerRadius="5" HorizontalAlignment="Center"/>
+              </StackPanel>
+              <StackPanel Width="88" Spacing="6">
+                <Border Classes="Skeleton" Width="76" Height="76" CornerRadius="15" HorizontalAlignment="Center"/>
+                <Border Classes="Skeleton" Width="70" Height="10" CornerRadius="5" HorizontalAlignment="Center"/>
               </StackPanel>
             </StackPanel>
           </Grid>

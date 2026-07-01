@@ -18,7 +18,8 @@ using VKUI.Controls;
 
 namespace ELOR.Laney.Views {
     public sealed partial class ImView : VKUI.Controls.Page {
-        private const double StoriesCarouselStep = 270;
+        private const double StoryCarouselItemPitch = 94;
+        private const double StoryCarouselWheelStep = 82;
         private VKSession Session { get { return VKSession.GetByDataContext(this); } }
 
         public ImView() {
@@ -163,24 +164,36 @@ namespace ELOR.Laney.Views {
         }
 
         private void StoriesCarouselLeftButton_Click(object sender, RoutedEventArgs e) {
-            ScrollStoriesCarousel(-StoriesCarouselStep);
+            ScrollStoriesCarouselByPage(-1);
         }
 
         private void StoriesCarouselRightButton_Click(object sender, RoutedEventArgs e) {
-            ScrollStoriesCarousel(StoriesCarouselStep);
+            ScrollStoriesCarouselByPage(1);
         }
 
         private void StoriesScroll_PointerWheelChanged(object sender, PointerWheelEventArgs e) {
             if (Math.Abs(e.Delta.Y) < 0.01) return;
-            ScrollStoriesCarousel(-e.Delta.Y * 72);
+            ScrollStoriesCarousel(-e.Delta.Y * StoryCarouselWheelStep, false);
             e.Handled = true;
         }
 
-        private void ScrollStoriesCarousel(double delta) {
+        private void ScrollStoriesCarouselByPage(int direction) {
+            if (StoriesScroll == null || direction == 0) return;
+
+            double viewport = StoriesScroll.Viewport.Width;
+            double page = Math.Max(StoryCarouselItemPitch, viewport - StoryCarouselItemPitch);
+            ScrollStoriesCarousel(direction * page, true);
+        }
+
+        private void ScrollStoriesCarousel(double delta, bool snapToCard) {
             if (StoriesScroll == null) return;
 
             double maxOffset = Math.Max(0, StoriesScroll.Extent.Width - StoriesScroll.Viewport.Width);
             double nextOffset = Math.Clamp(StoriesScroll.Offset.X + delta, 0, maxOffset);
+            if (snapToCard && StoryCarouselItemPitch > 0) {
+                nextOffset = Math.Round(nextOffset / StoryCarouselItemPitch) * StoryCarouselItemPitch;
+                nextOffset = Math.Clamp(nextOffset, 0, maxOffset);
+            }
             StoriesScroll.Offset = new Vector(nextOffset, StoriesScroll.Offset.Y);
         }
 
