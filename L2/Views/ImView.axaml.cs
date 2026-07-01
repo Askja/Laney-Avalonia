@@ -18,7 +18,7 @@ using VKUI.Controls;
 
 namespace ELOR.Laney.Views {
     public sealed partial class ImView : VKUI.Controls.Page {
-        private const double StoriesCarouselStep = 276;
+        private const double StoriesCarouselStep = 282;
         private VKSession Session { get { return VKSession.GetByDataContext(this); } }
 
         public ImView() {
