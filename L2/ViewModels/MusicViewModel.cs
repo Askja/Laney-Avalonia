@@ -64,6 +64,41 @@ namespace ELOR.Laney.ViewModels {
         }
     }
 
+    public sealed class MusicEqualizerBandViewModel : ViewModelBase {
+        private readonly Action<MusicEqualizerBandViewModel> changed;
+        private double _gain;
+
+        public MusicEqualizerBandViewModel(float frequency, string label, double gain, Action<MusicEqualizerBandViewModel> changed) {
+            Frequency = frequency;
+            Label = label;
+            this.changed = changed;
+            _gain = NormalizeGain(gain);
+        }
+
+        public float Frequency { get; }
+        public string Label { get; }
+        public double Gain {
+            get => _gain;
+            set {
+                double normalized = NormalizeGain(value);
+                if (Math.Abs(_gain - normalized) < 0.01) return;
+
+                _gain = normalized;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(GainLabel));
+                OnPropertyChanged(nameof(FillHeight));
+                changed?.Invoke(this);
+            }
+        }
+
+        public string GainLabel => Gain > 0.05 ? $"+{Gain:0.#} dB" : Gain < -0.05 ? $"{Gain:0.#} dB" : "0 dB";
+        public double FillHeight => 7 + (Gain + 12.0) / 24.0 * 24.0;
+
+        private static double NormalizeGain(double value) {
+            return Math.Round(Math.Clamp(value, -12.0, 12.0) * 2.0) / 2.0;
+        }
+    }
+
     public sealed class MusicViewModel : CommonViewModel {
         private const int PageSize = 100;
 
@@ -77,6 +112,7 @@ namespace ELOR.Laney.ViewModels {
         private string _statusText = "Готово";
         private string _downloadStatusText = "Скачанные треки сохраняются локально с sidecar JSON.";
         private AudioPlayerViewModel _currentPlayer;
+        private bool _suppressCustomEqualizerApply;
 
         public MusicViewModel(VKSession session) {
             this.session = session;
@@ -86,6 +122,7 @@ namespace ELOR.Laney.ViewModels {
 
             AudioPlayerViewModel.InstancesChanged += AudioPlayerViewModel_InstancesChanged;
             EnsureEqualizerPreviewBands();
+            EnsureCustomEqualizerBands();
             RefreshEqualizerPreview();
         }
 
@@ -94,6 +131,7 @@ namespace ELOR.Laney.ViewModels {
         public ObservableCollection<MusicTrackViewModel> Queue { get; } = new ObservableCollection<MusicTrackViewModel>();
         public ObservableCollection<MusicTrackViewModel> History { get; } = new ObservableCollection<MusicTrackViewModel>();
         public ObservableCollection<AudioEqualizerBandViewModel> EqualizerPreviewBands { get; } = new ObservableCollection<AudioEqualizerBandViewModel>();
+        public ObservableCollection<MusicEqualizerBandViewModel> CustomEqualizerBands { get; } = new ObservableCollection<MusicEqualizerBandViewModel>();
 
         public ObservableCollection<TwoStringTuple> SourceOptions { get; } = new ObservableCollection<TwoStringTuple> {
             new TwoStringTuple(MusicSourceIds.Library, "Музыка VK"),
@@ -108,7 +146,8 @@ namespace ELOR.Laney.ViewModels {
             new TwoStringTuple(AudioDspModeIds.Normalize, "Нормализация"),
             new TwoStringTuple(AudioDspModeIds.VoiceClarity, "Четкий голос"),
             new TwoStringTuple(AudioDspModeIds.Night, "Ночь"),
-            new TwoStringTuple(AudioDspModeIds.BassBoost, "Больше баса")
+            new TwoStringTuple(AudioDspModeIds.BassBoost, "Больше баса"),
+            new TwoStringTuple(AudioDspModeIds.Custom, "Свой EQ")
         };
 
         public TwoStringTuple CurrentSource {
@@ -166,6 +205,7 @@ namespace ELOR.Laney.ViewModels {
         public string CurrentTrackSubtitle => CurrentPlayer?.CurrentSong == null ? "Выбери трек из списка или истории." : $"{CurrentPlayer.CurrentSong.Performer} · {CurrentPlayer.QueueLabel}";
         public string PlayerStatusText => CurrentPlayer == null ? "Плеер свободен" : $"{(CurrentPlayer.IsPlaying ? "Играет" : "Пауза")} · {CurrentPlayer.PlaybackRateLabel} · {CurrentPlayer.VolumeLabel}";
         public string AudioDspStatusText => $"EQ: {CurrentAudioDspMode?.Item2 ?? "Выкл"}";
+        public string CustomEqualizerSummary => $"Свой EQ · {CustomEqualizerBands.Count} полос · -12/+12 dB";
         public string StatusText { get => _statusText; private set { _statusText = value; OnPropertyChanged(); } }
         public string DownloadStatusText { get => _downloadStatusText; private set { _downloadStatusText = value; OnPropertyChanged(); } }
         public string QueueSummary => Queue.Count == 0 ? "Очередь пуста" : $"В очереди: {Queue.Count}";
@@ -249,6 +289,17 @@ namespace ELOR.Laney.ViewModels {
             OnPropertyChanged(nameof(HasQueue));
             OnPropertyChanged(nameof(QueueSummary));
             OnPropertyChanged(nameof(LibrarySummary));
+        }
+
+        public void ResetCustomEqualizer() {
+            _suppressCustomEqualizerApply = true;
+            try {
+                foreach (MusicEqualizerBandViewModel band in CustomEqualizerBands) band.Gain = 0;
+            } finally {
+                _suppressCustomEqualizerApply = false;
+            }
+
+            ApplyCustomEqualizerBands();
         }
 
         public async Task DownloadTrackAsync(MusicTrackViewModel track) {
@@ -481,15 +532,43 @@ namespace ELOR.Laney.ViewModels {
         private void EnsureEqualizerPreviewBands() {
             if (EqualizerPreviewBands.Count > 0) return;
 
-            foreach (string label in new[] { "60", "125", "250", "1k", "3k", "6k", "12k" }) {
+            foreach ((float _, string label) in LMediaPlayer.CustomEqualizerBands) {
                 EqualizerPreviewBands.Add(new AudioEqualizerBandViewModel(label));
             }
         }
 
+        private void EnsureCustomEqualizerBands() {
+            if (CustomEqualizerBands.Count > 0) return;
+
+            float[] gains = LMediaPlayer.GetCustomEqualizerGains();
+            for (int i = 0; i < LMediaPlayer.CustomEqualizerBands.Length; i++) {
+                (float frequency, string label) = LMediaPlayer.CustomEqualizerBands[i];
+                double gain = i < gains.Length ? gains[i] : 0;
+                CustomEqualizerBands.Add(new MusicEqualizerBandViewModel(frequency, label, gain, OnCustomEqualizerBandChanged));
+            }
+        }
+
+        private void OnCustomEqualizerBandChanged(MusicEqualizerBandViewModel band) {
+            if (_suppressCustomEqualizerApply) return;
+            ApplyCustomEqualizerBands();
+        }
+
+        private void ApplyCustomEqualizerBands() {
+            Settings.AudioDspCustomGains = LMediaPlayer.FormatCustomEqualizerGains(CustomEqualizerBands.Select(b => (float)b.Gain).ToArray());
+            if (Settings.AudioDspMode != AudioDspModeIds.Custom) {
+                Settings.AudioDspMode = AudioDspModeIds.Custom;
+                _currentAudioDspMode = AudioDspModes.FirstOrDefault(m => m.Item1 == AudioDspModeIds.Custom) ?? AudioDspModes[0];
+                OnPropertyChanged(nameof(CurrentAudioDspMode));
+                OnPropertyChanged(nameof(AudioDspStatusText));
+            }
+
+            AudioPlayerViewModel.ApplyAudioDspModeToInstances();
+            RefreshEqualizerPreview();
+        }
+
         private void RefreshEqualizerPreview() {
-            float[] frequencies = [60, 125, 250, 1000, 3000, 6000, 12000];
-            for (int i = 0; i < EqualizerPreviewBands.Count && i < frequencies.Length; i++) {
-                EqualizerPreviewBands[i].Update(LMediaPlayer.GetEqualizerPreviewAmp(Settings.AudioDspMode, frequencies[i]));
+            for (int i = 0; i < EqualizerPreviewBands.Count && i < LMediaPlayer.CustomEqualizerBands.Length; i++) {
+                EqualizerPreviewBands[i].Update(LMediaPlayer.GetEqualizerPreviewAmp(Settings.AudioDspMode, LMediaPlayer.CustomEqualizerBands[i].Frequency));
             }
         }
 

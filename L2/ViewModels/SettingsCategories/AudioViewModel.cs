@@ -12,7 +12,8 @@ namespace ELOR.Laney.ViewModels.SettingsCategories {
             new TwoStringTuple(AudioDspModeIds.Normalize, "Нормализация"),
             new TwoStringTuple(AudioDspModeIds.VoiceClarity, "Чёткий голос"),
             new TwoStringTuple(AudioDspModeIds.Night, "Ночь"),
-            new TwoStringTuple(AudioDspModeIds.BassBoost, "Больше баса")
+            new TwoStringTuple(AudioDspModeIds.BassBoost, "Больше баса"),
+            new TwoStringTuple(AudioDspModeIds.Custom, "Свой EQ")
         };
 
         public bool AudioPlayerLoop { get { return Settings.AudioPlayerLoop; } set { Settings.AudioPlayerLoop = value; AudioPlayerViewModel.ApplyAudioSettingsToInstances(); OnPropertyChanged(); } }

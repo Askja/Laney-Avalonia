@@ -208,8 +208,9 @@ namespace ELOR.Laney.Core {
         public const string VoiceClarity = "voice";
         public const string Night = "night";
         public const string BassBoost = "bass";
+        public const string Custom = "custom";
 
-        public static readonly string[] All = [Off, Flat, Normalize, VoiceClarity, Night, BassBoost];
+        public static readonly string[] All = [Off, Flat, Normalize, VoiceClarity, Night, BassBoost, Custom];
 
         public static string NormalizeMode(string mode) {
             if (String.IsNullOrWhiteSpace(mode)) return Off;
@@ -664,6 +665,7 @@ namespace ELOR.Laney.Core {
         public const string AUDIO_PLAYER_SEEK_SECONDS = "audio_player_seek_seconds";
         public const string AUDIO_PLAYER_HISTORY = "audio_player_history";
         public const string AUDIO_DSP_MODE = "audio_dsp_mode";
+        public const string AUDIO_DSP_CUSTOM_GAINS = "audio_dsp_custom_gains";
         public const string VOICE_MESSAGE_RESUME_ENABLED = "voice_message_resume_enabled";
         public const string VOICE_MESSAGE_SKIP_SILENCE = "voice_message_skip_silence";
         public const string VOICE_MESSAGE_RESUME_POSITION_PREFIX = "voice_message_resume_position_";
@@ -853,6 +855,7 @@ namespace ELOR.Laney.Core {
             AUDIO_PLAYER_VOICE_RATE,
             AUDIO_PLAYER_SEEK_SECONDS,
             AUDIO_DSP_MODE,
+            AUDIO_DSP_CUSTOM_GAINS,
             VOICE_MESSAGE_RESUME_ENABLED,
             VOICE_MESSAGE_SKIP_SILENCE,
             NEWS_FEED_FILTER,
@@ -1537,6 +1540,11 @@ namespace ELOR.Laney.Core {
         public static string AudioDspMode {
             get => AudioDspModeIds.NormalizeMode(Get(AUDIO_DSP_MODE, AudioDspModeIds.Off));
             set => Set(AUDIO_DSP_MODE, AudioDspModeIds.NormalizeMode(value));
+        }
+
+        public static string AudioDspCustomGains {
+            get => Get(AUDIO_DSP_CUSTOM_GAINS, String.Empty);
+            set => Set(AUDIO_DSP_CUSTOM_GAINS, value?.Trim() ?? String.Empty);
         }
 
         public static string NewsFeedFilter {

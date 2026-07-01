@@ -25,6 +25,13 @@
         <Setter Property="Height" Value="34"/>
         <Setter Property="Padding" Value="0"/>
       </Style>
+      <Style Selector="Border.EqualizerWell">
+        <Setter Property="CornerRadius" Value="12"/>
+        <Setter Property="Padding" Value="8"/>
+        <Setter Property="Background" Value="{DynamicResource VKBackgroundSecondaryBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource LaneyGlassBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+      </Style>
     </Grid.Styles>
 
     <vkui:PanelHeader IsSeparatorVisible="False">
@@ -114,25 +121,41 @@
             </Button>
           </Grid>
 
-          <ItemsControl ItemsSource="{Binding EqualizerPreviewBands}">
-            <ItemsControl.ItemsPanel>
-              <ItemsPanelTemplate>
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch" Spacing="6"/>
-              </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="vm:AudioEqualizerBandViewModel">
-                <StackPanel Width="38" Spacing="4" VerticalAlignment="Bottom">
-                  <Border Width="22" Height="{Binding Height}" CornerRadius="6,6,2,2" HorizontalAlignment="Center" Background="{DynamicResource LaneyAccentBrush}"/>
-                  <TextBlock Classes="Caption1" TextAlignment="Center" Foreground="{DynamicResource VKTextSecondaryBrush}" Text="{Binding Label}"/>
-                </StackPanel>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
+          <Grid ColumnDefinitions="* Auto" ColumnSpacing="8">
+            <StackPanel>
+              <TextBlock Classes="Subhead" FontWeight="SemiBold" Foreground="{DynamicResource VKTextPrimaryBrush}" Text="Графический EQ"/>
+              <TextBlock Classes="Caption1" Foreground="{DynamicResource LaneyTextMutedBrush}" Text="{Binding CustomEqualizerSummary}"/>
+            </StackPanel>
+            <Button Grid.Column="1" Classes="Tertiary" MinHeight="32" Padding="10,4" Click="ResetEqualizerButton_Click" ToolTip.Tip="Сбросить свой EQ">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon20DeleteOutline}"/>
+                <TextBlock Text="Сброс"/>
+              </StackPanel>
+            </Button>
+          </Grid>
 
-          <TextBlock Classes="Caption1" Foreground="{DynamicResource LaneyTextMutedBrush}" Text="{Binding StatusText}" TextWrapping="Wrap"/>
-          <TextBlock Classes="Caption1" Foreground="{DynamicResource LaneyTextMutedBrush}" Text="{Binding DownloadStatusText}" TextWrapping="Wrap"/>
-          <TextBlock Classes="Caption1" Foreground="{DynamicResource LaneyTextMutedBrush}" Text="{Binding IntegrationStatusText}" TextWrapping="Wrap"/>
+          <Border Classes="EqualizerWell">
+            <ItemsControl ItemsSource="{Binding CustomEqualizerBands}" HorizontalAlignment="Stretch">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="4"/>
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:MusicEqualizerBandViewModel">
+                  <StackPanel Width="34" Spacing="3" VerticalAlignment="Bottom" ToolTip.Tip="{Binding Label}">
+                    <TextBlock Classes="Caption1" Height="14" TextAlignment="Center" Foreground="{DynamicResource LaneyTextMutedBrush}" Text="{Binding GainLabel}"/>
+                    <Grid Height="48">
+                      <Border Width="12" CornerRadius="6" HorizontalAlignment="Center" Background="{DynamicResource LaneyGlassBorderBrush}"/>
+                      <Border Width="14" Height="{Binding FillHeight}" CornerRadius="7,7,3,3" HorizontalAlignment="Center" VerticalAlignment="Bottom" Background="{DynamicResource LaneyAccentBrush}"/>
+                      <Slider Orientation="Vertical" Minimum="-12" Maximum="12" TickFrequency="0.5" Width="24" Height="48" Value="{Binding Gain, Mode=TwoWay}"/>
+                    </Grid>
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </Border>
+
         </StackPanel>
       </Border>
 

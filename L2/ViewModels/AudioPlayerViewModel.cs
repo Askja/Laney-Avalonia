@@ -97,7 +97,8 @@ namespace ELOR.Laney.ViewModels {
             new TwoStringTuple(AudioDspModeIds.Normalize, "Нормализация"),
             new TwoStringTuple(AudioDspModeIds.VoiceClarity, "Чёткий голос"),
             new TwoStringTuple(AudioDspModeIds.Night, "Ночь"),
-            new TwoStringTuple(AudioDspModeIds.BassBoost, "Больше баса")
+            new TwoStringTuple(AudioDspModeIds.BassBoost, "Больше баса"),
+            new TwoStringTuple(AudioDspModeIds.Custom, "Свой EQ")
         };
         public TwoStringTuple CurrentAudioDspMode { get { return GetAudioDspMode(); } set { ChangeAudioDspMode(value); } }
         public string AudioDspModeLabel { get { return CurrentAudioDspMode?.Item2 ?? "Выкл"; } }
@@ -434,6 +435,7 @@ namespace ELOR.Laney.ViewModels {
                 AudioDspModeIds.VoiceClarity => "Voice",
                 AudioDspModeIds.Night => "Night",
                 AudioDspModeIds.BassBoost => "Bass",
+                AudioDspModeIds.Custom => "EQ",
                 _ => "DSP"
             };
         }

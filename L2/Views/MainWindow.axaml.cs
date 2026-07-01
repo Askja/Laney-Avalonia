@@ -1279,6 +1279,7 @@ namespace ELOR.Laney.Views {
                 await LeftNav.NavigationRouter.NavigateToAsync(new ImView());
                 TryOpenPerfDemoChat();
                 TryOpenPerfNewsFeed();
+                TryOpenPerfMusic();
                 TryOpenPerfSettings();
                 TrySchedulePerfSettingsQa();
                 TrySchedulePerfEmojiQa();
@@ -1670,6 +1671,15 @@ namespace ELOR.Laney.Views {
             Dispatcher.UIThread.Post(async () => {
                 Log.Information("Opening news feed for perf/demo smoke.");
                 await LeftNav.NavigationRouter.NavigateToAsync(new NewsFeedView());
+            }, DispatcherPriority.Background);
+        }
+
+        private void TryOpenPerfMusic() {
+            if (!DemoMode.IsEnabled || !App.HasCmdLineValue("perf-open-music")) return;
+
+            Dispatcher.UIThread.Post(async () => {
+                Log.Information("Opening music for perf/demo smoke.");
+                await LeftNav.NavigationRouter.NavigateToAsync(new MusicView());
             }, DispatcherPriority.Background);
         }
 

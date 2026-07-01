@@ -76,6 +76,10 @@ namespace ELOR.Laney.Views {
             ViewModel?.ClearQueue();
         }
 
+        private void ResetEqualizerButton_Click(object sender, RoutedEventArgs e) {
+            ViewModel?.ResetCustomEqualizer();
+        }
+
         private async void OpenAudioSettingsButton_Click(object sender, RoutedEventArgs e) {
             Window owner = TopLevel.GetTopLevel(this) as Window;
             if (owner == null) return;

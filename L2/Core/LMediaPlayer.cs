@@ -2,6 +2,7 @@
 using LibVLCSharp.Shared;
 using Serilog;
 using System;
+using System.Globalization;
 using System.IO;
 
 namespace ELOR.Laney.Core {
@@ -39,6 +40,15 @@ namespace ELOR.Laney.Core {
         public float PlaybackRate { get; private set; } = 1f;
         public int VolumePercent { get; private set; } = 90;
         public string AudioDspMode { get; private set; } = AudioDspModeIds.Off;
+        public static readonly (float Frequency, string Label)[] CustomEqualizerBands = [
+            (60, "60"),
+            (125, "125"),
+            (250, "250"),
+            (1000, "1k"),
+            (3000, "3k"),
+            (6000, "6k"),
+            (12000, "12k")
+        ];
 
         #region Events
 
@@ -229,8 +239,51 @@ namespace ELOR.Laney.Core {
                 AudioDspModeIds.VoiceClarity => GetVoiceClarityAmp(frequency),
                 AudioDspModeIds.Night => GetNightAmp(frequency),
                 AudioDspModeIds.Normalize => GetNormalizeAmp(frequency),
+                AudioDspModeIds.Custom => GetCustomAmp(frequency),
                 _ => 0f
             };
+        }
+
+        public static float[] GetCustomEqualizerGains() {
+            float[] gains = new float[CustomEqualizerBands.Length];
+            string value = Settings.AudioDspCustomGains;
+            if (String.IsNullOrWhiteSpace(value)) return gains;
+
+            string[] parts = value.Split(new[] { ';', ',', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            for (int i = 0; i < gains.Length && i < parts.Length; i++) {
+                if (float.TryParse(parts[i], NumberStyles.Float, CultureInfo.InvariantCulture, out float gain)) {
+                    gains[i] = Math.Clamp(gain, -12f, 12f);
+                }
+            }
+
+            return gains;
+        }
+
+        public static string FormatCustomEqualizerGains(float[] gains) {
+            if (gains == null || gains.Length == 0) return String.Empty;
+
+            string[] parts = new string[CustomEqualizerBands.Length];
+            for (int i = 0; i < parts.Length; i++) {
+                float gain = i < gains.Length ? Math.Clamp(gains[i], -12f, 12f) : 0f;
+                parts[i] = gain.ToString("0.##", CultureInfo.InvariantCulture);
+            }
+
+            return String.Join(";", parts);
+        }
+
+        private static float GetCustomAmp(float frequency) {
+            float[] gains = GetCustomEqualizerGains();
+            int nearestIndex = 0;
+            float nearestDistance = Math.Abs(frequency - CustomEqualizerBands[0].Frequency);
+            for (int i = 1; i < CustomEqualizerBands.Length; i++) {
+                float distance = Math.Abs(frequency - CustomEqualizerBands[i].Frequency);
+                if (distance >= nearestDistance) continue;
+
+                nearestDistance = distance;
+                nearestIndex = i;
+            }
+
+            return gains[nearestIndex];
         }
 
         private static float GetBassBoostAmp(float frequency) {
