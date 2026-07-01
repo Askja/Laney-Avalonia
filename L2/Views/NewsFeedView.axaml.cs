@@ -44,5 +44,10 @@ namespace ELOR.Laney.Views {
             if (sender is not Control control || control.DataContext is not NewsFeedPostViewModel item) return;
             await Launcher.LaunchUrl(item.Link);
         }
+
+        private void BlockSourceButton_Click(object sender, RoutedEventArgs e) {
+            if (sender is not Control control || control.DataContext is not NewsFeedPostViewModel item) return;
+            ViewModel?.BlockSource(item);
+        }
     }
 }

@@ -1398,11 +1398,13 @@ namespace ELOR.Laney.Views {
                 NewsFeedRulesQaReport report = await viewModel.RunRulesQaAsync();
                 double privateMemoryMb = Math.Round((double)Process.GetCurrentProcess().PrivateMemorySize64 / 1048576, 2);
                 Log.Information(
-                    "Perf news feed QA result: passed={Passed}; hiddenPosts={HiddenPosts}; blockedAds={BlockedAds}; hiddenHasPromos={HiddenHasPromos}; visiblePosts={VisiblePosts}; visiblePromos={VisiblePromos}; privateMemory={PrivateMemoryMb:F2}MB",
+                    "Perf news feed QA result: passed={Passed}; hiddenPosts={HiddenPosts}; blockedAds={BlockedAds}; hiddenHasPromos={HiddenHasPromos}; blockedSourcePosts={BlockedSourcePosts}; blockedSourceVisible={BlockedSourceVisible}; visiblePosts={VisiblePosts}; visiblePromos={VisiblePromos}; privateMemory={PrivateMemoryMb:F2}MB",
                     report.Passed,
                     report.HiddenPosts,
                     report.BlockedAds,
                     report.HiddenHasPromos,
+                    report.BlockedSourcePosts,
+                    report.BlockedSourceVisible,
                     report.VisiblePosts,
                     report.VisiblePromos,
                     privateMemoryMb);

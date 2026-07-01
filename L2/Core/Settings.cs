@@ -672,6 +672,7 @@ namespace ELOR.Laney.Core {
         public const string NEWS_FEED_HIDE_ADS = "news_feed_hide_ads";
         public const string NEWS_FEED_STRICT_ADS = "news_feed_strict_ads";
         public const string NEWS_FEED_AD_KEYWORDS = "news_feed_ad_keywords";
+        public const string NEWS_FEED_BLOCKED_SOURCES = "news_feed_blocked_sources";
 
         public const string DEBUG_LOGS_CORE = "log_to_file_core";
         public const string DEBUG_LOGS_LP = "log_to_file_lp";
@@ -858,6 +859,7 @@ namespace ELOR.Laney.Core {
             NEWS_FEED_HIDE_ADS,
             NEWS_FEED_STRICT_ADS,
             NEWS_FEED_AD_KEYWORDS,
+            NEWS_FEED_BLOCKED_SOURCES,
             DEBUG_LOGS_CORE,
             DEBUG_LOGS_LP,
             DEBUG_LOGS_BITMAPMANAGER,
@@ -1555,6 +1557,11 @@ namespace ELOR.Laney.Core {
         public static string NewsFeedAdKeywords {
             get => Get(NEWS_FEED_AD_KEYWORDS, String.Empty);
             set => Set(NEWS_FEED_AD_KEYWORDS, value?.Trim() ?? String.Empty);
+        }
+
+        public static string NewsFeedBlockedSources {
+            get => Get(NEWS_FEED_BLOCKED_SOURCES, String.Empty);
+            set => Set(NEWS_FEED_BLOCKED_SOURCES, value?.Trim() ?? String.Empty);
         }
 
         public static IReadOnlyList<AudioPlaybackHistoryItem> GetAudioPlaybackHistory() {

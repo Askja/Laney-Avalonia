@@ -16,36 +16,59 @@ using VKUI.Controls;
 
 namespace ELOR.Laney.ViewModels {
     public sealed class NewsFeedPostViewModel {
-        public NewsFeedPostViewModel(VKSession session, WallPost post, bool isAdLike, string adReason) {
+        public NewsFeedPostViewModel(VKSession session, WallPost post, long sourceId, bool isAdLike, string adReason) {
             Session = session;
             Post = post;
+            SourceId = sourceId;
             IsAdLike = isAdLike;
             AdReason = adReason;
+            SourceText = BuildSourceText(sourceId);
         }
 
         public VKSession Session { get; }
         public WallPost Post { get; }
+        public long SourceId { get; }
+        public string SourceText { get; }
         public bool IsAdLike { get; }
         public bool IsAdBadgeVisible => IsAdLike;
         public string AdReason { get; }
         public string Link => Post == null ? "https://vk.com/feed" : $"https://vk.com/wall{Post.OwnerOrToId}_{Post.Id}";
+
+        private static string BuildSourceText(long sourceId) {
+            if (sourceId == 0) return "источник неизвестен";
+
+            Tuple<string, string, Uri> owner = CacheManager.GetNameAndAvatar(sourceId);
+            if (owner != null) {
+                string name = $"{owner.Item1} {owner.Item2}".Trim();
+                if (!String.IsNullOrWhiteSpace(name)) return name;
+            }
+
+            return sourceId < 0 ? $"club{-sourceId}" : $"id{sourceId}";
+        }
     }
 
     public sealed class NewsFeedViewModel : CommonViewModel {
         private const int PageSize = 25;
         private const int MaxAdScanTextLength = 12000;
         private const int MaxAdScanDepth = 5;
+        private const string CleaningModeOff = "off";
+        private const string CleaningModeSoft = "soft";
+        private const string CleaningModeStrict = "strict";
 
         private readonly VKSession session;
         private TwoStringTuple _currentFilter;
+        private TwoStringTuple _currentCleaningMode;
         private bool _hideAds = true;
         private bool _strictAds;
         private string _adKeywords;
         private IReadOnlyList<string> _customAdKeywords = Array.Empty<string>();
+        private string _blockedSources;
+        private HashSet<long> _blockedSourceIds = new HashSet<long>();
         private bool _initialized;
         private bool _hasMore = true;
         private string _nextFrom;
         private int _blockedAdsCount;
+        private int _blockedSourcePostsCount;
 
         public NewsFeedViewModel(VKSession session) {
             this.session = session;
@@ -54,6 +77,9 @@ namespace ELOR.Laney.ViewModels {
             _strictAds = Settings.NewsFeedStrictAds;
             _adKeywords = Settings.NewsFeedAdKeywords;
             _customAdKeywords = ParseCustomAdKeywords(_adKeywords);
+            _blockedSources = Settings.NewsFeedBlockedSources;
+            _blockedSourceIds = ParseBlockedSourceIds(_blockedSources);
+            _currentCleaningMode = ResolveCleaningMode();
         }
 
         public ObservableCollection<NewsFeedPostViewModel> Posts { get; } = new ObservableCollection<NewsFeedPostViewModel>();
@@ -67,6 +93,11 @@ namespace ELOR.Laney.ViewModels {
             new TwoStringTuple(NewsFeedFilterIds.Links, "Ссылки"),
             new TwoStringTuple(NewsFeedFilterIds.Rich, "С вложениями"),
             new TwoStringTuple(NewsFeedFilterIds.Text, "Только текст")
+        };
+        public ObservableCollection<TwoStringTuple> CleaningModeOptions { get; } = new ObservableCollection<TwoStringTuple> {
+            new TwoStringTuple(CleaningModeSoft, "Мягкая чистка"),
+            new TwoStringTuple(CleaningModeStrict, "Строгая чистка"),
+            new TwoStringTuple(CleaningModeOff, "Без чистки")
         };
 
         public TwoStringTuple CurrentFilter {
@@ -87,7 +118,10 @@ namespace ELOR.Laney.ViewModels {
                 if (_hideAds == value) return;
                 _hideAds = value;
                 Settings.NewsFeedHideAds = value;
+                _currentCleaningMode = ResolveCleaningMode();
                 OnPropertyChanged();
+                OnPropertyChanged(nameof(CurrentCleaningMode));
+                OnPropertyChanged(nameof(IsAdRulesVisible));
                 OnPropertyChanged(nameof(FeedStatusText));
                 RefreshAfterUserChange();
             }
@@ -99,7 +133,29 @@ namespace ELOR.Laney.ViewModels {
                 if (_strictAds == value) return;
                 _strictAds = value;
                 Settings.NewsFeedStrictAds = value;
+                _currentCleaningMode = ResolveCleaningMode();
                 OnPropertyChanged();
+                OnPropertyChanged(nameof(CurrentCleaningMode));
+                OnPropertyChanged(nameof(FeedStatusText));
+                OnPropertyChanged(nameof(IsAdRulesVisible));
+                RefreshAfterUserChange();
+            }
+        }
+
+        public TwoStringTuple CurrentCleaningMode {
+            get { return _currentCleaningMode; }
+            set {
+                if (value == null || value.Item1 == _currentCleaningMode?.Item1) return;
+
+                _currentCleaningMode = value;
+                _hideAds = value.Item1 != CleaningModeOff;
+                _strictAds = value.Item1 == CleaningModeStrict;
+                Settings.NewsFeedHideAds = _hideAds;
+                Settings.NewsFeedStrictAds = _strictAds;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(HideAds));
+                OnPropertyChanged(nameof(StrictAds));
+                OnPropertyChanged(nameof(IsAdRulesVisible));
                 OnPropertyChanged(nameof(FeedStatusText));
                 RefreshAfterUserChange();
             }
@@ -118,12 +174,34 @@ namespace ELOR.Laney.ViewModels {
             }
         }
 
+        public string BlockedSources {
+            get { return _blockedSources; }
+            set {
+                string normalized = value?.Trim() ?? String.Empty;
+                if (_blockedSources == normalized) return;
+
+                _blockedSources = normalized;
+                _blockedSourceIds = ParseBlockedSourceIds(normalized);
+                Settings.NewsFeedBlockedSources = normalized;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(BlockedSourcesListText));
+                OnPropertyChanged(nameof(HasBlockedSourceRules));
+                OnPropertyChanged(nameof(FeedStatusText));
+            }
+        }
+
         public int BlockedAdsCount { get { return _blockedAdsCount; } private set { _blockedAdsCount = value; OnPropertyChanged(); OnPropertyChanged(nameof(BlockedAdsText)); OnPropertyChanged(nameof(HasBlockedAds)); OnPropertyChanged(nameof(FeedStatusText)); } }
+        public int BlockedSourcePostsCount { get { return _blockedSourcePostsCount; } private set { _blockedSourcePostsCount = value; OnPropertyChanged(); OnPropertyChanged(nameof(BlockedSourcesText)); OnPropertyChanged(nameof(HasBlockedSourcePosts)); OnPropertyChanged(nameof(FeedStatusText)); } }
         public bool HasBlockedAds => BlockedAdsCount > 0;
+        public bool HasBlockedSourcePosts => BlockedSourcePostsCount > 0;
+        public bool HasBlockedSourceRules => _blockedSourceIds.Count > 0;
+        public bool IsAdRulesVisible => HideAds;
         public string BlockedAdsText => BlockedAdsCount == 0 ? null : $"скрыто промо: {BlockedAdsCount}";
+        public string BlockedSourcesText => BlockedSourcePostsCount == 0 ? null : $"скрыто источников: {BlockedSourcePostsCount}";
+        public string BlockedSourcesListText => _blockedSourceIds.Count == 0 ? "источники не заблокированы" : $"source id: {String.Join(", ", _blockedSourceIds.OrderBy(i => i))}";
         public string FeedStatusText => HideAds
-            ? $"newsfeed.get · {(_strictAds ? "строгая чистка" : "мягкая чистка")}{(_customAdKeywords.Count > 0 ? $" · ключей: {_customAdKeywords.Count}" : String.Empty)}"
-            : "newsfeed.get · промо показывается";
+            ? $"{(_strictAds ? "строго" : "мягко")}{(_customAdKeywords.Count > 0 ? $" · ключей {_customAdKeywords.Count}" : String.Empty)}{(_blockedSourceIds.Count > 0 ? $" · источников {_blockedSourceIds.Count}" : String.Empty)}"
+            : $"промо видно{(_blockedSourceIds.Count > 0 ? $" · источников {_blockedSourceIds.Count}" : String.Empty)}";
         public bool HasPosts => Posts.Count > 0;
         public bool IsLoadingFirstPage => IsLoading && Posts.Count == 0;
         public bool CanLoadMore => _hasMore && !IsLoading;
@@ -131,6 +209,12 @@ namespace ELOR.Laney.ViewModels {
 
         public async Task ApplyRulesAsync() {
             if (!_initialized) return;
+            _blockedSources = FormatBlockedSources(_blockedSourceIds);
+            Settings.NewsFeedBlockedSources = _blockedSources;
+            OnPropertyChanged(nameof(BlockedSources));
+            OnPropertyChanged(nameof(BlockedSourcesListText));
+            OnPropertyChanged(nameof(HasBlockedSourceRules));
+            OnPropertyChanged(nameof(FeedStatusText));
             await RefreshAsync();
         }
 
@@ -145,9 +229,29 @@ namespace ELOR.Laney.ViewModels {
             _nextFrom = null;
             _hasMore = true;
             BlockedAdsCount = 0;
+            BlockedSourcePostsCount = 0;
             Placeholder = null;
             RefreshPostState();
             await LoadNextAsync();
+        }
+
+        public void BlockSource(NewsFeedPostViewModel item) {
+            if (item == null || item.SourceId == 0 || _blockedSourceIds.Contains(item.SourceId)) return;
+
+            _blockedSourceIds.Add(item.SourceId);
+            _blockedSources = FormatBlockedSources(_blockedSourceIds);
+            Settings.NewsFeedBlockedSources = _blockedSources;
+            OnPropertyChanged(nameof(BlockedSources));
+            OnPropertyChanged(nameof(BlockedSourcesListText));
+            OnPropertyChanged(nameof(HasBlockedSourceRules));
+            OnPropertyChanged(nameof(FeedStatusText));
+
+            List<NewsFeedPostViewModel> removed = Posts.Where(p => p.SourceId == item.SourceId).ToList();
+            foreach (NewsFeedPostViewModel post in removed) Posts.Remove(post);
+            if (removed.Count > 0) BlockedSourcePostsCount += removed.Count;
+
+            RefreshPostState();
+            UpdateEmptyState();
         }
 
         public async Task LoadNextAsync() {
@@ -174,30 +278,37 @@ namespace ELOR.Laney.ViewModels {
             bool originalHideAds = _hideAds;
             bool originalStrictAds = _strictAds;
             string originalKeywords = _adKeywords;
+            string originalBlockedSources = _blockedSources;
             bool wasInitialized = _initialized;
 
             try {
                 _initialized = true;
-                await ApplyRulesForQaAsync(NewsFeedFilterIds.All, true, true, "casino; промокод; erid; adfox");
+                await ApplyRulesForQaAsync(NewsFeedFilterIds.All, true, true, "casino; промокод; erid; adfox", String.Empty);
                 int hiddenPosts = Posts.Count;
                 int blocked = BlockedAdsCount;
                 bool hiddenHasPromos = Posts.Any(p => p.IsAdLike);
 
-                await ApplyRulesForQaAsync(NewsFeedFilterIds.All, false, true, "casino; промокод; erid; adfox");
+                await ApplyRulesForQaAsync(NewsFeedFilterIds.All, true, true, "casino; промокод; erid; adfox", "-10001");
+                int sourceBlocked = BlockedSourcePostsCount;
+                bool blockedSourceVisible = Posts.Any(p => p.SourceId == -10001);
+
+                await ApplyRulesForQaAsync(NewsFeedFilterIds.All, false, true, "casino; промокод; erid; adfox", String.Empty);
                 int visiblePosts = Posts.Count;
                 int visiblePromos = Posts.Count(p => p.IsAdLike);
 
                 return new NewsFeedRulesQaReport {
-                    Passed = blocked >= 3 && !hiddenHasPromos && visiblePromos >= blocked && visiblePosts > hiddenPosts,
+                    Passed = blocked >= 3 && !hiddenHasPromos && sourceBlocked >= 1 && !blockedSourceVisible && visiblePromos >= blocked && visiblePosts > hiddenPosts,
                     HiddenPosts = hiddenPosts,
                     BlockedAds = blocked,
                     HiddenHasPromos = hiddenHasPromos,
+                    BlockedSourcePosts = sourceBlocked,
+                    BlockedSourceVisible = blockedSourceVisible,
                     VisiblePosts = visiblePosts,
                     VisiblePromos = visiblePromos
                 };
             } finally {
                 _initialized = wasInitialized;
-                await ApplyRulesForQaAsync(originalFilter?.Item1 ?? NewsFeedFilterIds.All, originalHideAds, originalStrictAds, originalKeywords);
+                await ApplyRulesForQaAsync(originalFilter?.Item1 ?? NewsFeedFilterIds.All, originalHideAds, originalStrictAds, originalKeywords, originalBlockedSources);
             }
         }
 
@@ -206,16 +317,24 @@ namespace ELOR.Laney.ViewModels {
             new System.Action(async () => await RefreshAsync())();
         }
 
-        private async Task ApplyRulesForQaAsync(string filterId, bool hideAds, bool strictAds, string keywords) {
+        private async Task ApplyRulesForQaAsync(string filterId, bool hideAds, bool strictAds, string keywords, string blockedSources) {
             _currentFilter = FilterOptions.FirstOrDefault(f => f.Item1 == NewsFeedFilterIds.Normalize(filterId)) ?? FilterOptions[0];
             _hideAds = hideAds;
             _strictAds = strictAds;
+            _currentCleaningMode = ResolveCleaningMode();
             _adKeywords = keywords ?? String.Empty;
             _customAdKeywords = ParseCustomAdKeywords(_adKeywords);
+            _blockedSources = NormalizeBlockedSources(blockedSources);
+            _blockedSourceIds = ParseBlockedSourceIds(_blockedSources);
             OnPropertyChanged(nameof(CurrentFilter));
+            OnPropertyChanged(nameof(CurrentCleaningMode));
             OnPropertyChanged(nameof(HideAds));
             OnPropertyChanged(nameof(StrictAds));
             OnPropertyChanged(nameof(AdKeywords));
+            OnPropertyChanged(nameof(BlockedSources));
+            OnPropertyChanged(nameof(BlockedSourcesListText));
+            OnPropertyChanged(nameof(HasBlockedSourceRules));
+            OnPropertyChanged(nameof(IsAdRulesVisible));
             OnPropertyChanged(nameof(FeedStatusText));
             await RefreshAsync();
         }
@@ -310,13 +429,19 @@ namespace ELOR.Laney.ViewModels {
             WallPost post = TryParsePost(item);
             if (post == null || !MatchesCurrentFilter(post)) return;
 
+            long sourceId = ResolvePostSourceId(post);
+            if (_blockedSourceIds.Contains(sourceId)) {
+                BlockedSourcePostsCount++;
+                return;
+            }
+
             bool isAd = IsAdLike(item, post, out string reason);
             if (HideAds && isAd) {
                 BlockedAdsCount++;
                 return;
             }
 
-            Posts.Add(new NewsFeedPostViewModel(session, post, isAd, reason));
+            Posts.Add(new NewsFeedPostViewModel(session, post, sourceId, isAd, reason));
             OnPropertyChanged(nameof(FeedCounterText));
         }
 
@@ -542,6 +667,52 @@ namespace ELOR.Laney.ViewModels {
                 .ToArray();
         }
 
+        private TwoStringTuple ResolveCleaningMode() {
+            string id = !_hideAds ? CleaningModeOff : _strictAds ? CleaningModeStrict : CleaningModeSoft;
+            return CleaningModeOptions.FirstOrDefault(o => o.Item1 == id) ?? CleaningModeOptions[0];
+        }
+
+        private static HashSet<long> ParseBlockedSourceIds(string value) {
+            HashSet<long> result = new HashSet<long>();
+            if (String.IsNullOrWhiteSpace(value)) return result;
+
+            foreach (string raw in value.Split(new[] { ',', ';', '\n', '\r', ' ' }, StringSplitOptions.RemoveEmptyEntries)) {
+                if (TryParseBlockedSourceId(raw, out long sourceId)) result.Add(sourceId);
+            }
+
+            return result;
+        }
+
+        private static string NormalizeBlockedSources(string value) {
+            HashSet<long> ids = ParseBlockedSourceIds(value);
+            return FormatBlockedSources(ids);
+        }
+
+        private static string FormatBlockedSources(IEnumerable<long> sourceIds) {
+            return String.Join("; ", sourceIds.Distinct().OrderBy(i => i));
+        }
+
+        private static bool TryParseBlockedSourceId(string value, out long sourceId) {
+            sourceId = 0;
+            if (String.IsNullOrWhiteSpace(value)) return false;
+
+            string token = value.Trim().Trim('@').ToLowerInvariant();
+            int slash = token.LastIndexOf('/');
+            if (slash >= 0 && slash < token.Length - 1) token = token[(slash + 1)..];
+            token = token.Trim();
+
+            bool negative = token.StartsWith("club", StringComparison.Ordinal) || token.StartsWith("public", StringComparison.Ordinal);
+            if (negative) {
+                token = token.StartsWith("club", StringComparison.Ordinal) ? token[4..] : token[6..];
+            } else if (token.StartsWith("id", StringComparison.Ordinal)) {
+                token = token[2..];
+            }
+
+            if (!long.TryParse(token, out long id) || id == 0) return false;
+            sourceId = negative ? -Math.Abs(id) : id;
+            return true;
+        }
+
         private static void CacheNewsOwners(JsonElement response) {
             if (response.TryGetProperty("profiles", out JsonElement profiles) && profiles.ValueKind == JsonValueKind.Array) {
                 List<User> users = (List<User>)JsonSerializer.Deserialize(profiles.GetRawText(), typeof(List<User>), BuildInJsonContext.Default);
@@ -585,6 +756,8 @@ namespace ELOR.Laney.ViewModels {
         public int HiddenPosts { get; set; }
         public int BlockedAds { get; set; }
         public bool HiddenHasPromos { get; set; }
+        public int BlockedSourcePosts { get; set; }
+        public bool BlockedSourceVisible { get; set; }
         public int VisiblePosts { get; set; }
         public int VisiblePromos { get; set; }
     }

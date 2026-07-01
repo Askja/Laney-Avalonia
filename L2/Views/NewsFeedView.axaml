@@ -20,6 +20,13 @@
         <Setter Property="BorderBrush" Value="{DynamicResource LaneyGlassBorderBrush}"/>
         <Setter Property="BorderThickness" Value="1"/>
       </Style>
+      <Style Selector="Border.NewsBadge">
+        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="Padding" Value="8,3"/>
+        <Setter Property="Background" Value="{DynamicResource VKBackgroundSecondaryBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource LaneyGlassBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+      </Style>
     </Grid.Styles>
 
     <vkui:PanelHeader IsSeparatorVisible="False">
@@ -39,8 +46,8 @@
     </vkui:PanelHeader>
 
     <Border Grid.Row="1" Padding="12,8,12,10" BorderBrush="{DynamicResource LaneyGlassBorderBrush}" BorderThickness="0,0,0,1">
-      <Grid RowDefinitions="Auto Auto Auto" RowSpacing="8">
-        <Grid ColumnDefinitions="* Auto" ColumnSpacing="10">
+      <Grid RowDefinitions="Auto Auto Auto Auto" RowSpacing="8">
+        <Grid ColumnDefinitions="* *" ColumnSpacing="8">
           <ComboBox Classes="Alternate" MinHeight="36" HorizontalAlignment="Stretch" ItemsSource="{Binding FilterOptions}" SelectedItem="{Binding CurrentFilter, Mode=TwoWay}">
             <ComboBox.ItemTemplate>
               <DataTemplate x:DataType="mdl:TwoStringTuple">
@@ -48,25 +55,42 @@
               </DataTemplate>
             </ComboBox.ItemTemplate>
           </ComboBox>
-          <CheckBox Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding HideAds, Mode=TwoWay}" Content="Без промо"/>
+          <ComboBox Grid.Column="1" Classes="Alternate" MinHeight="36" HorizontalAlignment="Stretch" ItemsSource="{Binding CleaningModeOptions}" SelectedItem="{Binding CurrentCleaningMode, Mode=TwoWay}">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="mdl:TwoStringTuple">
+                <TextBlock Text="{Binding Item2}"/>
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
         </Grid>
-        <Grid Grid.Row="1" ColumnDefinitions="Auto * Auto" ColumnSpacing="8" IsVisible="{Binding HideAds}">
-          <CheckBox VerticalAlignment="Center" IsChecked="{Binding StrictAds, Mode=TwoWay}" Content="Строго"/>
-          <TextBox Grid.Column="1" Classes="Search" MinHeight="34" PlaceholderText="Ключи промо: casino, промокод, erid" Text="{Binding AdKeywords, Mode=TwoWay}"/>
-          <Button Grid.Column="2" Classes="Tertiary" MinHeight="34" Padding="10,4" Click="ApplyRulesButton_Click" ToolTip.Tip="Применить ключевые слова">
+        <Grid Grid.Row="1" ColumnDefinitions="* Auto" ColumnSpacing="8" IsVisible="{Binding IsAdRulesVisible}">
+          <TextBox Classes="Search" MinHeight="34" PlaceholderText="Ключи промо: casino, промокод, erid" Text="{Binding AdKeywords, Mode=TwoWay}"/>
+          <Button Grid.Column="1" Classes="Tertiary" MinHeight="34" Padding="10,4" Click="ApplyRulesButton_Click" ToolTip.Tip="Применить правила чистки">
             <StackPanel Orientation="Horizontal" Spacing="6">
               <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon20Check}"/>
               <TextBlock Text="Применить"/>
             </StackPanel>
           </Button>
         </Grid>
-        <Grid Grid.Row="2" ColumnDefinitions="Auto *">
-          <Border CornerRadius="8" Padding="8,3" Background="{DynamicResource VKAccentBrush}" IsVisible="{Binding HasBlockedAds}">
+        <Grid Grid.Row="2" ColumnDefinitions="* Auto" ColumnSpacing="8">
+          <TextBox Classes="Search" MinHeight="34" PlaceholderText="Скрыть источники: -123, club456, id789" Text="{Binding BlockedSources, Mode=TwoWay}" ToolTip.Tip="{Binding BlockedSourcesListText}"/>
+          <Button Grid.Column="1" Classes="Tertiary" MinHeight="34" Padding="10,4" Click="ApplyRulesButton_Click" ToolTip.Tip="Применить список источников">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon20BlockOutline}"/>
+              <TextBlock Text="Скрыть"/>
+            </StackPanel>
+          </Button>
+        </Grid>
+        <Grid Grid.Row="3" ColumnDefinitions="Auto Auto *" ColumnSpacing="6">
+          <Border Classes="NewsBadge" Background="{DynamicResource VKAccentBrush}" IsVisible="{Binding HasBlockedAds}">
             <TextBlock Classes="Caption1" FontWeight="SemiBold" Foreground="{DynamicResource VKButtonPrimaryForegroundBrush}" Text="{Binding BlockedAdsText}"/>
           </Border>
-          <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+          <Border Grid.Column="1" Classes="NewsBadge" IsVisible="{Binding HasBlockedSourcePosts}">
+            <TextBlock Classes="Caption1" FontWeight="SemiBold" Foreground="{DynamicResource VKTextPrimaryBrush}" Text="{Binding BlockedSourcesText}"/>
+          </Border>
+          <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
             <TextBlock Classes="Caption1" VerticalAlignment="Center" Foreground="{DynamicResource LaneyTextMutedBrush}" Text="{Binding FeedCounterText}"/>
-            <TextBlock Classes="Caption1" VerticalAlignment="Center" Foreground="{DynamicResource LaneyTextMutedBrush}" Text="{Binding FeedStatusText}"/>
+            <TextBlock Classes="Caption1" MaxWidth="150" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Foreground="{DynamicResource LaneyTextMutedBrush}" Text="{Binding FeedStatusText}"/>
           </StackPanel>
         </Grid>
       </Grid>
@@ -80,16 +104,34 @@
               <DataTemplate x:DataType="vm:NewsFeedPostViewModel">
                 <Border Classes="NewsCard">
                   <StackPanel Spacing="10">
-                    <Border HorizontalAlignment="Left" CornerRadius="8" Padding="8,3" Background="{DynamicResource VKDestructiveBrush}" IsVisible="{Binding IsAdBadgeVisible}">
-                      <TextBlock Classes="Caption1" FontWeight="SemiBold" Foreground="{DynamicResource VKButtonPrimaryForegroundBrush}" Text="{Binding AdReason}"/>
-                    </Border>
-                    <controls:PostUI Tag="{Binding Session}" Post="{Binding Post}" HorizontalAlignment="Stretch"/>
-                    <Button Classes="Tertiary" HorizontalAlignment="Left" MinHeight="30" Padding="10,4" Click="OpenPostButton_Click">
+                    <Grid ColumnDefinitions="* Auto" ColumnSpacing="8">
                       <StackPanel Orientation="Horizontal" Spacing="6">
-                        <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon20MessageArrowRightOutline}"/>
-                        <TextBlock Text="Открыть в VK"/>
+                        <Border Classes="NewsBadge">
+                          <TextBlock Classes="Caption1" MaxWidth="190" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource LaneyTextMutedBrush}" Text="{Binding SourceText}"/>
+                        </Border>
+                        <Border Classes="NewsBadge" Background="{DynamicResource VKDestructiveBrush}" IsVisible="{Binding IsAdBadgeVisible}">
+                          <TextBlock Classes="Caption1" MaxWidth="150" TextTrimming="CharacterEllipsis" FontWeight="SemiBold" Foreground="{DynamicResource VKButtonPrimaryForegroundBrush}" Text="{Binding AdReason}"/>
+                        </Border>
                       </StackPanel>
-                    </Button>
+                      <Button Grid.Column="1" Classes="Tertiary" MinHeight="30" Padding="9,4" Click="BlockSourceButton_Click" ToolTip.Tip="Скрыть этот источник из ленты">
+                        <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon20BlockOutline}"/>
+                      </Button>
+                    </Grid>
+                    <controls:PostUI Tag="{Binding Session}" Post="{Binding Post}" HorizontalAlignment="Stretch"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <Button Classes="Tertiary" HorizontalAlignment="Left" MinHeight="30" Padding="10,4" Click="OpenPostButton_Click">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                          <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon20MessageArrowRightOutline}"/>
+                          <TextBlock Text="Открыть в VK"/>
+                        </StackPanel>
+                      </Button>
+                      <Button Classes="Tertiary" HorizontalAlignment="Left" MinHeight="30" Padding="10,4" Click="BlockSourceButton_Click">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                          <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon20BlockOutline}"/>
+                          <TextBlock Text="Скрыть источник"/>
+                        </StackPanel>
+                      </Button>
+                    </StackPanel>
                   </StackPanel>
                 </Border>
               </DataTemplate>
