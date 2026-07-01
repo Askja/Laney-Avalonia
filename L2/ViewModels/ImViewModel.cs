@@ -181,6 +181,9 @@ namespace ELOR.Laney.ViewModels {
             if (DemoMode.IsEnabled) {
                 await Dispatcher.UIThread.InvokeAsync(() => {
                     Stories.Clear();
+                    foreach (StoryRailItemViewModel item in BuildDemoStories()) {
+                        Stories.Add(item);
+                    }
                     StoriesLoadFailed = false;
                     _storiesLoaded = true;
                     RefreshStoriesState();
@@ -225,6 +228,17 @@ namespace ELOR.Laney.ViewModels {
             OnPropertyChanged(nameof(IsStoriesStatusVisible));
             OnPropertyChanged(nameof(StoriesStatusText));
             OnPropertyChanged(nameof(StoriesStatusSubtitle));
+        }
+
+        private static IEnumerable<StoryRailItemViewModel> BuildDemoStories() {
+            const string assetRoot = "avares://laney/Assets/Logo/";
+
+            yield return StoryRailItemViewModel.CreateDemo("Ай Хошино", $"{assetRoot}anime_ai.png", 101, false, true);
+            yield return StoryRailItemViewModel.CreateDemo("Акане", $"{assetRoot}anime_akane.png", 102);
+            yield return StoryRailItemViewModel.CreateDemo("VK Новости", $"{assetRoot}vk_modern.png", -1, false, true);
+            yield return StoryRailItemViewModel.CreateDemo("Laney Dev", $"{assetRoot}anime_star.png", 103, true);
+            yield return StoryRailItemViewModel.CreateDemo("Классика VK", $"{assetRoot}vk_classic.png", -2);
+            yield return StoryRailItemViewModel.CreateDemo("Синий VK", $"{assetRoot}vk_blue.png", -3, true);
         }
 
         private void ChangeChatFilter(TwoStringTuple value) {

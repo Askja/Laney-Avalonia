@@ -24,6 +24,19 @@ namespace ELOR.Laney.ViewModels {
             _stateText = BuildStateText(story);
         }
 
+        private StoryRailItemViewModel(string title, Uri previewUri, Uri avatarUri, long ownerId, bool isSeen, bool isVideo, bool isUnavailable, string stateText) {
+            Story = null;
+            OwnerId = ownerId;
+            PreviewUri = previewUri;
+            AvatarUri = avatarUri;
+            Title = String.IsNullOrWhiteSpace(title) ? "История" : title;
+            Initials = BuildInitials(Title);
+            _isSeen = isSeen;
+            IsVideo = isVideo;
+            IsUnavailable = isUnavailable;
+            _stateText = stateText;
+        }
+
         public Story Story { get; }
         public long OwnerId { get; }
         public Uri PreviewUri { get; }
@@ -35,8 +48,19 @@ namespace ELOR.Laney.ViewModels {
         public bool IsVideo { get; }
         public bool IsUnavailable { get; }
 
+        public static StoryRailItemViewModel CreateDemo(string title, string previewUri, long ownerId, bool isSeen = false, bool isVideo = false) {
+            Uri preview = Uri.TryCreate(previewUri, UriKind.Absolute, out Uri parsedPreview) ? parsedPreview : null;
+            string state = isVideo ? "demo-видео" : isSeen ? "demo-просмотрена" : "demo-новая";
+            return new StoryRailItemViewModel(title, preview, null, ownerId, isSeen, isVideo, false, state);
+        }
+
         public void MarkSeenLocally() {
             if (IsSeen || IsUnavailable) return;
+            if (Story == null) {
+                IsSeen = true;
+                StateText = "demo-просмотрена";
+                return;
+            }
 
             Story.Seen = 1;
             IsSeen = true;

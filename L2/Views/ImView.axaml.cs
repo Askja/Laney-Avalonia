@@ -104,9 +104,9 @@ namespace ELOR.Laney.Views {
                 if (b == 0) ChatsList.SelectedItem = null;
             };
 
-            if (DemoMode.IsEnabled) return;
-
             new System.Action(async () => await Session.ImViewModel.LoadStoriesAsync())();
+
+            if (DemoMode.IsEnabled) return;
 
             new System.Action(async () => {
                 bool isRegistered = false;
