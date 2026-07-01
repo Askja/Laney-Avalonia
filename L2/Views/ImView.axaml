@@ -261,40 +261,51 @@
       <Style Selector="ComboBox.ChatFilterPill /template/ ToggleButton#toggle">
         <Setter Property="Padding" Value="8,0"/>
       </Style>
+      <Style Selector="Button.ChatToolbarButton">
+        <Setter Property="Width" Value="34"/>
+        <Setter Property="MinWidth" Value="34"/>
+        <Setter Property="Height" Value="34"/>
+        <Setter Property="MinHeight" Value="34"/>
+        <Setter Property="Padding" Value="0"/>
+      </Style>
       <Style Selector="Button.StoryRailItem">
         <Setter Property="Padding" Value="0"/>
         <Setter Property="Width" Value="84"/>
         <Setter Property="MinWidth" Value="84"/>
-        <Setter Property="Height" Value="118"/>
+        <Setter Property="Height" Value="124"/>
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderThickness" Value="0"/>
-        <Setter Property="CornerRadius" Value="16"/>
+        <Setter Property="CornerRadius" Value="18"/>
         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
         <Setter Property="VerticalContentAlignment" Value="Stretch"/>
       </Style>
+      <Style Selector="Button.StoryRailRefresh">
+        <Setter Property="Width" Value="72"/>
+        <Setter Property="MinWidth" Value="72"/>
+      </Style>
       <Style Selector="Button.StoryRailItem /template/ Border#PART_Hover">
-        <Setter Property="Margin" Value="0"/>
-        <Setter Property="CornerRadius" Value="16"/>
+        <Setter Property="Margin" Value="3"/>
+        <Setter Property="CornerRadius" Value="17"/>
       </Style>
       <Style Selector="Button.StoryRailItem:pointerover /template/ Border#PART_Hover">
         <Setter Property="Background" Value="{DynamicResource LaneyChatListHoverBrush}"/>
       </Style>
       <Style Selector="Button.StoryRailItem /template/ ContentPresenter#PART_Presenter">
-        <Setter Property="Padding" Value="5"/>
+        <Setter Property="Padding" Value="0"/>
       </Style>
       <Style Selector="Button.StoryCarouselButton">
-        <Setter Property="Width" Value="32"/>
-        <Setter Property="Height" Value="64"/>
-        <Setter Property="MinHeight" Value="64"/>
+        <Setter Property="Width" Value="26"/>
+        <Setter Property="Height" Value="62"/>
+        <Setter Property="MinHeight" Value="62"/>
         <Setter Property="Padding" Value="0"/>
-        <Setter Property="CornerRadius" Value="16"/>
+        <Setter Property="CornerRadius" Value="13"/>
         <Setter Property="Background" Value="{DynamicResource LaneyGlassRaisedBrush}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource LaneyGlassBorderBrush}"/>
         <Setter Property="BorderThickness" Value="1"/>
       </Style>
       <Style Selector="Border.StoryCardSurface">
-        <Setter Property="CornerRadius" Value="14"/>
-        <Setter Property="Padding" Value="4"/>
+        <Setter Property="CornerRadius" Value="16"/>
+        <Setter Property="Padding" Value="3"/>
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderBrush" Value="Transparent"/>
         <Setter Property="BorderThickness" Value="1"/>
@@ -317,61 +328,59 @@
         <Setter Property="BorderThickness" Value="2"/>
       </Style>
     </Grid.Styles>
-    <vkui:PanelHeader VerticalAlignment="Top" Background="{DynamicResource LaneyGlassPanelBrush}" BorderBrush="{DynamicResource LaneyGlassBorderBrush}">
-      <vkui:PanelHeader.Content>
-        <Grid ColumnDefinitions="Auto Auto *" VerticalAlignment="Center" Height="52" MinWidth="210">
-          <TextBlock Classes="Display PanelHeaderTextStyle" VerticalAlignment="Center" FontWeight="Bold" LineHeight="30" Text="{x:Static i18n:Resources.chats}"/>
-          <ComboBox x:Name="ChatsFilterBox" Grid.Column="1" Classes="Alternate ChatFilterPill" Margin="12,0,0,0" Width="136" HorizontalAlignment="Left" VerticalAlignment="Center" MaxDropDownHeight="320" ItemsSource="{Binding ImViewModel.ChatFilters}" SelectedItem="{Binding ImViewModel.CurrentChatFilter, Mode=TwoWay}">
-            <ComboBox.ItemTemplate>
-              <DataTemplate x:DataType="mdl:TwoStringTuple">
-                <TextBlock Text="{Binding Item2}"/>
-              </DataTemplate>
-            </ComboBox.ItemTemplate>
-          </ComboBox>
-        </Grid>
-      </vkui:PanelHeader.Content>
-      <vkui:PanelHeader.LeftButtons>
-        <Button x:Name="AvatarButton">
+    <Border Height="64" Background="{DynamicResource LaneyGlassPanelBrush}" BorderBrush="{DynamicResource LaneyGlassBorderBrush}" BorderThickness="0,0,0,1">
+      <Grid ColumnDefinitions="Auto Auto Auto * Auto Auto Auto Auto" Margin="10,0,12,0" VerticalAlignment="Center">
+        <Button x:Name="AvatarButton" Grid.Column="0" Width="42" Height="42" Padding="0" Margin="0,0,8,0" VerticalAlignment="Center">
           <vkui:Avatar Width="32" Height="32" Initials="{Binding DisplayInitials}" Background="{Binding DisplayAvatarSeed, Converter={StaticResource agc}}" Foreground="White" controls:ImageLoader.Image="{Binding DisplayAvatar}"/>
         </Button>
-      </vkui:PanelHeader.LeftButtons>
-      <vkui:PanelHeader.RightButtons>
-        <Button x:Name="NewsFeedButton" ToolTip.Tip="Новости">
+        <TextBlock Grid.Column="1" Classes="Display PanelHeaderTextStyle" VerticalAlignment="Center" FontWeight="Bold" LineHeight="30" Text="{x:Static i18n:Resources.chats}"/>
+        <ComboBox x:Name="ChatsFilterBox" Grid.Column="2" Classes="Alternate ChatFilterPill" Margin="10,0,8,0" Width="112" HorizontalAlignment="Left" VerticalAlignment="Center" MaxDropDownHeight="320" ItemsSource="{Binding ImViewModel.ChatFilters}" SelectedItem="{Binding ImViewModel.CurrentChatFilter, Mode=TwoWay}">
+          <ComboBox.ItemTemplate>
+            <DataTemplate x:DataType="mdl:TwoStringTuple">
+              <TextBlock Text="{Binding Item2}"/>
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+        <Button x:Name="NewsFeedButton" Grid.Column="4" Classes="ChatToolbarButton" ToolTip.Tip="Новости">
           <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon28ArticleOutline}"/>
         </Button>
-        <Button x:Name="MusicButton" ToolTip.Tip="Музыка">
+        <Button x:Name="MusicButton" Grid.Column="5" Classes="ChatToolbarButton" Margin="2,0,0,0" ToolTip.Tip="Музыка">
           <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon28MusicOutline}"/>
         </Button>
-        <Button x:Name="SearchButton">
+        <Button x:Name="SearchButton" Grid.Column="6" Classes="ChatToolbarButton" Margin="2,0,0,0">
           <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon28SearchOutline}"/>
         </Button>
-        <Button x:Name="NewConvButton" IsVisible="{Binding !IsGroup}">
+        <Button x:Name="NewConvButton" Grid.Column="7" Classes="ChatToolbarButton" Margin="2,0,0,0" IsVisible="{Binding !IsGroup}">
           <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon28WriteSquareOutline}"/>
         </Button>
-      </vkui:PanelHeader.RightButtons>
-    </vkui:PanelHeader>
+      </Grid>
+    </Border>
 
     <Grid x:Name="ChatsListRoot" Grid.Row="1" RowDefinitions="Auto *" Background="{DynamicResource LaneyGlassPanelBrush}">
       <Border x:Name="StoriesRail" IsVisible="{Binding ImViewModel.HasStoriesRail}" BorderBrush="{DynamicResource LaneyGlassBorderBrush}" BorderThickness="0,0,0,1" Background="{DynamicResource LaneyGlassPanelBrush}">
-        <Grid MinHeight="128" ColumnDefinitions="Auto *" Margin="8,6,8,8" ClipToBounds="False">
-          <Button Classes="Tertiary StoryRailItem" Margin="0,0,4,0" VerticalAlignment="Center" Click="StoriesRefreshButton_Click" ToolTip.Tip="Обновить истории">
+        <Grid MinHeight="134" ColumnDefinitions="Auto *" Margin="8,6,8,8" ClipToBounds="False">
+          <Button Classes="Tertiary StoryRailItem StoryRailRefresh" Margin="0,0,6,0" VerticalAlignment="Center" Click="StoriesRefreshButton_Click" ToolTip.Tip="Обновить истории">
             <Border Classes="StoryCardSurface">
               <StackPanel Spacing="5" HorizontalAlignment="Center" VerticalAlignment="Center">
-                <Grid Width="74" Height="86" HorizontalAlignment="Center">
-                  <Border Classes="StoryRing" BorderBrush="{DynamicResource LaneyGlassBorderBrush}" Background="{DynamicResource LaneyGlassRaisedBrush}"/>
+                <Grid Width="60" Height="76" HorizontalAlignment="Center">
+                  <Border Width="60" Height="76" CornerRadius="15" BorderThickness="1" BorderBrush="{DynamicResource LaneyGlassBorderBrush}" Background="{DynamicResource LaneyGlassRaisedBrush}"/>
                   <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon20StoryOutline}" Width="28" Height="28" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource LaneyAccentBrush}"/>
                   <Border Width="24" Height="24" CornerRadius="12" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,2,2" Background="{DynamicResource VKAccentBrush}" BorderBrush="{DynamicResource LaneyGlassPanelBrush}" BorderThickness="2">
                     <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon20RecentOutline}" Width="13" Height="13" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource VKButtonPrimaryForegroundBrush}"/>
                   </Border>
                 </Grid>
-                <TextBlock Width="74" Height="16" Text="Истории" MaxLines="1" TextTrimming="CharacterEllipsis" TextAlignment="Center" FontSize="12" LineHeight="14" Foreground="{DynamicResource VKTextPrimaryBrush}"/>
+                <TextBlock Width="62" Height="22" Text="Истории" MaxLines="2" TextTrimming="CharacterEllipsis" TextAlignment="Center" FontSize="11" LineHeight="11" Foreground="{DynamicResource VKTextPrimaryBrush}"/>
               </StackPanel>
             </Border>
           </Button>
 
-          <Grid Grid.Column="1" ClipToBounds="False">
-            <ScrollViewer x:Name="StoriesScroll" IsVisible="{Binding ImViewModel.HasStories}" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled" PointerWheelChanged="StoriesScroll_PointerWheelChanged">
-              <ItemsRepeater ItemsSource="{Binding ImViewModel.Stories}" Margin="38,0,40,0" VerticalAlignment="Center">
+          <Grid Grid.Column="1" ColumnDefinitions="Auto * Auto" ClipToBounds="False">
+            <Button Grid.Column="0" Classes="Tertiary StoryCarouselButton" Margin="0,0,4,0" HorizontalAlignment="Left" VerticalAlignment="Center" Click="StoriesCarouselLeftButton_Click" IsVisible="{Binding ImViewModel.HasStories}" ToolTip.Tip="Назад">
+              <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon16ChevronLeft}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Button>
+
+            <ScrollViewer Grid.Column="1" x:Name="StoriesScroll" IsVisible="{Binding ImViewModel.HasStories}" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled" PointerWheelChanged="StoriesScroll_PointerWheelChanged">
+              <ItemsRepeater ItemsSource="{Binding ImViewModel.Stories}" Margin="6,0" VerticalAlignment="Center">
                 <ItemsRepeater.Layout>
                   <StackLayout Orientation="Horizontal" Spacing="6"/>
                 </ItemsRepeater.Layout>
@@ -400,7 +409,7 @@
                               <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon24Play}" Width="12" Height="12" Margin="1,0,0,0" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White"/>
                             </Border>
                           </Grid>
-                          <TextBlock Width="74" Height="28" Text="{Binding Title}" MaxLines="2" TextTrimming="CharacterEllipsis" TextAlignment="Center" FontSize="12" LineHeight="13" Foreground="{DynamicResource VKTextPrimaryBrush}"/>
+                          <TextBlock Width="74" Height="22" Text="{Binding Title}" MaxLines="2" TextTrimming="CharacterEllipsis" TextAlignment="Center" FontSize="11" LineHeight="11" Foreground="{DynamicResource VKTextPrimaryBrush}"/>
                         </StackPanel>
                       </Border>
                     </Button>
@@ -409,10 +418,7 @@
               </ItemsRepeater>
             </ScrollViewer>
 
-            <Button Classes="Tertiary StoryCarouselButton" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="1,0,0,0" Click="StoriesCarouselLeftButton_Click" IsVisible="{Binding ImViewModel.HasStories}" ToolTip.Tip="Назад">
-              <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon16ChevronLeft}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-            </Button>
-            <Button Classes="Tertiary StoryCarouselButton" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,1,0" Click="StoriesCarouselRightButton_Click" IsVisible="{Binding ImViewModel.HasStories}" ToolTip.Tip="Вперед">
+            <Button Grid.Column="2" Classes="Tertiary StoryCarouselButton" Margin="4,0,0,0" HorizontalAlignment="Right" VerticalAlignment="Center" Click="StoriesCarouselRightButton_Click" IsVisible="{Binding ImViewModel.HasStories}" ToolTip.Tip="Вперед">
               <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon16ChevronLeft}" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
                 <vkui:VKIcon.RenderTransform>
                   <RotateTransform Angle="180"/>
@@ -420,7 +426,7 @@
               </vkui:VKIcon>
             </Button>
 
-            <Border Margin="12,10,12,10" CornerRadius="14" Background="{DynamicResource LaneyGlassRaisedBrush}" BorderBrush="{DynamicResource LaneyGlassBorderBrush}" BorderThickness="1" IsVisible="{Binding ImViewModel.IsStoriesStatusVisible}">
+            <Border Grid.ColumnSpan="3" Margin="6,10,6,10" CornerRadius="14" Background="{DynamicResource LaneyGlassRaisedBrush}" BorderBrush="{DynamicResource LaneyGlassBorderBrush}" BorderThickness="1" IsVisible="{Binding ImViewModel.IsStoriesStatusVisible}">
               <Grid ColumnDefinitions="Auto *" Margin="14,0" VerticalAlignment="Center">
                 <vkui:VKIcon Id="{x:Static vkui:VKIconNames.Icon20StoryOutline}" Width="24" Height="24" VerticalAlignment="Center" Foreground="{DynamicResource LaneyTextMutedBrush}"/>
                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="12,0,0,0" Spacing="2">
@@ -430,7 +436,7 @@
               </Grid>
             </Border>
 
-            <StackPanel Orientation="Horizontal" Spacing="6" Margin="38,0,12,0" VerticalAlignment="Center" IsVisible="{Binding ImViewModel.IsStoriesSkeletonVisible}">
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" Margin="6,0" VerticalAlignment="Center" IsVisible="{Binding ImViewModel.IsStoriesSkeletonVisible}">
               <StackPanel Width="84" Spacing="5">
                 <Border Classes="Skeleton" Width="74" Height="86" CornerRadius="16" HorizontalAlignment="Center"/>
                 <Border Classes="Skeleton" Width="54" Height="10" CornerRadius="5" HorizontalAlignment="Center"/>
